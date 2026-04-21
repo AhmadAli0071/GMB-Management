@@ -60,6 +60,8 @@ export function SalesDashboard() {
   const [updateReviewComment, setUpdateReviewComment] = useState('');
   const [showSectionReviewModal, setShowSectionReviewModal] = useState<{ updateId: string; section: string; status: string } | null>(null);
   const [sectionReviewComment, setSectionReviewComment] = useState('');
+  const [expandedDates, setExpandedDates] = useState<Record<string, boolean>>({});
+  const toggleDate = (key: string) => setExpandedDates(prev => ({ ...prev, [key]: !prev[key] }));
 
   const myProjects = projects.filter(p => p.createdBy === currentUser.id);
   const workingProjects = myProjects.filter(p => !['COMPLETED', 'CLIENT_COMMUNICATION', 'VERIFICATION'].includes(p.stage));
@@ -400,12 +402,13 @@ export function SalesDashboard() {
                             });
                             return Object.keys(grouped).sort((a: string, b: string) => b.localeCompare(a)).map((date: string) => (
                               <div key={date} className="bg-slate-800/30 rounded-lg border border-slate-700/30 overflow-hidden">
-                                <div className="px-4 py-2.5 bg-slate-800/60 flex items-center gap-2">
+                                <div className="px-4 py-2.5 bg-slate-800/60 flex items-center gap-2 cursor-pointer hover:bg-slate-700/40 transition-colors" onClick={() => toggleDate(`${project.id}-${date}`)}>
+                                  {expandedDates[`${project.id}-${date}`] ? <ChevronUp size={14} className="text-slate-500" /> : <ChevronDown size={14} className="text-slate-500" />}
                                   <Calendar size={13} className="text-blue-400" />
                                   <span className="text-sm font-semibold text-slate-200">{new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</span>
                                   <span className="text-[10px] text-slate-500 bg-slate-700/50 px-1.5 py-0.5 rounded">{grouped[date].length} report{grouped[date].length !== 1 ? 's' : ''}</span>
                                 </div>
-                                <div className="divide-y divide-slate-700/30 p-3 space-y-3">
+                                <div className={`divide-y divide-slate-700/30 p-3 space-y-3 ${expandedDates[`${project.id}-${date}`] ? '' : 'hidden'}`}>
                                   {grouped[date].map((update: any) => {
                             const fromUser = users[update.fromId];
                             const isStructured = update.reportType === 'STRUCTURED';

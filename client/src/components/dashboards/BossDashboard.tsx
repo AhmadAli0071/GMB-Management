@@ -14,6 +14,8 @@ export function BossDashboard() {
   const { unreadCounts } = useChatNotify();
   const [expandedProject, setExpandedProject] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [expandedDates, setExpandedDates] = useState<Record<string, boolean>>({});
+  const toggleDate = (key: string) => setExpandedDates(prev => ({ ...prev, [key]: !prev[key] }));
 
   const allUpdates = projectUpdates;
   const pendingCount = allUpdates.filter((u: any) => u.reportType === 'STRUCTURED' && (u.onPageStatus === 'PENDING' || u.offPageStatus === 'PENDING')).length;
@@ -169,12 +171,13 @@ export function BossDashboard() {
                             const dates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
                             return dates.map(date => (
                               <div key={date} className="bg-slate-800/30 rounded-lg border border-slate-700/30 overflow-hidden">
-                                <div className="px-4 py-2.5 bg-slate-800/60 flex items-center gap-2">
+                                <div className="px-4 py-2.5 bg-slate-800/60 flex items-center gap-2 cursor-pointer hover:bg-slate-700/40 transition-colors" onClick={() => toggleDate(`${project.id}-${date}`)}>
+                                  {expandedDates[`${project.id}-${date}`] ? <ChevronUp size={14} className="text-slate-500" /> : <ChevronDown size={14} className="text-slate-500" />}
                                   <Calendar size={13} className="text-blue-400" />
                                   <span className="text-sm font-semibold text-slate-200">{new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</span>
                                   <span className="text-[10px] text-slate-500 bg-slate-700/50 px-1.5 py-0.5 rounded">{grouped[date].length} report{grouped[date].length !== 1 ? 's' : ''}</span>
                                 </div>
-                                <div className="divide-y divide-slate-700/30">
+                                <div className={`divide-y divide-slate-700/30 ${expandedDates[`${project.id}-${date}`] ? '' : 'hidden'}`}>
                                   {grouped[date].map((report: any) => {
                                     const fromUser = users[report.fromId];
                                     const toUser = users[report.toId];
