@@ -7,5 +7,5 @@ export function notFoundHandler(req, res) {
 
 export function errorHandler(err, req, res, _next) {
   logger.error('Unhandled error', { component: 'error-handler', error: err.message, stack: err.stack });
-  res.status(500).json({ error: 'Internal server error' });
+  res.status(500).json({ error: err.message || 'Internal server error' });
 }

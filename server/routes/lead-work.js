@@ -2,21 +2,35 @@ import express from 'express';
 import multer from 'multer';
 import crypto from 'crypto';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import LeadWork from '../models/LeadWork.js';
 import { authMiddleware } from '../middleware/auth.js';
 import logger from '../utils/logger.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const uploadsDir = path.join(__dirname, '../uploads');
 
 const router = express.Router();
 router.use(authMiddleware);
 
 const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, 'uploads/'),
+  destination: (_req, _file, cb) => cb(null, uploadsDir),
   filename: (_req, file, cb) => {
     const ext = path.extname(file.originalname);
     cb(null, crypto.randomBytes(8).toString('hex') + ext);
   },
 });
 const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
+
+function handleUpload(req, res, next) {
+  upload.array('files', 10)(req, res, function (err) {
+    if (err) {
+      logger.error('Multer error in lead-work', { component: 'lead-work', error: err.message, code: err.code });
+      return res.status(400).json({ error: err.message || 'File upload failed' });
+    }
+    next();
+  });
+}
 
 function formatLeadWork(doc) {
   const obj = doc.toObject ? doc.toObject() : doc;
@@ -43,7 +57,7 @@ router.get('/', async (_req, res) => {
   }
 });
 
-router.post('/', upload.array('files', 10), async (req, res) => {
+router.post('/', handleUpload, async (req, res) => {
   try {
     const { projectId, text, workDate } = req.body;
     const userId = req.user.id;
@@ -68,7 +82,7 @@ router.post('/', upload.array('files', 10), async (req, res) => {
   }
 });
 
-router.put('/:id', upload.array('files', 10), async (req, res) => {
+router.put('/:id', handleUpload, async (req, res) => {
   try {
     const { id } = req.params;
     const { text } = req.body;

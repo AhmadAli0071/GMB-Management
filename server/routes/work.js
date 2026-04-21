@@ -2,15 +2,19 @@ import express from 'express';
 import multer from 'multer';
 import crypto from 'crypto';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import WorkSubmission from '../models/WorkSubmission.js';
 import { authMiddleware } from '../middleware/auth.js';
 import logger from '../utils/logger.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const uploadsDir = path.join(__dirname, '../uploads');
 
 const router = express.Router();
 router.use(authMiddleware);
 
 const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, 'uploads/'),
+  destination: (_req, _file, cb) => cb(null, uploadsDir),
   filename: (_req, file, cb) => {
     const ext = path.extname(file.originalname);
     cb(null, crypto.randomBytes(8).toString('hex') + ext);
