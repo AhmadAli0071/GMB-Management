@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import {
   ArrowRight, MapPin, Star, Globe, Search, Building2, X, Shield, ExternalLink,
   Send, Clock, ChevronDown, ChevronUp, Paperclip, Image, FileText,
-  CheckCircle2, RotateCcw, Folder, Download, Plus, Trash2, FileUp, Bell, AlertCircle, MessageCircle, Loader2
+  CheckCircle2, RotateCcw, Folder, Download, Plus, Trash2, FileUp, Bell, AlertCircle, MessageCircle, Loader2, Palette
 } from 'lucide-react';
 import { Card, Button, Badge } from '../ui/Common';
 import { useApp } from '../../AppContext';
@@ -42,6 +42,10 @@ export function SEOLeadDashboard() {
   const [updateReviewComment, setUpdateReviewComment] = useState('');
   const [showAlreadySentPopup, setShowAlreadySentPopup] = useState('');
   const [addingWork, setAddingWork] = useState(false);
+  const [showAssignDesignerModal, setShowAssignDesignerModal] = useState(false);
+  const [assignDesignerForm, setAssignDesignerForm] = useState({ projectId: '', text: '' });
+  const [assignDesignerImages, setAssignDesignerImages] = useState<FileList | null>(null);
+  const [assignDesignerDocs, setAssignDesignerDocs] = useState<FileList | null>(null);
   const [expandedWorkDates, setExpandedWorkDates] = useState<Record<string, boolean>>({});
   const toggleWorkDate = (key: string) => setExpandedWorkDates(prev => ({ ...prev, [key]: !prev[key] }));
 
@@ -49,6 +53,8 @@ export function SEOLeadDashboard() {
   const docInputRef = useRef<HTMLInputElement>(null);
   const onPageFileRef = useRef<HTMLInputElement>(null);
   const editOnPageFileRef = useRef<HTMLInputElement>(null);
+  const assignDesignerImgRef = useRef<HTMLInputElement>(null);
+  const assignDesignerDocRef = useRef<HTMLInputElement>(null);
 
   const seoManager = (Object.values(users) as any[]).find(u => u.role === 'SEO_MANAGER');
   const seoManagerName = seoManager?.name || 'SEO Manager';
@@ -61,6 +67,10 @@ export function SEOLeadDashboard() {
   const offPageSpecialist = (Object.values(users) as any[]).find(u => u.role === 'OFF_PAGE_SPECIALIST');
   const offPageName = offPageSpecialist?.name || 'Off-Page Specialist';
   const offPageId = offPageSpecialist?.id || '';
+
+  const designerUser = (Object.values(users) as any[]).find(u => u.role === 'DESIGNER');
+  const designerName = designerUser?.name || 'Designer';
+  const designerId = designerUser?.id || '';
 
   const myProjects = projects.filter(p => p.assignedTo.includes(currentUser.id));
   const mySentAssignments = assignments.filter(a => a.fromId === currentUser.id);
@@ -94,6 +104,31 @@ export function SEOLeadDashboard() {
     setSelectedImages(null);
     setSelectedDocs(null);
     setShowAssignModal(true);
+  };
+
+  const openAssignDesignerModal = (projectId: string) => {
+    setAssignDesignerForm({ projectId, text: '' });
+    setAssignDesignerImages(null);
+    setAssignDesignerDocs(null);
+    setShowAssignDesignerModal(true);
+  };
+
+  const handleAssignDesigner = async () => {
+    const formData = new FormData();
+    formData.append('projectId', assignDesignerForm.projectId);
+    formData.append('toId', designerId);
+    formData.append('text', assignDesignerForm.text);
+    if (assignDesignerImages) {
+      for (let i = 0; i < assignDesignerImages.length; i++) formData.append('images', assignDesignerImages[i]);
+    }
+    if (assignDesignerDocs) {
+      for (let i = 0; i < assignDesignerDocs.length; i++) formData.append('documents', assignDesignerDocs[i]);
+    }
+    await createAssignment(formData);
+    setShowAssignDesignerModal(false);
+    setAssignDesignerForm({ projectId: '', text: '' });
+    setAssignDesignerImages(null);
+    setAssignDesignerDocs(null);
   };
 
   const handleReview = async () => {
@@ -292,14 +327,17 @@ export function SEOLeadDashboard() {
                         <div className="w-1 h-4 bg-blue-500 rounded-full" />
                         Project Details
                       </h4>
-                      <div className="flex flex-wrap gap-2">
-                        {project.stage === 'ASSIGNED_TO_LEAD' && (
-                          <Button size="sm" className="gap-1" onClick={() => handleStartWork(project.id)}>Start Work <ArrowRight size={14} /></Button>
-                        )}
-                        <Button variant="secondary" size="sm" className="gap-1" onClick={() => openAssignModal(project.id)}>
-                          <Send size={14} /> Assign to {offPageName}
-                        </Button>
-                      </div>
+                       <div className="flex flex-wrap gap-2">
+                         {project.stage === 'ASSIGNED_TO_LEAD' && (
+                           <Button size="sm" className="gap-1" onClick={() => handleStartWork(project.id)}>Start Work <ArrowRight size={14} /></Button>
+                         )}
+                         <Button variant="secondary" size="sm" className="gap-1" onClick={() => openAssignModal(project.id)}>
+                           <Send size={14} /> Assign to {offPageName}
+                         </Button>
+                         <Button variant="secondary" size="sm" className="gap-1" onClick={() => openAssignDesignerModal(project.id)}>
+                           <Palette size={14} /> Assign to {designerName}
+                         </Button>
+                       </div>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                        <div className="p-2.5 bg-slate-800/40 rounded-lg border border-slate-700/30"><span className="text-[10px] text-slate-500 uppercase tracking-wider">Category</span><p className="text-sm font-medium text-slate-200 mt-0.5 truncate">{project.businessCategory || 'N/A'}</p></div>
@@ -1021,6 +1059,47 @@ export function SEOLeadDashboard() {
               <Button variant={updateReviewStatus === 'APPROVED' ? 'primary' : 'danger'} className="gap-1" onClick={handleUpdateReview} disabled={updateReviewStatus === 'CHANGES_REQUESTED' && !updateReviewComment.trim()}>
                 {updateReviewStatus === 'APPROVED' ? <><CheckCircle2 size={14} /> Approve</> : <><RotateCcw size={14} /> Send Back</>}
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAssignDesignerModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => setShowAssignDesignerModal(false)} />
+          <div className="relative bg-slate-800/50 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden z-10">
+            <div className="px-6 py-4 border-b border-slate-700/50 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-100">Assign Design Task to {designerName}</h3>
+              <button onClick={() => setShowAssignDesignerModal(false)} className="p-2 hover:bg-slate-700/50 rounded-lg text-slate-500"><X size={18} /></button>
+            </div>
+            <div className="px-6 py-5 space-y-4">
+              <div className="p-3 bg-pink-500/10 border border-pink-500/20 rounded-lg text-sm">
+                <p className="font-semibold text-pink-400">{projects.find(p => p.id === assignDesignerForm.projectId)?.name}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Task Description</label>
+                <textarea className="block w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[80px]" placeholder="Describe what images/designs are needed..." value={assignDesignerForm.text} onChange={e => setAssignDesignerForm({ ...assignDesignerForm, text: e.target.value })} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Reference Images</label>
+                <div className="flex items-center gap-3">
+                  <Button variant="outline" size="sm" className="gap-1" onClick={() => assignDesignerImgRef.current?.click()}><Image size={14} /> Select Images</Button>
+                  <span className="text-xs text-slate-500">{assignDesignerImages ? `${assignDesignerImages.length} selected` : 'None'}</span>
+                  <input ref={assignDesignerImgRef} type="file" multiple accept="image/*" className="hidden" onChange={e => setAssignDesignerImages(e.target.files)} />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Reference Documents</label>
+                <div className="flex items-center gap-3">
+                  <Button variant="outline" size="sm" className="gap-1" onClick={() => assignDesignerDocRef.current?.click()}><Paperclip size={14} /> Select Files</Button>
+                  <span className="text-xs text-slate-500">{assignDesignerDocs ? `${assignDesignerDocs.length} selected` : 'None'}</span>
+                  <input ref={assignDesignerDocRef} type="file" multiple className="hidden" onChange={e => setAssignDesignerDocs(e.target.files)} />
+                </div>
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-slate-700/50 flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setShowAssignDesignerModal(false)}>Cancel</Button>
+              <Button className="gap-1" onClick={handleAssignDesigner}><Palette size={14} /> Assign to {designerName}</Button>
             </div>
           </div>
         </div>
