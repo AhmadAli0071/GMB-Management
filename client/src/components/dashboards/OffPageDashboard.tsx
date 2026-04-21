@@ -46,8 +46,8 @@ export function OffPageDashboard() {
 
   const myAssignments = assignments.filter(a => a.toId === currentUser.id);
   const mySentAssignments = assignments.filter(a => a.fromId === currentUser.id);
-  const designerWorkSubmissions = workSubmissions.filter(w => w.toId === currentUser.id);
-  const myProjectIds = [...new Set([...myAssignments.map(a => a.projectId), ...mySentAssignments.map(a => a.projectId)])];
+  const designerWorkSubmissions = workSubmissions.filter(w => w.toId === currentUser.id || (designerId && w.fromId === designerId));
+  const myProjectIds = [...new Set([...myAssignments.map(a => a.projectId), ...mySentAssignments.map(a => a.projectId), ...designerWorkSubmissions.map(w => (w as any).projectId)])];
   const myProjects = myProjectIds.map(id => projects.find(p => p.id === id)).filter(Boolean);
 
   const handleSubmitWork = async () => {

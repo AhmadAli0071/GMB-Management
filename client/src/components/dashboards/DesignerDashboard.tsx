@@ -42,7 +42,7 @@ export function DesignerDashboard() {
     const formData = new FormData();
     formData.append('assignmentId', showSubmitModal);
     formData.append('projectId', assignment.projectId);
-    formData.append('toId', offPageId);
+    formData.append('toId', assignment.fromId);
     formData.append('text', submitText);
     formData.append('workDate', submitDate);
     if (selectedFiles) {

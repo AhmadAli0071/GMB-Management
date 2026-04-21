@@ -302,7 +302,7 @@ export function BossDashboard() {
 
                     {(() => {
                       const mySentAssignments = assignments.filter(a => a.toId === designerId && a.projectId === project.id);
-                      const designerWork = workSubmissions.filter((w: any) => w.projectId === project.id && mySentAssignments.some(a => a.id === w.assignmentId));
+                      const designerWork = workSubmissions.filter((w: any) => w.projectId === project.id && w.fromId === designerId);
                       if (designerWork.length === 0 && mySentAssignments.length === 0) return null;
                       return (
                         <div className="px-4 sm:px-5 py-4 border-t border-slate-700/50">
