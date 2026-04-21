@@ -208,19 +208,17 @@ export function OffPageDashboard() {
                 <div className="border-t border-slate-700/50">
                 <div className="grid grid-cols-1 lg:grid-cols-3">
                   <div className="lg:col-span-2">
-                  <div className="p-4 sm:p-5 border-b border-slate-700/50">
-                    <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-                        <div className="w-1 h-4 bg-blue-500 rounded-full" />
-                        Project Details
-                      </h4>
-                      {designerId && (
-                        <Button variant="secondary" size="sm" className="gap-1" onClick={() => openAssignDesignerModal(project.id)}>
-                          <Palette size={14} /> Assign to {designerName}
-                        </Button>
-                      )}
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                   <div className="p-4 sm:p-5 border-b border-slate-700/50">
+                     <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                       <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                         <div className="w-1 h-4 bg-blue-500 rounded-full" />
+                         Project Details
+                       </h4>
+                       <Button variant="secondary" size="sm" className="gap-1" onClick={() => openAssignDesignerModal(project.id)}>
+                         <Palette size={14} /> Assign to {designerName}
+                       </Button>
+                     </div>
+                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                        <div className="p-2.5 bg-slate-800/40 rounded-lg border border-slate-700/30"><span className="text-[10px] text-slate-500 uppercase tracking-wider">Category</span><p className="text-sm font-medium text-slate-200 mt-0.5 truncate">{project.businessCategory || 'N/A'}</p></div>
                        <div className="p-2.5 bg-slate-800/40 rounded-lg border border-slate-700/30"><span className="text-[10px] text-slate-500 uppercase tracking-wider">Phone</span><p className="text-sm font-medium text-slate-200 mt-0.5 truncate">{project.businessPhone || 'N/A'}</p></div>
                        <div className="p-2.5 bg-slate-800/40 rounded-lg border border-slate-700/30"><span className="text-[10px] text-slate-500 uppercase tracking-wider">Email</span><p className="text-sm font-medium text-slate-200 mt-0.5 truncate">{project.businessEmail || 'N/A'}</p></div>
