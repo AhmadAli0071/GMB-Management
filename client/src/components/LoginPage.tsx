@@ -15,7 +15,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [id, setId] = useState('');
-  const [role, setRole] = useState<UserRole>('INTERN');
+  const [role, setRole] = useState<UserRole>('DESIGNER');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -55,7 +55,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
     setPassword('');
     setName('');
     setId('');
-    setRole('INTERN');
+    setRole('DESIGNER');
     setIsLogin(!isLogin);
   };
 

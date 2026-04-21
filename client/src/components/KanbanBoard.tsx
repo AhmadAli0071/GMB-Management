@@ -37,7 +37,7 @@ export function KanbanBoard() {
   const [form, setForm] = useState({ projectId: '', title: '', description: '', assignedTo: '', priority: 'MEDIUM' as const, type: 'ON_PAGE' as const });
 
   const visibleTasks = tasks.filter(t => {
-    if (currentUser.role === 'INTERN') return t.assignedTo === currentUser.id;
+    if (currentUser.role === 'DESIGNER') return t.assignedTo === currentUser.id;
     if (currentUser.role === 'OFF_PAGE_SPECIALIST') return t.assignedTo === currentUser.id || t.assignedBy === currentUser.id;
     if (currentUser.role === 'SEO_LEAD') return t.assignedTo === currentUser.id || t.assignedBy === currentUser.id;
     return true;

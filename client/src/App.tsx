@@ -9,7 +9,7 @@ import { SalesDashboard } from './components/dashboards/SalesDashboard';
 import { SEOManagerDashboard } from './components/dashboards/SEOManagerDashboard';
 import { SEOLeadDashboard } from './components/dashboards/SEOLeadDashboard';
 import { OffPageDashboard } from './components/dashboards/OffPageDashboard';
-import { InternDashboard } from './components/dashboards/InternDashboard';
+import { DesignerDashboard } from './components/dashboards/DesignerDashboard';
 import { BossDashboard } from './components/dashboards/BossDashboard';
 import { ProjectDetailPage } from './components/ProjectDetailPage';
 import { KanbanBoard } from './components/KanbanBoard';
@@ -78,7 +78,7 @@ function AppContent() {
         {currentUser.role === 'SEO_LEAD' && <SEOLeadDashboard />}
         {currentUser.role === 'OFF_PAGE_SPECIALIST' && <OffPageDashboard />}
         {currentUser.role === 'BOSS' && <BossDashboard />}
-        {currentUser.role === 'INTERN' && <InternDashboard />}
+        {currentUser.role === 'DESIGNER' && <DESIGNERDashboard />}
       </div>
     </div>
   );
@@ -89,7 +89,7 @@ function AppContent() {
       case 'SEO_LEAD': return <SEOLeadDashboard />;
       case 'OFF_PAGE_SPECIALIST': return <OffPageDashboard />;
       case 'BOSS': return <BossDashboard />;
-      case 'INTERN': return <InternDashboard />;
+      case 'DESIGNER': return <DESIGNERDashboard />;
       default: return null;
     }
   };
@@ -210,7 +210,7 @@ function RequestsPage() {
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Internal Requests</h1>
+          <h1 className="text-2xl font-bold tracking-tight">DESIGNERal Requests</h1>
           <p className="text-slate-500 mt-1">
             {currentUser.role === 'SALES_MANAGER' ? 'Client information requests from the SEO team' :
              currentUser.role === 'SEO_LEAD' ? 'Your requests to Sales Manager for client info' :
@@ -400,7 +400,7 @@ function ActivityTimeline() {
 function TeamPage() {
   const { users } = useApp();
 
-  const roleOrder = ['SALES_MANAGER', 'SEO_MANAGER', 'SEO_LEAD', 'OFF_PAGE_SPECIALIST', 'INTERN'];
+  const roleOrder = ['SALES_MANAGER', 'SEO_MANAGER', 'SEO_LEAD', 'OFF_PAGE_SPECIALIST', 'DESIGNER'];
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
@@ -450,7 +450,7 @@ function TeamPage() {
           <ChevronRight size={20} className="text-slate-600" />
           <div className="px-4 py-2 bg-orange-500/10 rounded-lg font-semibold text-orange-400">Awais (Off-Page)</div>
           <ChevronRight size={20} className="text-slate-600" />
-          <div className="px-4 py-2 bg-slate-700/50 rounded-lg font-semibold text-slate-400">Hassan (Intern)</div>
+          <div className="px-4 py-2 bg-slate-700/50 rounded-lg font-semibold text-slate-400">Hassan (DESIGNER)</div>
         </div>
         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-400">
           <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">

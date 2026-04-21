@@ -96,7 +96,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   SEO_MANAGER: 'SEO Manager',
   SEO_LEAD: 'SEO Lead',
   OFF_PAGE_SPECIALIST: 'Off-Page Specialist',
-  INTERN: 'Intern',
+  DESIGNER: 'Designer',
   BOSS: 'Boss',
 };
 
