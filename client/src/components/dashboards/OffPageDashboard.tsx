@@ -22,6 +22,8 @@ export function OffPageDashboard() {
   const [editText, setEditText] = useState('');
   const [editFiles, setEditFiles] = useState<FileList | null>(null);
   const [showAlreadySentPopup, setShowAlreadySentPopup] = useState('');
+  const [expandedWorkDates, setExpandedWorkDates] = useState<Record<string, boolean>>({});
+  const toggleWorkDate = (key: string) => setExpandedWorkDates(prev => ({ ...prev, [key]: !prev[key] }));
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editFileRef = useRef<HTMLInputElement>(null);
 
@@ -264,46 +266,71 @@ export function OffPageDashboard() {
                         )}
                       </div>
 
-                      {projectWork.filter(w => w.assignmentId === assignment.id).map(work => (
-                        <div key={work.id} className="mx-5 mb-3 p-4 sm:p-6 bg-slate-800/50 border border-slate-700/50 rounded-xl">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-3">
-                              <Badge variant={getStatusColor(work.status) as any} className="text-[10px]">
-                                {work.status === 'APPROVED' ? 'Approved' : work.status === 'CHANGES_REQUESTED' ? 'Changes Requested' : 'Pending Review'}
-                              </Badge>
-                              <span className="text-[11px] text-slate-500">{new Date(work.createdAt).toLocaleString()}</span>
-                            </div>
-                            <Button variant="ghost" size="sm" className="gap-1 text-slate-500" onClick={() => openEditModal(work)}>
-                              <Edit3 size={12} /> Edit
-                            </Button>
-                          </div>
-                          {work.text && <p className="text-sm text-slate-300 mb-2">{work.text}</p>}
-                          {work.files.length > 0 && (
-                            <div className="flex flex-wrap gap-2">
-                              {work.files.map((f: any, i: number) => {
-                                const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(f.filename);
-                                return (
-                                  <div key={i} className="relative group">
-                                    <a href={`/uploads/${f.filename}`} target="_blank" download>
-                                      {isImg ? (
-                                        <img src={`/uploads/${f.filename}`} className="w-16 h-16 rounded-lg object-cover border border-slate-700/50 hover:shadow-md" />
-                                      ) : (
-                                        <span className="flex items-center gap-1 px-2 py-1 bg-blue-500/10 border border-blue-500/20 rounded text-xs text-blue-400 hover:bg-blue-500/20"><Download size={10} /> {f.originalName}</span>
+                      {projectWork.filter(w => w.assignmentId === assignment.id).length > 0 && (() => {
+                        const assignmentWork = projectWork.filter(w => w.assignmentId === assignment.id);
+                        const grouped: Record<string, any[]> = {};
+                        assignmentWork.forEach((w: any) => {
+                          const d = w.workDate || new Date(w.createdAt).toISOString().split('T')[0];
+                          if (!grouped[d]) grouped[d] = [];
+                          grouped[d].push(w);
+                        });
+                        return Object.keys(grouped).sort((a, b) => b.localeCompare(a)).map(date => {
+                          const dateKey = `work-${assignment.id}-${date}`;
+                          return (
+                            <div key={date} className="mx-4 mb-2 bg-slate-800/30 border border-slate-700/30 rounded-lg overflow-hidden">
+                              <div className="px-3 py-2 bg-slate-800/60 flex items-center gap-2 cursor-pointer hover:bg-slate-700/40 transition-colors" onClick={() => toggleWorkDate(dateKey)}>
+                                {expandedWorkDates[dateKey] ? <ChevronUp size={14} className="text-slate-500" /> : <ChevronDown size={14} className="text-slate-500" />}
+                                <span className="text-xs font-semibold text-slate-200">{new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                                <span className="text-[10px] text-slate-500 bg-slate-700/50 px-1.5 py-0.5 rounded">{grouped[date].length} item{grouped[date].length !== 1 ? 's' : ''}</span>
+                              </div>
+                              {expandedWorkDates[dateKey] && (
+                                <div className="p-2 space-y-2">
+                                  {grouped[date].map((work: any) => (
+                                    <div key={work.id} className="p-3 bg-slate-800/50 border border-slate-700/50 rounded-xl">
+                                      <div className="flex items-center justify-between mb-2">
+                                        <div className="flex items-center gap-3">
+                                          <Badge variant={getStatusColor(work.status) as any} className="text-[10px]">
+                                            {work.status === 'APPROVED' ? 'Approved' : work.status === 'CHANGES_REQUESTED' ? 'Changes Requested' : 'Pending Review'}
+                                          </Badge>
+                                          <span className="text-[11px] text-slate-500">{new Date(work.createdAt).toLocaleString()}</span>
+                                        </div>
+                                        <Button variant="ghost" size="sm" className="gap-1 text-slate-500" onClick={() => openEditModal(work)}>
+                                          <Edit3 size={12} /> Edit
+                                        </Button>
+                                      </div>
+                                      {work.text && <p className="text-sm text-slate-300 mb-2">{work.text}</p>}
+                                      {work.files.length > 0 && (
+                                        <div className="flex flex-wrap gap-2">
+                                          {work.files.map((f: any, i: number) => {
+                                            const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(f.filename);
+                                            return (
+                                              <div key={i} className="relative group">
+                                                <a href={`/uploads/${f.filename}`} target="_blank" download>
+                                                  {isImg ? (
+                                                    <img src={`/uploads/${f.filename}`} className="w-16 h-16 rounded-lg object-cover border border-slate-700/50 hover:shadow-md" />
+                                                  ) : (
+                                                    <span className="flex items-center gap-1 px-2 py-1 bg-blue-500/10 border border-blue-500/20 rounded text-xs text-blue-400 hover:bg-blue-500/20"><Download size={10} /> {f.originalName}</span>
+                                                  )}
+                                                </a>
+                                                <button onClick={() => deleteWorkFile(work.id, f.filename)} className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[8px]"><X size={8} /></button>
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
                                       )}
-                                    </a>
-                                    <button onClick={() => deleteWorkFile(work.id, f.filename)} className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[8px]"><X size={8} /></button>
-                                  </div>
-                                );
-                              })}
+                                      {work.reviewComment && (
+                                        <div className={`p-2 rounded-lg text-xs mt-2 ${work.status === 'APPROVED' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+                                          <span className="font-bold">{seoLeadName}:</span> {work.reviewComment}
+                                        </div>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
-                          )}
-                          {work.reviewComment && (
-                            <div className={`p-2 rounded-lg text-xs mt-2 ${work.status === 'APPROVED' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
-                              <span className="font-bold">{seoLeadName}:</span> {work.reviewComment}
-                            </div>
-                          )}
-                        </div>
-                      ))}
+                          );
+                        });
+                      })()}
                     </div>
                   ))}
                   </div>

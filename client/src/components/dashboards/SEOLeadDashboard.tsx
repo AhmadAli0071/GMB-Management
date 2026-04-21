@@ -42,6 +42,8 @@ export function SEOLeadDashboard() {
   const [updateReviewComment, setUpdateReviewComment] = useState('');
   const [showAlreadySentPopup, setShowAlreadySentPopup] = useState('');
   const [addingWork, setAddingWork] = useState(false);
+  const [expandedWorkDates, setExpandedWorkDates] = useState<Record<string, boolean>>({});
+  const toggleWorkDate = (key: string) => setExpandedWorkDates(prev => ({ ...prev, [key]: !prev[key] }));
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const docInputRef = useRef<HTMLInputElement>(null);
@@ -351,46 +353,69 @@ export function SEOLeadDashboard() {
                       </div>
                     ) : (
                       <div className="space-y-2">
-                        {projectOnPageWork.map((item: any) => (
-                          <div key={item.id} className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg">
-                            <div className="flex items-start justify-between mb-2">
-                              <p className="text-sm text-slate-300 flex-1">{item.text || <span className="text-slate-500 italic">No description</span>}</p>
-                              <div className="flex items-center gap-1 ml-2 shrink-0">
-                                <button className="p-1 hover:bg-purple-500/20 rounded text-purple-400" onClick={() => openEditOnPageModal(item)}>
-                                  <FileText size={14} />
-                                </button>
-                                <button className="p-1 hover:bg-red-500/20 rounded text-red-400" onClick={() => deleteLeadWork(item.id)}>
-                                  <Trash2 size={14} />
-                                </button>
+                        {(() => {
+                          const grouped: Record<string, any[]> = {};
+                          projectOnPageWork.forEach((item: any) => {
+                            const d = item.workDate || new Date(item.createdAt).toISOString().split('T')[0];
+                            if (!grouped[d]) grouped[d] = [];
+                            grouped[d].push(item);
+                          });
+                          return Object.keys(grouped).sort((a, b) => b.localeCompare(a)).map(date => {
+                            const dateKey = `onpage-${project.id}-${date}`;
+                            return (
+                              <div key={date} className="bg-purple-500/5 border border-purple-500/20 rounded-lg overflow-hidden">
+                                <div className="px-3 py-2 flex items-center gap-2 cursor-pointer hover:bg-purple-500/10 transition-colors" onClick={() => toggleWorkDate(dateKey)}>
+                                  {expandedWorkDates[dateKey] ? <ChevronUp size={14} className="text-purple-400" /> : <ChevronDown size={14} className="text-purple-400" />}
+                                  <span className="text-xs font-semibold text-purple-300">{new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                                  <span className="text-[10px] text-slate-500 bg-slate-700/50 px-1.5 py-0.5 rounded">{grouped[date].length} item{grouped[date].length !== 1 ? 's' : ''}</span>
+                                </div>
+                                {expandedWorkDates[dateKey] && (
+                                  <div className="p-2 space-y-2">
+                                    {grouped[date].map((item: any) => (
+                                      <div key={item.id} className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg">
+                                        <div className="flex items-start justify-between mb-2">
+                                          <p className="text-sm text-slate-300 flex-1">{item.text || <span className="text-slate-500 italic">No description</span>}</p>
+                                          <div className="flex items-center gap-1 ml-2 shrink-0">
+                                            <button className="p-1 hover:bg-purple-500/20 rounded text-purple-400" onClick={() => openEditOnPageModal(item)}>
+                                              <FileText size={14} />
+                                            </button>
+                                            <button className="p-1 hover:bg-red-500/20 rounded text-red-400" onClick={() => deleteLeadWork(item.id)}>
+                                              <Trash2 size={14} />
+                                            </button>
+                                          </div>
+                                        </div>
+                                        {item.files.length > 0 && (
+                                          <div className="flex flex-wrap gap-2">
+                                            {item.files.map((f: any, i: number) => {
+                                              const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(f.filename);
+                                              return (
+                                                <div key={i} className="relative group">
+                                                  {isImg ? (
+                                                    <img src={`/uploads/${f.filename}`} className="w-16 h-16 rounded-lg object-cover border border-slate-700/50" />
+                                                  ) : (
+                                                    <a href={`/uploads/${f.filename}`} target="_blank" download className="flex items-center gap-1 text-xs text-blue-400 hover:underline bg-slate-800/50 px-2 py-1 rounded border border-slate-700/50">
+                                                      <Download size={12} /> {f.originalName}
+                                                    </a>
+                                                  )}
+                                                  <button
+                                                    className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-[8px] hidden group-hover:flex items-center justify-center"
+                                                    onClick={() => deleteLeadWorkFile(item.id, f.filename)}
+                                                  >
+                                                    <X size={8} />
+                                                  </button>
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
-                            </div>
-                            {item.files.length > 0 && (
-                              <div className="flex flex-wrap gap-2">
-                                {item.files.map((f: any, i: number) => {
-                                  const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(f.filename);
-                                  return (
-                                    <div key={i} className="relative group">
-                                      {isImg ? (
-                                        <img src={`/uploads/${f.filename}`} className="w-16 h-16 rounded-lg object-cover border border-slate-700/50" />
-                                      ) : (
-                                        <a href={`/uploads/${f.filename}`} target="_blank" download className="flex items-center gap-1 text-xs text-blue-400 hover:underline bg-slate-800/50 px-2 py-1 rounded border border-slate-700/50">
-                                          <Download size={12} /> {f.originalName}
-                                        </a>
-                                      )}
-                                      <button
-                                        className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-[8px] hidden group-hover:flex items-center justify-center"
-                                        onClick={() => deleteLeadWorkFile(item.id, f.filename)}
-                                      >
-                                        <X size={8} />
-                                      </button>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-                            <p className="text-[10px] text-slate-500 mt-1">{new Date(item.createdAt).toLocaleString()}</p>
-                          </div>
-                        ))}
+                            );
+                          });
+                        })()}
                       </div>
                     )}
                   </div>
@@ -409,36 +434,60 @@ export function SEOLeadDashboard() {
                       </div>
                     ) : (
                       <div className="space-y-2">
-                        {approvedOffPage.map((work: any) => {
-                          const fromUser = users[work.fromId];
-                          return (
-                            <div key={work.id} className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg">
-                              <div className="flex items-center gap-2 mb-1">
-                                <Badge variant="green" className="text-[10px]">Approved</Badge>
-                                <span className="text-[10px] text-slate-500">{fromUser?.name} — {new Date(work.createdAt).toLocaleString()}</span>
-                              </div>
-                              {work.text && <p className="text-sm text-slate-300 mb-2">{work.text}</p>}
-                              {work.files.length > 0 && (
-                                <div className="flex flex-wrap gap-2">
-                                  {work.files.map((f: any, i: number) => {
-                                    const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(f.filename);
-                                    return (
-                                      <a key={i} href={`/uploads/${f.filename}`} target="_blank" download>
-                                        {isImg ? (
-                                          <img src={`/uploads/${f.filename}`} className="w-16 h-16 rounded-lg object-cover border border-slate-700/50" />
-                                        ) : (
-                                          <span className="flex items-center gap-1 text-xs text-blue-400 hover:underline bg-slate-800/50 px-2 py-1 rounded border border-slate-700/50">
-                                            <Download size={12} /> {f.originalName}
-                                          </span>
-                                        )}
-                                      </a>
-                                    );
-                                  })}
+                        {(() => {
+                          const grouped: Record<string, any[]> = {};
+                          approvedOffPage.forEach((work: any) => {
+                            const d = work.workDate || new Date(work.createdAt).toISOString().split('T')[0];
+                            if (!grouped[d]) grouped[d] = [];
+                            grouped[d].push(work);
+                          });
+                          return Object.keys(grouped).sort((a, b) => b.localeCompare(a)).map(date => {
+                            const dateKey = `offpage-${project.id}-${date}`;
+                            return (
+                              <div key={date} className="bg-orange-500/5 border border-orange-500/20 rounded-lg overflow-hidden">
+                                <div className="px-3 py-2 flex items-center gap-2 cursor-pointer hover:bg-orange-500/10 transition-colors" onClick={() => toggleWorkDate(dateKey)}>
+                                  {expandedWorkDates[dateKey] ? <ChevronUp size={14} className="text-orange-400" /> : <ChevronDown size={14} className="text-orange-400" />}
+                                  <span className="text-xs font-semibold text-orange-300">{new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                                  <span className="text-[10px] text-slate-500 bg-slate-700/50 px-1.5 py-0.5 rounded">{grouped[date].length} item{grouped[date].length !== 1 ? 's' : ''}</span>
                                 </div>
-                              )}
-                            </div>
-                          );
-                        })}
+                                {expandedWorkDates[dateKey] && (
+                                  <div className="p-2 space-y-2">
+                                    {grouped[date].map((work: any) => {
+                                      const fromUser = users[work.fromId];
+                                      return (
+                                        <div key={work.id} className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg">
+                                          <div className="flex items-center gap-2 mb-1">
+                                            <Badge variant="green" className="text-[10px]">Approved</Badge>
+                                            <span className="text-[10px] text-slate-500">{fromUser?.name}</span>
+                                          </div>
+                                          {work.text && <p className="text-sm text-slate-300 mb-2">{work.text}</p>}
+                                          {work.files.length > 0 && (
+                                            <div className="flex flex-wrap gap-2">
+                                              {work.files.map((f: any, i: number) => {
+                                                const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(f.filename);
+                                                return (
+                                                  <a key={i} href={`/uploads/${f.filename}`} target="_blank" download>
+                                                    {isImg ? (
+                                                      <img src={`/uploads/${f.filename}`} className="w-16 h-16 rounded-lg object-cover border border-slate-700/50" />
+                                                    ) : (
+                                                      <span className="flex items-center gap-1 text-xs text-blue-400 hover:underline bg-slate-800/50 px-2 py-1 rounded border border-slate-700/50">
+                                                        <Download size={12} /> {f.originalName}
+                                                      </span>
+                                                    )}
+                                                  </a>
+                                                );
+                                              })}
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          });
+                        })()}
                       </div>
                     )}
                   </div>
