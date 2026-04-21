@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Globe, X, ShieldCheck, ExternalLink, Calendar,
-  Folder, ChevronDown, ChevronUp, Download, FileText, Clock, Trash2, MessageCircle
+  Folder, ChevronDown, ChevronUp, Download, FileText, Clock, Trash2, MessageCircle,
+  Palette, Image, Paperclip, Send, CheckCircle2
 } from 'lucide-react';
 import { Card, Badge, Button } from '../ui/Common';
 import { useApp } from '../../AppContext';
@@ -10,12 +11,25 @@ import { STAGE_LABELS, STAGE_COLORS } from '../../types';
 import { ChatBox } from '../chat/ChatBox';
 
 export function BossDashboard() {
-  const { projects, users, projectUpdates, workSubmissions, deleteProject } = useApp();
+  const { projects, users, projectUpdates, workSubmissions, deleteProject, createAssignment, reviewWork, assignments } = useApp();
   const { unreadCounts } = useChatNotify();
   const [expandedProject, setExpandedProject] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [expandedDates, setExpandedDates] = useState<Record<string, boolean>>({});
   const toggleDate = (key: string) => setExpandedDates(prev => ({ ...prev, [key]: !prev[key] }));
+  const [showAssignDesignerModal, setShowAssignDesignerModal] = useState(false);
+  const [assignDesignerForm, setAssignDesignerForm] = useState({ projectId: '', text: '' });
+  const [assignDesignerImages, setAssignDesignerImages] = useState<FileList | null>(null);
+  const [assignDesignerDocs, setAssignDesignerDocs] = useState<FileList | null>(null);
+  const [reviewWorkModal, setReviewWorkModal] = useState<string | null>(null);
+  const [reviewWorkStatus, setReviewWorkStatus] = useState('');
+  const [reviewWorkComment, setReviewWorkComment] = useState('');
+  const assignDesignerImgRef = useRef<HTMLInputElement>(null);
+  const assignDesignerDocRef = useRef<HTMLInputElement>(null);
+
+  const designer = (Object.values(users) as any[]).find(u => u.role === 'DESIGNER');
+  const designerName = designer?.name || 'Designer';
+  const designerId = designer?.id || '';
 
   const allUpdates = projectUpdates;
   const pendingCount = allUpdates.filter((u: any) => u.reportType === 'STRUCTURED' && (u.onPageStatus === 'PENDING' || u.offPageStatus === 'PENDING')).length;
@@ -26,6 +40,45 @@ export function BossDashboard() {
     if (status === 'APPROVED') return 'green';
     if (status === 'REJECTED') return 'red';
     return 'yellow';
+  };
+
+  const getWorkStatusColor = (status: string) => {
+    if (status === 'APPROVED') return 'green';
+    if (status === 'CHANGES_REQUESTED') return 'red';
+    return 'yellow';
+  };
+
+  const openAssignDesignerModal = (projectId: string) => {
+    setAssignDesignerForm({ projectId, text: '' });
+    setAssignDesignerImages(null);
+    setAssignDesignerDocs(null);
+    setShowAssignDesignerModal(true);
+  };
+
+  const handleAssignDesigner = async () => {
+    const formData = new FormData();
+    formData.append('projectId', assignDesignerForm.projectId);
+    formData.append('toId', designerId);
+    formData.append('text', assignDesignerForm.text);
+    if (assignDesignerImages) {
+      for (let i = 0; i < assignDesignerImages.length; i++) formData.append('images', assignDesignerImages[i]);
+    }
+    if (assignDesignerDocs) {
+      for (let i = 0; i < assignDesignerDocs.length; i++) formData.append('documents', assignDesignerDocs[i]);
+    }
+    await createAssignment(formData);
+    setShowAssignDesignerModal(false);
+    setAssignDesignerForm({ projectId: '', text: '' });
+    setAssignDesignerImages(null);
+    setAssignDesignerDocs(null);
+  };
+
+  const handleReviewDesignerWork = async () => {
+    if (!reviewWorkModal) return;
+    await reviewWork(reviewWorkModal, reviewWorkStatus, reviewWorkComment);
+    setReviewWorkModal(null);
+    setReviewWorkStatus('');
+    setReviewWorkComment('');
   };
 
   return (
@@ -128,9 +181,16 @@ export function BossDashboard() {
                         <div className="w-1 h-4 bg-blue-500 rounded-full" />
                         Project Details
                       </h4>
-                      <Button size="sm" variant="danger" className="gap-1" onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(project.id); }}>
-                        <Trash2 size={14} /> Delete
-                      </Button>
+                      <div className="flex gap-2">
+                        {designerId && (
+                          <Button variant="secondary" size="sm" className="gap-1" onClick={() => openAssignDesignerModal(project.id)}>
+                            <Palette size={14} /> Assign to {designerName}
+                          </Button>
+                        )}
+                        <Button size="sm" variant="danger" className="gap-1" onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(project.id); }}>
+                          <Trash2 size={14} /> Delete
+                        </Button>
+                      </div>
                     </div>
                     <div className="p-4 sm:p-5 border-b border-slate-700/50">
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
@@ -239,6 +299,92 @@ export function BossDashboard() {
                     ) : (
                       <div className="px-5 py-8 text-center text-sm text-slate-500">No reports submitted yet</div>
                     )}
+
+                    {(() => {
+                      const mySentAssignments = assignments.filter(a => a.fromId === designerId && a.projectId === project.id);
+                      const designerWork = workSubmissions.filter((w: any) => w.projectId === project.id && mySentAssignments.some(a => a.id === w.assignmentId));
+                      if (designerWork.length === 0 && mySentAssignments.length === 0) return null;
+                      return (
+                        <div className="px-4 sm:px-5 py-4 border-t border-slate-700/50">
+                          <div className="flex items-center gap-2 mb-3">
+                            <div className="w-6 h-6 bg-pink-500/20 rounded flex items-center justify-center">
+                              <Palette size={12} className="text-pink-400" />
+                            </div>
+                            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">{designerName}'s Design Work</h4>
+                          </div>
+                          {designerWork.length === 0 ? (
+                            <p className="text-xs text-slate-500 text-center py-4">No submissions yet</p>
+                          ) : (() => {
+                            const grouped: Record<string, any[]> = {};
+                            designerWork.forEach((w: any) => {
+                              const d = w.workDate || new Date(w.createdAt).toISOString().split('T')[0];
+                              if (!grouped[d]) grouped[d] = [];
+                              grouped[d].push(w);
+                            });
+                            return Object.keys(grouped).sort((a, b) => b.localeCompare(a)).map(date => {
+                              const dateKey = `designer-${project.id}-${date}`;
+                              return (
+                                <div key={date} className="mb-2 bg-pink-500/5 border border-pink-500/20 rounded-lg overflow-hidden">
+                                  <div className="px-3 py-2 bg-pink-500/10 flex items-center gap-2 cursor-pointer hover:bg-pink-500/15 transition-colors" onClick={() => toggleDate(dateKey)}>
+                                    {expandedDates[dateKey] ? <ChevronUp size={14} className="text-pink-400" /> : <ChevronDown size={14} className="text-pink-400" />}
+                                    <span className="text-xs font-semibold text-slate-200">{new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                                    <span className="text-[10px] text-slate-500 bg-slate-700/50 px-1.5 py-0.5 rounded">{grouped[date].length} item{grouped[date].length !== 1 ? 's' : ''}</span>
+                                  </div>
+                                  {expandedDates[dateKey] && (
+                                    <div className="p-2 space-y-2">
+                                      {grouped[date].map((work: any) => (
+                                        <div key={work.id} className="p-3 bg-pink-500/5 border border-pink-500/20 rounded-lg">
+                                          <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                                            <div className="flex items-center gap-2">
+                                              <Badge variant={getWorkStatusColor(work.status) as any} className="text-[10px]">
+                                                {work.status === 'APPROVED' ? 'Approved' : work.status === 'CHANGES_REQUESTED' ? 'Changes Requested' : 'Pending Review'}
+                                              </Badge>
+                                              <span className="text-[10px] text-slate-500">{new Date(work.createdAt).toLocaleString()}</span>
+                                            </div>
+                                            {work.status === 'PENDING_REVIEW' && (
+                                              <div className="flex gap-1">
+                                                <Button size="sm" variant="primary" className="gap-1 text-[11px] px-2 py-1" onClick={() => { setReviewWorkStatus('APPROVED'); setReviewWorkComment(''); setReviewWorkModal(work.id); }}>
+                                                  <CheckCircle2 size={12} /> Approve
+                                                </Button>
+                                                <Button size="sm" variant="danger" className="gap-1 text-[11px] px-2 py-1" onClick={() => { setReviewWorkStatus('CHANGES_REQUESTED'); setReviewWorkComment(''); setReviewWorkModal(work.id); }}>
+                                                  <X size={12} /> Reject
+                                                </Button>
+                                              </div>
+                                            )}
+                                          </div>
+                                          {work.text && <p className="text-sm text-slate-300 mb-2">{work.text}</p>}
+                                          {work.files.length > 0 && (
+                                            <div className="flex flex-wrap gap-2">
+                                              {work.files.map((f: any, i: number) => {
+                                                const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(f.filename);
+                                                return (
+                                                  <a key={i} href={`/uploads/${f.filename}`} target="_blank" download>
+                                                    {isImg ? (
+                                                      <img src={`/uploads/${f.filename}`} className="w-20 h-20 rounded-lg object-cover border border-slate-700/50 hover:shadow-md" />
+                                                    ) : (
+                                                      <span className="flex items-center gap-1 px-2 py-1 bg-blue-500/10 border border-blue-500/20 rounded text-xs text-blue-400"><Download size={10} /> {f.originalName}</span>
+                                                    )}
+                                                  </a>
+                                                );
+                                              })}
+                                            </div>
+                                          )}
+                                          {work.reviewComment && (
+                                            <div className={`p-2 rounded-lg text-xs mt-2 ${work.status === 'APPROVED' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+                                              <span className="font-bold">Review:</span> {work.reviewComment}
+                                            </div>
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            });
+                          })()}
+                        </div>
+                      );
+                    })()}
                     </div>
                     <div className="lg:col-span-1 border-l border-slate-700/50">
                       <ChatBox projectId={project.id} />
@@ -285,6 +431,68 @@ export function BossDashboard() {
           </div>
         );
       })()}
+
+      {showAssignDesignerModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => setShowAssignDesignerModal(false)} />
+          <div className="relative bg-slate-800/50 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden z-10">
+            <div className="px-6 py-4 border-b border-slate-700/50 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-100">Assign Design Task to {designerName}</h3>
+              <button onClick={() => setShowAssignDesignerModal(false)} className="p-2 hover:bg-slate-700/50 rounded-lg text-slate-500"><X size={18} /></button>
+            </div>
+            <div className="px-6 py-5 space-y-4">
+              <div className="p-3 bg-pink-500/10 border border-pink-500/20 rounded-lg text-sm">
+                <p className="font-semibold text-pink-400">{projects.find(p => p.id === assignDesignerForm.projectId)?.name}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Task Description</label>
+                <textarea className="block w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[80px]" placeholder="Describe what images/designs are needed..." value={assignDesignerForm.text} onChange={e => setAssignDesignerForm({ ...assignDesignerForm, text: e.target.value })} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Reference Images</label>
+                <div className="flex items-center gap-3">
+                  <Button variant="outline" size="sm" className="gap-1" onClick={() => assignDesignerImgRef.current?.click()}><Image size={14} /> Select Images</Button>
+                  <span className="text-xs text-slate-500">{assignDesignerImages ? `${assignDesignerImages.length} selected` : 'None'}</span>
+                  <input ref={assignDesignerImgRef} type="file" multiple accept="image/*" className="hidden" onChange={e => setAssignDesignerImages(e.target.files)} />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Reference Documents</label>
+                <div className="flex items-center gap-3">
+                  <Button variant="outline" size="sm" className="gap-1" onClick={() => assignDesignerDocRef.current?.click()}><Paperclip size={14} /> Select Files</Button>
+                  <span className="text-xs text-slate-500">{assignDesignerDocs ? `${assignDesignerDocs.length} selected` : 'None'}</span>
+                  <input ref={assignDesignerDocRef} type="file" multiple className="hidden" onChange={e => setAssignDesignerDocs(e.target.files)} />
+                </div>
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-slate-700/50 flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setShowAssignDesignerModal(false)}>Cancel</Button>
+              <Button className="gap-1" onClick={handleAssignDesigner}><Palette size={14} /> Assign to {designerName}</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {reviewWorkModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => setReviewWorkModal(null)} />
+          <div className="relative bg-slate-800/50 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden z-10">
+            <div className="px-6 py-4 border-b border-slate-700/50 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-100">{reviewWorkStatus === 'APPROVED' ? 'Approve' : 'Reject'} Design Work</h3>
+              <button onClick={() => setReviewWorkModal(null)} className="p-2 hover:bg-slate-700/50 rounded-lg text-slate-500"><X size={18} /></button>
+            </div>
+            <div className="px-6 py-5">
+              <textarea className="block w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]" placeholder={reviewWorkStatus === 'CHANGES_REQUESTED' ? 'What needs to be changed...' : 'Optional comment...'} value={reviewWorkComment} onChange={e => setReviewWorkComment(e.target.value)} />
+            </div>
+            <div className="px-6 py-4 border-t border-slate-700/50 flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setReviewWorkModal(null)}>Cancel</Button>
+              <Button variant={reviewWorkStatus === 'APPROVED' ? 'primary' : 'danger'} className="gap-1" onClick={handleReviewDesignerWork} disabled={reviewWorkStatus === 'CHANGES_REQUESTED' && !reviewWorkComment.trim()}>
+                {reviewWorkStatus === 'APPROVED' ? <><CheckCircle2 size={14} /> Approve</> : <><X size={14} /> Reject</>}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
