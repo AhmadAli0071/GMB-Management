@@ -20,6 +20,7 @@ export function SEOLeadDashboard() {
   const { unreadCounts } = useChatNotify();
 
   const [expandedProject, setExpandedProject] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<string>('details');
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [assignForm, setAssignForm] = useState({ projectId: '', toId: '', text: '' });
   const [selectedImages, setSelectedImages] = useState<FileList | null>(null);
@@ -321,6 +322,13 @@ export function SEOLeadDashboard() {
                 <div className="border-t border-slate-700/50">
                 <div className="grid grid-cols-1 lg:grid-cols-3">
                   <div className="lg:col-span-2">
+                  <div className="flex gap-1 px-4 sm:px-5 pt-3 border-b border-slate-700/50">
+                    <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab === 'details' ? 'bg-slate-800/50 text-blue-400 border-b-2 border-blue-400' : 'text-slate-500 hover:text-slate-300'}`} onClick={() => setActiveTab('details')}>Details</button>
+                    <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab === 'onpage' ? 'bg-slate-800/50 text-purple-400 border-b-2 border-purple-400' : 'text-slate-500 hover:text-slate-300'}`} onClick={() => setActiveTab('onpage')}>On-Page</button>
+                    <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab === 'offpage' ? 'bg-slate-800/50 text-orange-400 border-b-2 border-orange-400' : 'text-slate-500 hover:text-slate-300'}`} onClick={() => setActiveTab('offpage')}>Off-Page</button>
+                    <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab === 'report' ? 'bg-slate-800/50 text-green-400 border-b-2 border-green-400' : 'text-slate-500 hover:text-slate-300'}`} onClick={() => setActiveTab('report')}>Submit Report</button>
+                  </div>
+                  {activeTab === 'details' && (<>
                   <div className="p-4 sm:px-5 sm:py-4 border-b border-slate-700/50">
                     <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
                       <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
@@ -370,7 +378,8 @@ export function SEOLeadDashboard() {
                       </div>
                     )}
                   </div>
-
+                  </>)}
+                  {activeTab === 'onpage' && (<>
                   <div className="p-4 sm:px-5 sm:py-4 border-b border-slate-700/50">
                     <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                       <div className="flex items-center gap-2">
@@ -457,7 +466,8 @@ export function SEOLeadDashboard() {
                       </div>
                     )}
                   </div>
-
+                  </>)}
+                  {activeTab === 'offpage' && (<>
                   <div className="p-4 sm:px-5 sm:py-4 border-b border-slate-700/50">
                     <div className="flex items-center gap-2 mb-3">
                       <div className="w-6 h-6 bg-orange-500/20 rounded flex items-center justify-center">
@@ -598,7 +608,9 @@ export function SEOLeadDashboard() {
                       ))}
                     </div>
                   )}
+                  </>)}
 
+                  {activeTab === 'report' && (<>
                   {rejectedReports.length > 0 && (
                     <div className="p-4 sm:px-5 sm:py-4 border-t border-slate-700/50">
                       <div className="flex items-center gap-2 mb-3">
@@ -724,6 +736,7 @@ export function SEOLeadDashboard() {
                       Report will include your On-Page work + {offPageName}'s approved Off-Page work
                     </p>
                   </div>
+                  </>)}
                   </div>
                   <div className="lg:col-span-1 border-l border-slate-700/50 lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto">
                     <ChatBox projectId={project.id} />
