@@ -301,7 +301,7 @@ export function BossDashboard() {
                     )}
 
                     {(() => {
-                      const mySentAssignments = assignments.filter(a => a.fromId === designerId && a.projectId === project.id);
+                      const mySentAssignments = assignments.filter(a => a.toId === designerId && a.projectId === project.id);
                       const designerWork = workSubmissions.filter((w: any) => w.projectId === project.id && mySentAssignments.some(a => a.id === w.assignmentId));
                       if (designerWork.length === 0 && mySentAssignments.length === 0) return null;
                       return (
