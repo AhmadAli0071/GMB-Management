@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "npx concurrently \"npm run dev --workspace=server\" \"npm run dev --workspace=client\"",
     "dev:server": "npm run dev --workspace=server",
-    "dev:client": "npm run dev --workspace=client"
+    "dev:client": "npm run dev --workspace=client",
+    "build": "cd client && npm install && npm run build",
+    "start": "cd server && npm install && node index.js"
   },
   "workspaces": [
     "client",
