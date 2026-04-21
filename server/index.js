@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
@@ -105,6 +106,9 @@ io.on('connection', (socket) => {
 
 async function start() {
   try {
+    const uploadsDir = path.join(__dirname, 'uploads');
+    if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+
     await connectDB();
     const collections = ['users', 'activities', 'projects', 'tasks', 'inforequests', 'leadworks'];
     for (const col of collections) {

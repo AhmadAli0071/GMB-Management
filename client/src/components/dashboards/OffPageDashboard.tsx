@@ -46,11 +46,15 @@ export function OffPageDashboard() {
     if (selectedFiles) {
       for (let i = 0; i < selectedFiles.length; i++) formData.append('files', selectedFiles[i]);
     }
-    await submitWork(formData);
-    setShowSubmitModal(null);
-    setSubmitText('');
-    setSubmitDate(new Date().toISOString().split('T')[0]);
-    setSelectedFiles(null);
+    try {
+      await submitWork(formData);
+      setShowSubmitModal(null);
+      setSubmitText('');
+      setSubmitDate(new Date().toISOString().split('T')[0]);
+      setSelectedFiles(null);
+    } catch (err: any) {
+      alert('Upload failed: ' + (err.message || 'Unknown error'));
+    }
   };
 
   const handleUpdateWork = async () => {
