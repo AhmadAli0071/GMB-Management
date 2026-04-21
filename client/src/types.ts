@@ -1,4 +1,4 @@
-export type UserRole = 'SALES_MANAGER' | 'SEO_MANAGER' | 'SEO_LEAD' | 'OFF_PAGE_SPECIALIST' | 'INTERN' | 'BOSS';
+export type UserRole = 'SALES_MANAGER' | 'SEO_MANAGER' | 'SEO_LEAD' | 'OFF_PAGE_SPECIALIST' | 'DESIGNER' | 'BOSS';
 
 export type ProjectStage =
   | 'CLIENT_COMMUNICATION'
