@@ -30,6 +30,7 @@ function formatWork(doc) {
     files: obj.files,
     status: obj.status,
     reviewComment: obj.reviewComment,
+    workDate: obj.workDate || '',
     createdAt: obj.createdAt,
     updatedAt: obj.updatedAt,
   };
@@ -46,7 +47,7 @@ router.get('/', async (_req, res) => {
 
 router.post('/', upload.array('files', 10), async (req, res) => {
   try {
-    const { assignmentId, projectId, toId, text } = req.body;
+    const { assignmentId, projectId, toId, text, workDate } = req.body;
     const userId = req.user.id;
     const files = req.files?.map(f => ({ filename: f.filename, originalName: f.originalname })) || [];
 
@@ -59,6 +60,7 @@ router.post('/', upload.array('files', 10), async (req, res) => {
       toId,
       text: text || '',
       files,
+      workDate: workDate || new Date().toISOString().split('T')[0],
     });
 
     logger.info('Work submitted', { component: 'work', workId, fromId: userId });

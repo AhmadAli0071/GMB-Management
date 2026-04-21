@@ -17,6 +17,7 @@ export function OffPageDashboard() {
   const [showSubmitModal, setShowSubmitModal] = useState<string | null>(null);
   const [showEditModal, setShowEditModal] = useState<string | null>(null);
   const [submitText, setSubmitText] = useState('');
+  const [submitDate, setSubmitDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
   const [editText, setEditText] = useState('');
   const [editFiles, setEditFiles] = useState<FileList | null>(null);
@@ -41,12 +42,14 @@ export function OffPageDashboard() {
     formData.append('projectId', assignment.projectId);
     formData.append('toId', seoLeadId);
     formData.append('text', submitText);
+    formData.append('workDate', submitDate);
     if (selectedFiles) {
       for (let i = 0; i < selectedFiles.length; i++) formData.append('files', selectedFiles[i]);
     }
     await submitWork(formData);
     setShowSubmitModal(null);
     setSubmitText('');
+    setSubmitDate(new Date().toISOString().split('T')[0]);
     setSelectedFiles(null);
   };
 
@@ -340,6 +343,10 @@ export function OffPageDashboard() {
             <div className="px-6 py-5 space-y-4">
               <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg text-sm">
                 <p className="font-semibold text-orange-400">{projects.find(p => p.id === myAssignments.find(a => a.id === showSubmitModal)?.projectId)?.name}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Work Date</label>
+                <input type="date" className="block w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500" value={submitDate} onChange={e => setSubmitDate(e.target.value)} />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-1">Update / Message</label>

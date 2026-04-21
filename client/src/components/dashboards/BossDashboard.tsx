@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  Globe, X, ShieldCheck, ExternalLink,
+  Globe, X, ShieldCheck, ExternalLink, Calendar,
   Folder, ChevronDown, ChevronUp, Download, FileText, Clock, Trash2, MessageCircle
 } from 'lucide-react';
 import { Card, Badge, Button } from '../ui/Common';
@@ -156,99 +156,81 @@ export function BossDashboard() {
                       <div className="p-4 sm:p-5">
                         <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
                           <div className="w-1 h-4 bg-purple-500 rounded-full" />
-                          Reports
+                          Project Records
                         </h4>
-                        <div className="space-y-4">
-                          {structuredReports.map((report: any) => {
-                            const fromUser = users[report.fromId];
-                            const toUser = users[report.toId];
-                            const offPageWorks = (report.offPageWorkIds || []).map((id: string) => workSubmissions.find((w: any) => w.id === id)).filter(Boolean);
-
-                            return (
-                              <div key={report.id} className="p-4 bg-slate-800/50 border border-slate-700/50 rounded-xl">
-                                <div className="flex items-center gap-3 mb-3">
-                                  <Badge variant="purple" className="text-[10px]">Structured Report</Badge>
-                                  <span className="text-[11px] text-slate-500">{fromUser?.name} → {toUser?.name} — {new Date(report.createdAt).toLocaleString()}</span>
+                        <div className="space-y-2">
+                          {(() => {
+                            const grouped: Record<string, any[]> = {};
+                            structuredReports.forEach((r: any) => {
+                              const d = r.workDate || new Date(r.createdAt).toISOString().split('T')[0];
+                              if (!grouped[d]) grouped[d] = [];
+                              grouped[d].push(r);
+                            });
+                            const dates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+                            return dates.map(date => (
+                              <div key={date} className="bg-slate-800/30 rounded-lg border border-slate-700/30 overflow-hidden">
+                                <div className="px-4 py-2.5 bg-slate-800/60 flex items-center gap-2">
+                                  <Calendar size={13} className="text-blue-400" />
+                                  <span className="text-sm font-semibold text-slate-200">{new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                                  <span className="text-[10px] text-slate-500 bg-slate-700/50 px-1.5 py-0.5 rounded">{grouped[date].length} report{grouped[date].length !== 1 ? 's' : ''}</span>
                                 </div>
-
-                                <div className="space-y-4">
-                                  {(report.onPageText || (report.onPageFiles && report.onPageFiles.length > 0)) && (
-                                    <div>
-                                      <div className="flex items-center justify-between mb-2">
-                                        <h5 className="text-xs font-bold text-purple-400 uppercase tracking-wider flex items-center gap-1"><FileText size={10} /> On-Page Report</h5>
-                                        <Badge variant={getStatusColor(report.onPageStatus)} className="text-[10px]">
-                                          {report.onPageStatus === 'APPROVED' ? 'Approved' : report.onPageStatus === 'REJECTED' ? 'Rejected' : 'Pending'}
-                                        </Badge>
-                                      </div>
-                                      <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg">
-                                        {report.onPageText && <p className="text-sm text-slate-300 mb-2 whitespace-pre-wrap">{report.onPageText}</p>}
-                                        {report.onPageFiles && report.onPageFiles.length > 0 && (
-                                          <div className="flex flex-wrap gap-2">
-                                            {report.onPageFiles.map((f: any, i: number) => {
-                                              const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(f.filename);
-                                              return (
-                                                <a key={i} href={`/uploads/${f.filename}`} target="_blank" download>
-                                                  {isImg ? (
-                                                    <img src={`/uploads/${f.filename}`} className="w-20 h-20 rounded-lg object-cover border border-slate-700/50 hover:shadow-md" />
-                                                  ) : (
-                                                    <span className="flex items-center gap-1 px-3 py-2 bg-slate-800/50 border border-blue-500/20 rounded-lg text-xs text-blue-400 hover:bg-blue-500/10"><Download size={14} /> {f.originalName}</span>
-                                                  )}
-                                                </a>
-                                              );
-                                            })}
-                                          </div>
-                                        )}
-                                      </div>
-                                      {report.onPageComment && (
-                                        <div className={`p-2 rounded-lg text-xs mt-1 ${report.onPageStatus === 'APPROVED' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
-                                          <span className="font-bold">{toUser?.name}:</span> {report.onPageComment}
+                                <div className="divide-y divide-slate-700/30">
+                                  {grouped[date].map((report: any) => {
+                                    const fromUser = users[report.fromId];
+                                    const toUser = users[report.toId];
+                                    const offPageWorks = (report.offPageWorkIds || []).map((id: string) => workSubmissions.find((w: any) => w.id === id)).filter(Boolean);
+                                    return (
+                                      <div key={report.id} className="p-3">
+                                        <div className="flex items-center gap-2 mb-2">
+                                          <Badge variant="purple" className="text-[10px]">Structured Report</Badge>
+                                          <span className="text-[10px] text-slate-500">{fromUser?.name} → {toUser?.name}</span>
+                                          <span className="text-[10px] text-slate-600">{new Date(report.createdAt).toLocaleTimeString()}</span>
                                         </div>
-                                      )}
-                                    </div>
-                                  )}
-
-                                  {offPageWorks.length > 0 && (
-                                    <div>
-                                      <div className="flex items-center justify-between mb-2">
-                                        <h5 className="text-xs font-bold text-orange-400 uppercase tracking-wider flex items-center gap-1"><Globe size={10} /> Off-Page Report</h5>
-                                        <Badge variant={getStatusColor(report.offPageStatus)} className="text-[10px]">
-                                          {report.offPageStatus === 'APPROVED' ? 'Approved' : report.offPageStatus === 'REJECTED' ? 'Rejected' : 'Pending'}
-                                        </Badge>
-                                      </div>
-                                      <div className="space-y-2">
-                                        {offPageWorks.map((work: any) => (
-                                          <div key={work.id} className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg">
-                                            {work.text && <p className="text-sm text-slate-300 mb-2">{work.text}</p>}
-                                            {work.files && work.files.length > 0 && (
-                                              <div className="flex flex-wrap gap-2">
-                                                {work.files.map((f: any, i: number) => {
-                                                  const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(f.filename);
-                                                  return (
-                                                    <a key={i} href={`/uploads/${f.filename}`} target="_blank" download>
-                                                      {isImg ? (
-                                                        <img src={`/uploads/${f.filename}`} className="w-20 h-20 rounded-lg object-cover border border-slate-700/50 hover:shadow-md" />
-                                                      ) : (
-                                                        <span className="flex items-center gap-1 px-3 py-2 bg-slate-800/50 border border-blue-500/20 rounded-lg text-xs text-blue-400 hover:bg-blue-500/10"><Download size={14} /> {f.originalName}</span>
-                                                      )}
-                                                    </a>
-                                                  );
-                                                })}
+                                        <div className="space-y-2">
+                                          {(report.onPageText || (report.onPageFiles && report.onPageFiles.length > 0)) && (
+                                            <div>
+                                              <div className="flex items-center justify-between mb-1">
+                                                <h5 className="text-[10px] font-bold text-purple-400 uppercase tracking-wider flex items-center gap-1"><FileText size={10} /> On-Page</h5>
+                                                <Badge variant={getStatusColor(report.onPageStatus)} className="text-[10px]">{report.onPageStatus === 'APPROVED' ? 'Approved' : report.onPageStatus === 'REJECTED' ? 'Rejected' : 'Pending'}</Badge>
                                               </div>
-                                            )}
-                                          </div>
-                                        ))}
-                                      </div>
-                                      {report.offPageComment && (
-                                        <div className={`p-2 rounded-lg text-xs mt-1 ${report.offPageStatus === 'APPROVED' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
-                                          <span className="font-bold">{toUser?.name}:</span> {report.offPageComment}
+                                              <div className="p-2 bg-purple-500/10 border border-purple-500/20 rounded-lg">
+                                                {report.onPageText && <p className="text-xs text-slate-300 whitespace-pre-wrap">{report.onPageText}</p>}
+                                                {report.onPageFiles && report.onPageFiles.length > 0 && (
+                                                  <div className="flex flex-wrap gap-1.5 mt-1.5">{report.onPageFiles.map((f: any, i: number) => {
+                                                    const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(f.filename);
+                                                    return <a key={i} href={`/uploads/${f.filename}`} target="_blank" download>{isImg ? <img src={`/uploads/${f.filename}`} className="w-14 h-14 rounded object-cover border border-slate-700/50" /> : <span className="flex items-center gap-1 px-2 py-1 bg-slate-800/50 border border-blue-500/20 rounded text-[10px] text-blue-400"><Download size={10} /> {f.originalName}</span>}</a>;
+                                                  })}</div>
+                                                )}
+                                              </div>
+                                            </div>
+                                          )}
+                                          {offPageWorks.length > 0 && (
+                                            <div>
+                                              <div className="flex items-center justify-between mb-1">
+                                                <h5 className="text-[10px] font-bold text-orange-400 uppercase tracking-wider flex items-center gap-1"><Globe size={10} /> Off-Page</h5>
+                                                <Badge variant={getStatusColor(report.offPageStatus)} className="text-[10px]">{report.offPageStatus === 'APPROVED' ? 'Approved' : report.offPageStatus === 'REJECTED' ? 'Rejected' : 'Pending'}</Badge>
+                                              </div>
+                                              <div className="space-y-1">{offPageWorks.map((work: any) => (
+                                                <div key={work.id} className="p-2 bg-orange-500/10 border border-orange-500/20 rounded-lg">
+                                                  {work.text && <p className="text-xs text-slate-300">{work.text}</p>}
+                                                  {work.files && work.files.length > 0 && (
+                                                    <div className="flex flex-wrap gap-1.5 mt-1">{work.files.map((f: any, i: number) => {
+                                                      const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(f.filename);
+                                                      return <a key={i} href={`/uploads/${f.filename}`} target="_blank" download>{isImg ? <img src={`/uploads/${f.filename}`} className="w-14 h-14 rounded object-cover border border-slate-700/50" /> : <span className="flex items-center gap-1 px-2 py-1 bg-slate-800/50 border border-blue-500/20 rounded text-[10px] text-blue-400"><Download size={10} /> {f.originalName}</span>}</a>;
+                                                    })}</div>
+                                                  )}
+                                                </div>
+                                              ))}</div>
+                                            </div>
+                                          )}
                                         </div>
-                                      )}
-                                    </div>
-                                  )}
+                                      </div>
+                                    );
+                                  })}
                                 </div>
                               </div>
-                            );
-                          })}
+                            ));
+                          })()}
                         </div>
                       </div>
                     ) : (

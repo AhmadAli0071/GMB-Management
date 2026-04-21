@@ -8,6 +8,7 @@ const leadWorkSchema = new mongoose.Schema({
   text: { type: String, default: '' },
   files: [{ filename: String, originalName: String }],
   status: { type: String, enum: ['DRAFT', 'INCLUDED'], default: 'DRAFT' },
+  workDate: { type: String, default: '' },
 }, { versionKey: false, timestamps: true });
 
 export default mongoose.model('LeadWork', leadWorkSchema);

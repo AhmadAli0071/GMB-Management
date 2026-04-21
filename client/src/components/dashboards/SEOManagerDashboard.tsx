@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import {
-  ArrowRight, MapPin, Star, Globe, Search, Building2, X, ExternalLink,
+  ArrowRight, MapPin, Star, Globe, Search, Building2, X, ExternalLink, Calendar,
   Shield, Send, Clock, Folder, ChevronDown, ChevronUp,
   CheckCircle2, RotateCcw, Download, FileText, Bell, Users, MessageCircle
 } from 'lucide-react';
@@ -225,11 +225,26 @@ export function SEOManagerDashboard() {
                         </div>
                         <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
                           <div className="w-1 h-4 bg-green-500 rounded-full" />
-                          Reports from {seoLeadName}
+                          Project Records
                         </h4>
                       </div>
-                      <div className="space-y-3">
-                        {projectUpdates.map((update: any) => {
+                      <div className="space-y-2">
+                        {(() => {
+                          const grouped: Record<string, any[]> = {};
+                          projectUpdates.forEach((u: any) => {
+                            const d = u.workDate || new Date(u.createdAt).toISOString().split('T')[0];
+                            if (!grouped[d]) grouped[d] = [];
+                            grouped[d].push(u);
+                          });
+                          return Object.keys(grouped).sort((a: string, b: string) => b.localeCompare(a)).map((date: string) => (
+                            <div key={date} className="bg-slate-800/30 rounded-lg border border-slate-700/30 overflow-hidden">
+                              <div className="px-4 py-2.5 bg-slate-800/60 flex items-center gap-2">
+                                <Calendar size={13} className="text-blue-400" />
+                                <span className="text-sm font-semibold text-slate-200">{new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                                <span className="text-[10px] text-slate-500 bg-slate-700/50 px-1.5 py-0.5 rounded">{grouped[date].length} report{grouped[date].length !== 1 ? 's' : ''}</span>
+                              </div>
+                              <div className="divide-y divide-slate-700/30 p-3 space-y-3">
+                                {grouped[date].map((update: any) => {
                           const fromUser = users[update.fromId];
                           const isStructured = update.reportType === 'STRUCTURED';
                           const offPageWorks = (update.offPageWorkIds || []).map((id: string) => workSubmissions.find((w: any) => w.id === id)).filter(Boolean);
@@ -393,6 +408,10 @@ export function SEOManagerDashboard() {
                             </div>
                           );
                         })}
+                              </div>
+                            </div>
+                          ));
+                        })()}
                       </div>
                     </div>
                   )}

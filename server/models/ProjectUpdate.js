@@ -17,6 +17,7 @@ const projectUpdateSchema = new mongoose.Schema({
   offPageStatus: { type: String, enum: ['PENDING', 'APPROVED', 'REJECTED'], default: 'PENDING' },
   onPageComment: { type: String, default: '' },
   offPageComment: { type: String, default: '' },
+  workDate: { type: String, default: '' },
 }, { versionKey: false, timestamps: true });
 
 export default mongoose.model('ProjectUpdate', projectUpdateSchema);

@@ -29,12 +29,14 @@ export function SEOLeadDashboard() {
   const [reviewCommentText, setReviewCommentText] = useState('');
   const [showAddOnPageModal, setShowAddOnPageModal] = useState(false);
   const [addOnPageForm, setAddOnPageForm] = useState({ projectId: '', text: '' });
+  const [addOnPageDate, setAddOnPageDate] = useState(new Date().toISOString().split('T')[0]);
   const [onPageFiles, setOnPageFiles] = useState<FileList | null>(null);
   const [showEditOnPageModal, setShowEditOnPageModal] = useState<string | null>(null);
   const [editOnPageForm, setEditOnPageForm] = useState({ id: '', text: '' });
   const [editOnPageFiles, setEditOnPageFiles] = useState<FileList | null>(null);
   const [showSubmitReportModal, setShowSubmitReportModal] = useState(false);
   const [reportForm, setReportForm] = useState({ projectId: '', toId: '' });
+  const [reportDate, setReportDate] = useState(new Date().toISOString().split('T')[0]);
   const [showUpdateReviewModal, setShowUpdateReviewModal] = useState<string | null>(null);
   const [updateReviewStatus, setUpdateReviewStatus] = useState('');
   const [updateReviewComment, setUpdateReviewComment] = useState('');
@@ -103,6 +105,7 @@ export function SEOLeadDashboard() {
     const formData = new FormData();
     formData.append('projectId', addOnPageForm.projectId);
     formData.append('text', addOnPageForm.text);
+    formData.append('workDate', addOnPageDate);
     if (onPageFiles) {
       for (let i = 0; i < onPageFiles.length; i++) formData.append('files', onPageFiles[i]);
     }
@@ -110,11 +113,13 @@ export function SEOLeadDashboard() {
     setShowAddOnPageModal(false);
     setAddOnPageForm({ projectId: '', text: '' });
     setOnPageFiles(null);
+    setAddOnPageDate(new Date().toISOString().split('T')[0]);
   };
 
   const openAddOnPageModal = (projectId: string) => {
     setAddOnPageForm({ projectId, text: '' });
     setOnPageFiles(null);
+    setAddOnPageDate(new Date().toISOString().split('T')[0]);
     setShowAddOnPageModal(true);
   };
 
@@ -157,10 +162,12 @@ export function SEOLeadDashboard() {
       }
     }
     formData.append('onPageFilesJson', JSON.stringify(onPageFiles));
+    formData.append('workDate', reportDate);
 
     await submitProjectUpdate(formData);
     setShowSubmitReportModal(false);
     setReportForm({ projectId: '', toId: '' });
+    setReportDate(new Date().toISOString().split('T')[0]);
   };
 
   const openSubmitReportModal = (projectId: string, toId: string) => {
@@ -742,6 +749,10 @@ export function SEOLeadDashboard() {
                 <p className="font-semibold text-purple-400">{projects.find(p => p.id === addOnPageForm.projectId)?.name}</p>
               </div>
               <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Work Date</label>
+                <input type="date" className="block w-full px-3 py-2 bg-slate-900/50 border border-slate-700/50 rounded-lg text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500" value={addOnPageDate} onChange={e => setAddOnPageDate(e.target.value)} />
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-slate-300 mb-1">Description / Notes</label>
                 <textarea
                   className="block w-full px-3 py-2 bg-slate-900/50 border border-slate-700/50 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[120px]"
@@ -849,6 +860,15 @@ export function SEOLeadDashboard() {
               </div>
 
               <div className="px-6 py-5 space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Report Date</label>
+                  <input
+                    type="date"
+                    className="block w-full px-3 py-2 bg-slate-900/50 border border-slate-700/50 rounded-lg text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={reportDate}
+                    onChange={e => setReportDate(e.target.value)}
+                  />
+                </div>
                 <div>
                   <h4 className="text-sm font-bold text-purple-400 uppercase tracking-wider mb-3 flex items-center gap-2">
                     <div className="w-5 h-5 bg-purple-500/20 rounded flex items-center justify-center"><FileText size={10} className="text-purple-400" /></div>

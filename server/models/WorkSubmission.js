@@ -10,6 +10,7 @@ const workSubmissionSchema = new mongoose.Schema({
   files: [{ filename: String, originalName: String }],
   status: { type: String, enum: ['PENDING_REVIEW', 'APPROVED', 'CHANGES_REQUESTED'], default: 'PENDING_REVIEW' },
   reviewComment: { type: String, default: '' },
+  workDate: { type: String, default: '' },
 }, { versionKey: false, timestamps: true });
 
 export default mongoose.model('WorkSubmission', workSubmissionSchema);

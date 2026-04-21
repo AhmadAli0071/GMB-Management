@@ -28,6 +28,7 @@ function formatLeadWork(doc) {
     text: obj.text,
     files: obj.files,
     status: obj.status,
+    workDate: obj.workDate || '',
     createdAt: obj.createdAt,
     updatedAt: obj.updatedAt,
   };
@@ -44,7 +45,7 @@ router.get('/', async (_req, res) => {
 
 router.post('/', upload.array('files', 10), async (req, res) => {
   try {
-    const { projectId, text } = req.body;
+    const { projectId, text, workDate } = req.body;
     const userId = req.user.id;
     const files = req.files?.map(f => ({ filename: f.filename, originalName: f.originalname })) || [];
 
@@ -56,6 +57,7 @@ router.post('/', upload.array('files', 10), async (req, res) => {
       section: 'ON_PAGE',
       text: text || '',
       files,
+      workDate: workDate || new Date().toISOString().split('T')[0],
     });
 
     logger.info('Lead work created', { component: 'lead-work', itemId, userId });

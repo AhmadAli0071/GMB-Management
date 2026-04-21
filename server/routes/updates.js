@@ -37,6 +37,7 @@ function formatUpdate(doc) {
     offPageStatus: obj.offPageStatus || 'PENDING',
     onPageComment: obj.onPageComment || '',
     offPageComment: obj.offPageComment || '',
+    workDate: obj.workDate || '',
     createdAt: obj.createdAt,
     updatedAt: obj.updatedAt,
   };
@@ -53,7 +54,7 @@ router.get('/', async (_req, res) => {
 
 router.post('/', upload.array('files', 10), async (req, res) => {
   try {
-    const { projectId, toId, text, reportType, onPageText, offPageWorkIds } = req.body;
+    const { projectId, toId, text, reportType, onPageText, offPageWorkIds, workDate } = req.body;
     const userId = req.user.id;
     const files = req.files?.map(f => ({ filename: f.filename, originalName: f.originalname })) || [];
 
@@ -68,6 +69,7 @@ router.post('/', upload.array('files', 10), async (req, res) => {
       text: text || '',
       files,
       reportType: isStructured ? 'STRUCTURED' : 'SIMPLE',
+      workDate: workDate || new Date().toISOString().split('T')[0],
     };
 
     if (isStructured) {
