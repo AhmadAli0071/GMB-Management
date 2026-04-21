@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import {
   ArrowRight, MapPin, Star, Globe, Search, Building2, X, Shield, ExternalLink,
   Send, Clock, ChevronDown, ChevronUp, Paperclip, Image, FileText,
-  CheckCircle2, RotateCcw, Folder, Download, Plus, Trash2, FileUp, Bell, AlertCircle, MessageCircle
+  CheckCircle2, RotateCcw, Folder, Download, Plus, Trash2, FileUp, Bell, AlertCircle, MessageCircle, Loader2
 } from 'lucide-react';
 import { Card, Button, Badge } from '../ui/Common';
 import { useApp } from '../../AppContext';
@@ -41,6 +41,7 @@ export function SEOLeadDashboard() {
   const [updateReviewStatus, setUpdateReviewStatus] = useState('');
   const [updateReviewComment, setUpdateReviewComment] = useState('');
   const [showAlreadySentPopup, setShowAlreadySentPopup] = useState('');
+  const [addingWork, setAddingWork] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const docInputRef = useRef<HTMLInputElement>(null);
@@ -102,18 +103,25 @@ export function SEOLeadDashboard() {
   };
 
   const handleAddOnPage = async () => {
-    const formData = new FormData();
-    formData.append('projectId', addOnPageForm.projectId);
-    formData.append('text', addOnPageForm.text);
-    formData.append('workDate', addOnPageDate);
-    if (onPageFiles) {
-      for (let i = 0; i < onPageFiles.length; i++) formData.append('files', onPageFiles[i]);
+    setAddingWork(true);
+    try {
+      const formData = new FormData();
+      formData.append('projectId', addOnPageForm.projectId);
+      formData.append('text', addOnPageForm.text);
+      formData.append('workDate', addOnPageDate);
+      if (onPageFiles) {
+        for (let i = 0; i < onPageFiles.length; i++) formData.append('files', onPageFiles[i]);
+      }
+      await createLeadWork(formData);
+      setShowAddOnPageModal(false);
+      setAddOnPageForm({ projectId: '', text: '' });
+      setOnPageFiles(null);
+      setAddOnPageDate(new Date().toISOString().split('T')[0]);
+    } catch (err: any) {
+      alert('Failed to add work: ' + (err.message || 'Unknown error'));
+    } finally {
+      setAddingWork(false);
     }
-    await createLeadWork(formData);
-    setShowAddOnPageModal(false);
-    setAddOnPageForm({ projectId: '', text: '' });
-    setOnPageFiles(null);
-    setAddOnPageDate(new Date().toISOString().split('T')[0]);
   };
 
   const openAddOnPageModal = (projectId: string) => {
@@ -773,7 +781,7 @@ export function SEOLeadDashboard() {
             </div>
             <div className="px-6 py-4 border-t border-slate-700/50 flex justify-end gap-3">
               <Button variant="outline" onClick={() => setShowAddOnPageModal(false)}>Cancel</Button>
-              <Button className="gap-1" onClick={handleAddOnPage}><Plus size={14} /> Add</Button>
+              <Button className="gap-1" onClick={handleAddOnPage} disabled={addingWork}>{addingWork ? <><Loader2 size={14} className="animate-spin" /> Adding...</> : <><Plus size={14} /> Add</>}</Button>
             </div>
           </div>
         </div>
