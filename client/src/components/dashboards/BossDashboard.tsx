@@ -182,11 +182,6 @@ export function BossDashboard() {
                         Project Details
                       </h4>
                       <div className="flex gap-2">
-                        {designerId && (
-                          <Button variant="secondary" size="sm" className="gap-1" onClick={() => openAssignDesignerModal(project.id)}>
-                            <Palette size={14} /> Assign to {designerName}
-                          </Button>
-                        )}
                         <Button size="sm" variant="danger" className="gap-1" onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(project.id); }}>
                           <Trash2 size={14} /> Delete
                         </Button>
