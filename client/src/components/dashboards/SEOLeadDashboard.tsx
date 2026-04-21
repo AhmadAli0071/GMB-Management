@@ -725,7 +725,7 @@ export function SEOLeadDashboard() {
                     </p>
                   </div>
                   </div>
-                  <div className="lg:col-span-1 border-l border-slate-700/50">
+                  <div className="lg:col-span-1 border-l border-slate-700/50 lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto">
                     <ChatBox projectId={project.id} />
                   </div>
                 </div>
