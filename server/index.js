@@ -47,15 +47,14 @@ app.use('/api/updates', updateRoutes);
 app.use('/api/lead-work', leadWorkRoutes);
 app.use('/api/chat', chatRoutes);
 
-const clientDist = path.join(__dirname, '../client/dist');
-app.use(express.static(clientDist));
-app.get('*', (_req, res, next) => {
-  if (_req.path.startsWith('/api/') || _req.path.startsWith('/socket.io') || _req.path.startsWith('/uploads')) return next();
-  res.sendFile(path.join(clientDist, 'index.html'));
-});
-
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString(), uptime: process.uptime() });
+});
+
+const clientDist = path.join(__dirname, '../client/dist');
+app.use(express.static(clientDist));
+app.get('*', (_req, res) => {
+  res.sendFile(path.join(clientDist, 'index.html'));
 });
 
 app.use(notFoundHandler);
