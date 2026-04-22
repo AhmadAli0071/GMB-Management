@@ -2,7 +2,7 @@ let electron;
 try {
   electron = require('electron');
 } catch (e) {
-  require('./server/index.js');
+  import('./server/index.js');
   return;
 }
 
