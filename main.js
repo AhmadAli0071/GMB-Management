@@ -6,7 +6,7 @@ try {
   return;
 }
 
-const { app, BrowserWindow, ipcMain, Notification } = electron;
+const { app, BrowserWindow, Notification } = electron;
 const path = require('path');
 const https = require('https');
 
@@ -16,19 +16,6 @@ const PRODUCTION_URL = 'https://skyblue-heron-259301.hostingersite.com';
 const APP_URL = process.env.APP_URL || PRODUCTION_URL;
 
 app.setAppUserModelId('CD-GBP-Portal');
-
-ipcMain.on('show-notification', (_event, { title, body }) => {
-  if (Notification.isSupported()) {
-    const notif = new Notification({ title, body, silent: false });
-    notif.on('click', () => {
-      if (mainWindow) {
-        if (mainWindow.isMinimized()) mainWindow.restore();
-        mainWindow.focus();
-      }
-    });
-    notif.show();
-  }
-});
 
 function waitForServer(url, retries = 15) {
   return new Promise((resolve) => {
@@ -100,19 +87,32 @@ async function createWindow() {
     callback(true);
   });
 
+  mainWindow.webContents.on('console-message', (_event, level, message) => {
+    if (!message.startsWith('__NOTIF__')) return;
+    try {
+      const data = JSON.parse(message.substring(9));
+      if (Notification.isSupported()) {
+        const notif = new Notification({ title: data.title || 'CD-GBP-Portal', body: data.body || '', silent: false });
+        notif.on('click', () => {
+          if (mainWindow) {
+            if (mainWindow.isMinimized()) mainWindow.restore();
+            mainWindow.focus();
+          }
+        });
+        notif.show();
+      }
+    } catch (e) {}
+  });
+
   mainWindow.webContents.on('dom-ready', () => {
     mainWindow.webContents.executeJavaScript(`
       (function() {
-        const OrigNotification = window.Notification;
         window.Notification = function(title, options) {
-          try { new OrigNotification(title, options); } catch(e) {}
+          var body = (options && options.body) || '';
+          console.log('__NOTIF__' + JSON.stringify({title: title, body: body}));
         };
-        window.Notification.permission = 'granted';
+        Object.defineProperty(window.Notification, 'permission', { get: function() { return 'granted'; }, configurable: true });
         window.Notification.requestPermission = function() { return Promise.resolve('granted'); };
-        Object.defineProperty(window.Notification, 'permission', {
-          get: function() { return 'granted'; },
-          configurable: true
-        });
       })();
     `);
   });
