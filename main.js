@@ -1,12 +1,4 @@
-let electron;
-try {
-  electron = require('electron');
-} catch (e) {
-  import('./server/index.js');
-  return;
-}
-
-const { app, BrowserWindow, Notification } = electron;
+const { app, BrowserWindow, Notification } = require('electron');
 const path = require('path');
 const https = require('https');
 
