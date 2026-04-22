@@ -1,6 +1,5 @@
 const { app, BrowserWindow, Notification } = require('electron');
 const path = require('path');
-const https = require('https');
 
 let mainWindow;
 
@@ -9,57 +8,7 @@ const APP_URL = process.env.APP_URL || PRODUCTION_URL;
 
 app.setAppUserModelId('CD-GBP-Portal');
 
-function waitForServer(url, retries = 15) {
-  return new Promise((resolve) => {
-    let attempts = 0;
-    const check = () => {
-      attempts++;
-      https
-        .get(`${url}/api/health`, (res) => {
-          resolve(res.statusCode === 200);
-        })
-        .on('error', () => {
-          if (attempts < retries) {
-            setTimeout(check, 2000);
-          } else {
-            resolve(false);
-          }
-        });
-    };
-    check();
-  });
-}
-
-function showErrorWindow(errorMessage) {
-  const errorWindow = new BrowserWindow({
-    width: 600,
-    height: 400,
-    title: 'CD-GBP-Portal - Error',
-    autoHideMenuBar: true,
-    resizable: false,
-  });
-
-  errorWindow.loadURL(
-    `data:text/html;charset=utf-8,${encodeURIComponent(`
-      <html>
-        <body style="font-family:sans-serif;padding:40px;background:#1a1a2e;color:#e94560;text-align:center;">
-          <h1>Connection Failed</h1>
-          <p style="color:#eee;word-break:break-word;">${errorMessage}</p>
-          <p style="color:#aaa;font-size:12px;">Check your internet connection and try again.</p>
-        </body>
-      </html>
-    `)}`
-  );
-}
-
-async function createWindow() {
-  const serverReady = await waitForServer(APP_URL);
-
-  if (!serverReady) {
-    showErrorWindow('Could not connect to the server. Please check your internet connection.');
-    return;
-  }
-
+function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
