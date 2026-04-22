@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, Notification } = require('electron');
 const path = require('path');
 const https = require('https');
 
@@ -71,6 +71,21 @@ async function createWindow() {
     },
     autoHideMenuBar: true,
     show: false,
+  });
+
+  mainWindow.webContents.session.setPermissionRequestHandler((webContents, permission, callback) => {
+    if (permission === 'notifications') {
+      callback(true);
+    } else {
+      callback(true);
+    }
+  });
+
+  mainWindow.webContents.session.setPermissionCheckHandler((webContents, permission) => {
+    if (permission === 'notifications') {
+      return true;
+    }
+    return true;
   });
 
   mainWindow.once('ready-to-show', () => {
