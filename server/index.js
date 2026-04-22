@@ -21,8 +21,7 @@ import chatRoutes from './routes/chat.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import logger from './utils/logger.js';
 
-const envPath = process.env.ENV_FILE_PATH || path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '.env');
-dotenv.config({ path: envPath });
+dotenv.config({ path: '../.env' });
 
 const JWT_SECRET = process.env.JWT_SECRET || 'crossdigi-secret-2024';
 
@@ -53,7 +52,7 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString(), uptime: process.uptime() });
 });
 
-const clientDist = process.env.CLIENT_DIST_PATH || path.join(__dirname, '../client/dist');
+const clientDist = path.join(__dirname, '../client/dist');
 app.use(express.static(clientDist));
 app.get('*', (_req, res) => {
   res.sendFile(path.join(clientDist, 'index.html'));

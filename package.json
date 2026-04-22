@@ -5,9 +5,9 @@
   "private": true,
   "main": "main.js",
   "scripts": {
-    "dev": "npx concurrently \"cd server && npm run dev\" \"cd client && npm run dev\"",
-    "dev:server": "cd server && npm run dev",
-    "dev:client": "cd client && npm run dev",
+    "dev": "npx concurrently \"npm run dev --workspace=server\" \"npm run dev --workspace=client\"",
+    "dev:server": "npm run dev --workspace=server",
+    "dev:client": "npm run dev --workspace=client",
     "build": "cd client && npm install && npm run build",
     "start": "cd server && npm install && node index.js",
     "electron": "electron .",
@@ -43,6 +43,10 @@
       "shortcutName": "CD-GBP-Portal"
     }
   },
+  "workspaces": [
+    "client",
+    "server"
+  ],
   "devDependencies": {
     "concurrently": "^9.1.2",
     "electron": "^28.0.0",

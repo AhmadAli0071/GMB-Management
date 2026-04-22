@@ -11,3 +11,4 @@ logs/
 out.log
 err.log
 uploads/
+release/
