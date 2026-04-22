@@ -104,6 +104,14 @@ io.on('connection', (socket) => {
   });
 });
 
+process.on('uncaughtException', (err) => {
+  logger.error('Uncaught Exception', { component: 'server', error: err.message, stack: err.stack });
+});
+
+process.on('unhandledRejection', (reason) => {
+  logger.error('Unhandled Rejection', { component: 'server', error: String(reason) });
+});
+
 async function start() {
   try {
     const uploadsDir = path.join(__dirname, 'uploads');
