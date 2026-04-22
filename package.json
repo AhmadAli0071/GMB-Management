@@ -22,7 +22,8 @@
       "output": "C:/temp/gmb-release"
     },
     "files": [
-      "main.js"
+      "main.js",
+      "preload.js"
     ],
     "win": {
       "target": [

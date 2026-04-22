@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Notification } = require('electron');
+const { app, BrowserWindow, ipcMain, Notification } = require('electron');
 const path = require('path');
 const https = require('https');
 
@@ -6,6 +6,21 @@ let mainWindow;
 
 const PRODUCTION_URL = 'https://skyblue-heron-259301.hostingersite.com';
 const APP_URL = process.env.APP_URL || PRODUCTION_URL;
+
+app.setAppUserModelId('CD-GBP-Portal');
+
+ipcMain.on('show-notification', (_event, { title, body }) => {
+  if (Notification.isSupported()) {
+    const notif = new Notification({ title, body, silent: false });
+    notif.on('click', () => {
+      if (mainWindow) {
+        if (mainWindow.isMinimized()) mainWindow.restore();
+        mainWindow.focus();
+      }
+    });
+    notif.show();
+  }
+});
 
 function waitForServer(url, retries = 15) {
   return new Promise((resolve) => {
@@ -68,24 +83,33 @@ async function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js'),
     },
     autoHideMenuBar: true,
     show: false,
   });
 
-  mainWindow.webContents.session.setPermissionRequestHandler((webContents, permission, callback) => {
-    if (permission === 'notifications') {
-      callback(true);
-    } else {
-      callback(true);
-    }
+  mainWindow.webContents.session.setPermissionRequestHandler((_webContents, permission, callback) => {
+    callback(true);
   });
 
-  mainWindow.webContents.session.setPermissionCheckHandler((webContents, permission) => {
-    if (permission === 'notifications') {
-      return true;
-    }
-    return true;
+  mainWindow.webContents.on('dom-ready', () => {
+    mainWindow.webContents.executeJavaScript(`
+      (function() {
+        if (window.electronAPI && window.electronAPI.isElectron) {
+          const OrigNotification = window.Notification;
+          window.Notification = function(title, options) {
+            window.electronAPI.sendNotification(title, options && options.body);
+          };
+          window.Notification.permission = 'granted';
+          window.Notification.requestPermission = function() { return Promise.resolve('granted'); };
+          Object.defineProperty(window.Notification, 'permission', {
+            get: function() { return 'granted'; },
+            configurable: true
+          });
+        }
+      })();
+    `);
   });
 
   mainWindow.once('ready-to-show', () => {
