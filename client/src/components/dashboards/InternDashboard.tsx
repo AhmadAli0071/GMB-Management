@@ -1,10 +1,11 @@
-import React from 'react';
-import { CheckCircle2, Circle, Clock, FileText, Send } from 'lucide-react';
+import React, { useState } from 'react';
+import { CheckCircle2, Circle, Clock, FileText, Loader2, Send } from 'lucide-react';
 import { Card, Button, Badge, StatCard } from '../ui/Common';
 import { useApp } from '../../AppContext';
 
 export function InternDashboard() {
   const { currentUser, tasks, projects, users, updateTaskStatus } = useApp();
+  const [loadingTask, setLoadingTask] = useState<string | null>(null);
 
   const myTasks = tasks.filter(t => t.assignedTo === currentUser.id);
   const todoTasks = myTasks.filter(t => t.status === 'TODO');
@@ -65,8 +66,11 @@ export function InternDashboard() {
                         </div>
                       </div>
                     </div>
-                    <Button size="sm" className="gap-2 shrink-0" onClick={() => updateTaskStatus(task.id, 'SUBMITTED')}>
-                      <Send size={14} /> Submit
+                    <Button size="sm" className="gap-2 shrink-0" disabled={loadingTask === task.id} onClick={async () => {
+                      setLoadingTask(task.id);
+                      try { await updateTaskStatus(task.id, 'SUBMITTED'); } finally { setLoadingTask(null); }
+                    }}>
+                      {loadingTask === task.id ? <><Loader2 size={14} className="animate-spin" /> Submitting...</> : <><Send size={14} /> Submit</>}
                     </Button>
                   </div>
                   <div className="mt-4 pt-4 border-t border-slate-700/30 flex items-center gap-2 text-[11px] text-slate-500">
@@ -111,8 +115,11 @@ export function InternDashboard() {
                         </div>
                       </div>
                     </div>
-                    <Button variant="secondary" size="sm" className="gap-2 shrink-0" onClick={() => updateTaskStatus(task.id, 'IN_PROGRESS')}>
-                      <Clock size={14} /> Start
+                    <Button variant="secondary" size="sm" className="gap-2 shrink-0" disabled={loadingTask === task.id} onClick={async () => {
+                      setLoadingTask(task.id);
+                      try { await updateTaskStatus(task.id, 'IN_PROGRESS'); } finally { setLoadingTask(null); }
+                    }}>
+                      {loadingTask === task.id ? <><Loader2 size={14} className="animate-spin" /> Starting...</> : <><Clock size={14} /> Start</>}
                     </Button>
                   </div>
                   <div className="mt-4 pt-4 border-t border-slate-700/30 flex items-center gap-2 text-[11px] text-slate-500">

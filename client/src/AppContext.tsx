@@ -35,6 +35,7 @@ interface AppContextType {
   reviewWork: (id: string, status: string, reviewComment?: string) => Promise<void>;
   updateWork: (id: string, formData: FormData) => Promise<void>;
   deleteWorkFile: (id: string, filename: string) => Promise<void>;
+  deleteWork: (id: string) => Promise<void>;
   projectUpdates: any[];
   submitProjectUpdate: (formData: FormData) => Promise<void>;
   reviewProjectUpdate: (id: string, status: string, reviewComment?: string) => Promise<void>;
@@ -180,6 +181,11 @@ export function AppProvider({ currentUser, onLogout, children }: { currentUser: 
     await refreshData();
   }, [refreshData]);
 
+  const deleteWork = useCallback(async (id: string) => {
+    await api.deleteWork(id);
+    await refreshData();
+  }, [refreshData]);
+
   const submitProjectUpdate = useCallback(async (formData: FormData) => {
     await api.submitProjectUpdate(formData);
     await refreshData();
@@ -253,6 +259,7 @@ export function AppProvider({ currentUser, onLogout, children }: { currentUser: 
       reviewWork,
       updateWork,
       deleteWorkFile,
+      deleteWork,
       projectUpdates,
       submitProjectUpdate,
       reviewProjectUpdate,

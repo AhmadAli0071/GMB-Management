@@ -16,11 +16,11 @@ const KanbanColumn: React.FC<{ title: string; color: string; children: React.Rea
     <div className="flex-1 min-w-[300px] flex flex-col h-full">
       <div className="flex items-center justify-between mb-4 px-2">
         <div className="flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full ${color}`} />
-          <h3 className="font-bold text-slate-100">{title}</h3>
-          <span className="bg-gray-200 text-slate-400 text-[10px] font-bold px-2 py-0.5 rounded-full">{count}</span>
+          <div className={`w-3 h-3 rounded-full ${color}`} />
+          <h3 className="font-bold text-slate-700">{title}</h3>
+          <span className="bg-blue-50 text-blue-500 text-[10px] font-bold px-2 py-0.5 rounded-full">{count}</span>
         </div>
-        <button className="text-slate-500 hover:text-slate-400">
+        <button className="text-slate-400 hover:text-blue-500">
           <MoreHorizontal size={18} />
         </button>
       </div>
@@ -44,10 +44,10 @@ export function KanbanBoard() {
   });
 
   const columns: { title: string; status: TaskStatus; color: string }[] = [
-    { title: 'To Do', status: 'TODO', color: 'bg-gray-400' },
-    { title: 'In Progress', status: 'IN_PROGRESS', color: 'bg-blue-400' },
-    { title: 'Submitted', status: 'SUBMITTED', color: 'bg-yellow-400' },
-    { title: 'Completed', status: 'COMPLETED', color: 'bg-green-400' },
+    { title: 'To Do', status: 'TODO', color: 'bg-slate-400' },
+    { title: 'In Progress', status: 'IN_PROGRESS', color: 'bg-blue-500' },
+    { title: 'Submitted', status: 'SUBMITTED', color: 'bg-yellow-500' },
+    { title: 'Completed', status: 'COMPLETED', color: 'bg-green-500' },
   ];
 
   const handleCreate = (e: React.FormEvent) => {
@@ -60,8 +60,8 @@ export function KanbanBoard() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-400">Showing {visibleTasks.length} tasks relevant to your role</p>
-        <Button size="sm" className="gap-2" onClick={() => setShowCreateModal(true)}>
+        <p className="text-sm text-slate-500">Showing {visibleTasks.length} tasks relevant to your role</p>
+        <Button size="sm" className="gap-2 shadow-md" onClick={() => setShowCreateModal(true)}>
           <Plus size={16} />
           <span>Add Task</span>
         </Button>
@@ -74,31 +74,31 @@ export function KanbanBoard() {
               const project = projects.find(p => p.id === task.projectId);
               const user = users[task.assignedTo];
               return (
-                <Card key={task.id} className="p-4 hover:shadow-md cursor-pointer group border-slate-700/50">
+                <Card key={task.id} className="p-4 hover:shadow-lg cursor-pointer group border-blue-100 bg-white/80">
                   <div className="flex justify-between items-start mb-2">
                     <Badge variant={task.type === 'ON_PAGE' ? 'blue' : 'orange'} className="px-1.5 py-0 text-[9px]">
                       {task.type.replace('_', ' ')}
                     </Badge>
-                    <button className="text-slate-600 opacity-0 group-hover:opacity-100 p-1">
+                    <button className="text-slate-300 opacity-0 group-hover:opacity-100 p-1">
                       <Grip size={14} />
                     </button>
                   </div>
-                  <h4 className="font-bold text-slate-100 text-sm mb-1 leading-snug group-hover:text-blue-400 transition-colors">{task.title}</h4>
-                  <p className="text-[10px] text-slate-500 font-medium mb-3">{project?.name}</p>
+                  <h4 className="font-bold text-slate-700 text-sm mb-1 leading-snug group-hover:text-blue-600 transition-colors">{task.title}</h4>
+                  <p className="text-[10px] text-slate-400 font-medium mb-3">{project?.name}</p>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <img src={user?.avatar} className="w-5 h-5 rounded-full ring-2 ring-slate-800 border border-slate-700/50" referrerPolicy="no-referrer" />
-                      <span className="text-[10px] font-bold text-slate-400">{user?.name}</span>
+                      <img src={user?.avatar} className="w-5 h-5 rounded-full ring-2 ring-blue-100 border border-white" referrerPolicy="no-referrer" />
+                      <span className="text-[10px] font-bold text-slate-500">{user?.name}</span>
                     </div>
                     <div className="flex gap-1">
                       {task.status === 'TODO' && (
-                        <button onClick={() => updateTaskStatus(task.id, 'IN_PROGRESS')} className="text-[9px] bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full font-bold hover:bg-blue-100">Start</button>
+                        <button onClick={() => updateTaskStatus(task.id, 'IN_PROGRESS')} className="text-[9px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-bold hover:bg-blue-100">Start</button>
                       )}
                       {task.status === 'IN_PROGRESS' && currentUser.id === task.assignedTo && (
-                        <button onClick={() => updateTaskStatus(task.id, 'SUBMITTED')} className="text-[9px] bg-yellow-500/10 text-yellow-600 px-2 py-0.5 rounded-full font-bold hover:bg-yellow-100">Submit</button>
+                        <button onClick={() => updateTaskStatus(task.id, 'SUBMITTED')} className="text-[9px] bg-yellow-50 text-yellow-600 px-2 py-0.5 rounded-full font-bold hover:bg-yellow-100">Submit</button>
                       )}
                       {task.status === 'SUBMITTED' && currentUser.id === task.assignedBy && (
-                        <button onClick={() => updateTaskStatus(task.id, 'COMPLETED')} className="text-[9px] bg-green-500/10 text-green-400 px-2 py-0.5 rounded-full font-bold hover:bg-green-100">Approve</button>
+                        <button onClick={() => updateTaskStatus(task.id, 'COMPLETED')} className="text-[9px] bg-green-50 text-green-600 px-2 py-0.5 rounded-full font-bold hover:bg-green-100">Approve</button>
                       )}
                     </div>
                   </div>

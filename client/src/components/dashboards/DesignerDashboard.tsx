@@ -2,25 +2,29 @@ import React, { useState, useRef } from 'react';
 import {
   MapPin, Star, Globe, Shield, ExternalLink,
   Clock, ChevronDown, ChevronUp, FileText, Send, Upload, X, Paperclip,
-  Download, Edit3, Folder, AlertCircle, MessageCircle, Palette
+  Download, Edit3, Folder, AlertCircle, MessageCircle, Palette, ArrowLeft,
+  Loader2
 } from 'lucide-react';
 import { Card, Button, Badge } from '../ui/Common';
 import { useApp } from '../../AppContext';
 import { useChatNotify } from '../../ChatNotifyContext';
-import { STAGE_LABELS, STAGE_COLORS } from '../../types';
+import { STAGE_LABELS, STAGE_COLORS, ALL_STAGES } from '../../types';
 import { ChatBox } from '../chat/ChatBox';
 
 export function DesignerDashboard() {
-  const { currentUser, projects, users, assignments, workSubmissions, updateAssignmentStatus, submitWork, updateWork, deleteWorkFile } = useApp();
+  const { currentUser, projects, users, assignments, workSubmissions, updateAssignmentStatus, submitWork, updateWork, deleteWorkFile, tasks } = useApp();
   const { unreadCounts } = useChatNotify();
   const [expandedProject, setExpandedProject] = useState<string | null>(null);
   const [showSubmitModal, setShowSubmitModal] = useState<string | null>(null);
   const [showEditModal, setShowEditModal] = useState<string | null>(null);
+  const [showProjectDetail, setShowProjectDetail] = useState<string | null>(null);
   const [submitText, setSubmitText] = useState('');
   const [submitDate, setSubmitDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
   const [editText, setEditText] = useState('');
   const [editFiles, setEditFiles] = useState<FileList | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [updating, setUpdating] = useState(false);
   const [showAlreadySentPopup, setShowAlreadySentPopup] = useState('');
   const [expandedWorkDates, setExpandedWorkDates] = useState<Record<string, boolean>>({});
   const toggleWorkDate = (key: string) => setExpandedWorkDates(prev => ({ ...prev, [key]: !prev[key] }));
@@ -48,6 +52,7 @@ export function DesignerDashboard() {
     if (selectedFiles) {
       for (let i = 0; i < selectedFiles.length; i++) formData.append('files', selectedFiles[i]);
     }
+    setSubmitting(true);
     try {
       await submitWork(formData);
       setShowSubmitModal(null);
@@ -56,6 +61,8 @@ export function DesignerDashboard() {
       setSelectedFiles(null);
     } catch (err: any) {
       alert('Upload failed: ' + (err.message || 'Unknown error'));
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -66,10 +73,15 @@ export function DesignerDashboard() {
     if (editFiles) {
       for (let i = 0; i < editFiles.length; i++) formData.append('files', editFiles[i]);
     }
-    await updateWork(showEditModal, formData);
-    setShowEditModal(null);
-    setEditText('');
-    setEditFiles(null);
+    setUpdating(true);
+    try {
+      await updateWork(showEditModal, formData);
+      setShowEditModal(null);
+      setEditText('');
+      setEditFiles(null);
+    } finally {
+      setUpdating(false);
+    }
   };
 
   const openEditModal = (work: any) => {
@@ -82,6 +94,107 @@ export function DesignerDashboard() {
     if (status === 'APPROVED') return 'green';
     if (status === 'CHANGES_REQUESTED') return 'red';
     return 'yellow';
+  };
+
+  const renderProjectDetail = (project: any) => {
+    const projectTasks = tasks.filter((t: any) => t.projectId === project.id);
+    const currentStageIndex = ALL_STAGES.indexOf(project.stage);
+
+    return (
+      <div className="border-t border-slate-200 bg-white">
+        <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-white">
+          <button onClick={() => setShowProjectDetail(null)} className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium">
+            <ArrowLeft size={18} /> Back to Tasks
+          </button>
+        </div>
+        
+        <div className="p-6 space-y-6">
+          <div className="flex items-center gap-4">
+            <h2 className="text-2xl font-bold text-slate-900">{project.name}</h2>
+            <Badge variant={STAGE_COLORS[project.stage]}>{STAGE_LABELS[project.stage]}</Badge>
+            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${project.verificationStatus === 'VERIFIED' ? 'bg-green-50 text-green-600 border-green-200' : 'bg-red-50 text-red-500 border-red-200'}`}>
+              <Shield size={11} /> {project.verificationStatus === 'VERIFIED' ? 'Verified' : 'Unverified'}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div className="lg:col-span-3 space-y-4">
+              <Card className="p-5">
+                <h3 className="font-bold text-lg mb-3 text-slate-800">Project Details</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div><span className="text-slate-500">Category:</span> <span className="text-slate-600">{project.businessCategory || 'N/A'}</span></div>
+                  <div><span className="text-slate-500">Email:</span> <span className="text-blue-600">{project.businessEmail}</span></div>
+                  <div><span className="text-slate-500">Phone:</span> <span className="text-slate-600">{project.businessPhone}</span></div>
+                  <div><span className="text-slate-500">Location:</span> <span className="text-slate-600">{project.businessCity}{project.businessState ? `, ${project.businessState}` : ''}</span></div>
+                  <div><span className="text-slate-500">Website:</span> <span className="text-blue-600">{project.businessWebsite || 'N/A'}</span></div>
+                  <div><span className="text-slate-500">Created:</span> <span className="text-slate-600">{new Date(project.createdAt).toLocaleDateString()}</span></div>
+                </div>
+                {project.specialInstructions && (
+                  <div className="mt-4 pt-4 border-t border-slate-200">
+                    <h4 className="text-sm font-bold text-slate-400 mb-2">Special Instructions</h4>
+                    <p className="text-sm text-slate-600">{project.specialInstructions}</p>
+                  </div>
+                )}
+              </Card>
+
+              <Card className="p-5">
+                <h3 className="font-bold text-lg mb-3 text-slate-800">Project Progress</h3>
+                <div className="flex items-center justify-between relative">
+                  <div className="absolute top-4 left-0 w-full h-0.5 bg-slate-200 z-0" />
+                  {ALL_STAGES.map((stage, i) => {
+                    const isCompleted = i < currentStageIndex;
+                    const isCurrent = i === currentStageIndex;
+                    return (
+                      <div key={stage} className="relative z-10 flex flex-col items-center gap-2 bg-white px-2">
+                        <div className={`w-8 h-8 rounded-full border-3 flex items-center justify-center transition-all ${
+                          isCompleted ? 'bg-blue-600 border-blue-500 text-white' :
+                          isCurrent ? 'bg-slate-200 border-blue-500 text-blue-600' :
+                          'bg-slate-100 border-slate-300 text-slate-400'
+                        }`}>
+                          {isCompleted ? <FileText size={14} /> : <span className="text-xs font-bold">{i + 1}</span>}
+                        </div>
+                        <span className={`text-[9px] font-bold uppercase text-center max-w-[60px] ${
+                          isCurrent ? 'text-blue-600' : isCompleted ? 'text-slate-600' : 'text-slate-500'
+                        }`}>{STAGE_LABELS[stage].split(' ')[0]}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </Card>
+            </div>
+
+            <div className="space-y-4">
+              <Card className="p-5">
+                <h3 className="font-bold text-lg mb-3 text-slate-800">Task Summary</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between text-sm"><span className="text-slate-500">Total Tasks</span><span className="font-bold text-slate-600">{projectTasks.length}</span></div>
+                  <div className="flex justify-between text-sm"><span className="text-slate-500">Completed</span><span className="font-bold text-green-600">{projectTasks.filter((t: any) => t.status === 'COMPLETED').length}</span></div>
+                  <div className="flex justify-between text-sm"><span className="text-slate-500">In Progress</span><span className="font-bold text-blue-600">{projectTasks.filter((t: any) => t.status === 'IN_PROGRESS').length}</span></div>
+                </div>
+              </Card>
+
+              <Card className="p-5">
+                <h3 className="font-bold text-lg mb-3 text-slate-800">Team</h3>
+                <div className="space-y-2">
+                  {project.assignedTo.map((id: string) => {
+                    const user = users[id];
+                    return user ? (
+                      <div key={id} className="flex items-center gap-2">
+                        <img src={user.avatar} className="w-8 h-8 rounded-full" referrerPolicy="no-referrer" />
+                        <div>
+                          <p className="text-sm font-medium text-slate-600">{user.name}</p>
+                          <p className="text-[10px] text-slate-500">{user.role.replace('_', ' ')}</p>
+                        </div>
+                      </div>
+                    ) : null;
+                  })}
+                </div>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -112,11 +225,11 @@ export function DesignerDashboard() {
 
           return (
             <Card key={project.id} className="overflow-hidden">
-              <div className="p-4 sm:p-6 cursor-pointer hover:bg-slate-900/30 transition-colors" onClick={() => setExpandedProject(isExpanded ? null : project.id)}>
+              <div className="p-4 sm:p-6 cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => setExpandedProject(isExpanded ? null : project.id)}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="relative shrink-0">
-                      <div className="w-14 h-14 bg-pink-500/10 rounded-2xl flex items-center justify-center text-pink-500 relative">
+                      <div className="w-14 h-14 bg-blue-500 text-white relative">
                         <Folder size={28} />
                         {notifyCount > 0 && !isExpanded && (
                           <span className="absolute -top-1 -right-1 min-w-[20px] h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 animate-pulse">{notifyCount}</span>
@@ -130,7 +243,7 @@ export function DesignerDashboard() {
                     </div>
                     <div>
                       <div className="flex items-center gap-3">
-                        <h3 className="font-bold text-lg text-slate-100">{project.name}</h3>
+                        <h3 className="font-bold text-lg text-slate-900">{project.name}</h3>
                         <Badge variant={STAGE_COLORS[project.stage]}>{STAGE_LABELS[project.stage]}</Badge>
                       </div>
                       <p className="text-sm text-slate-500 mt-0.5">{project.businessCategory || 'N/A'}</p>
@@ -141,27 +254,39 @@ export function DesignerDashboard() {
                       </div>
                     </div>
                   </div>
-                  {isExpanded ? <ChevronUp size={20} className="text-slate-500" /> : <ChevronDown size={20} className="text-slate-500" />}
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="gap-1"
+                      onClick={(e) => { e.stopPropagation(); setShowProjectDetail(project.id); }}
+                    >
+                      <FileText size={14} /> Details
+                    </Button>
+                    {isExpanded ? <ChevronUp size={20} className="text-slate-500" /> : <ChevronDown size={20} className="text-slate-500" />}
+                  </div>
                 </div>
               </div>
 
-              {isExpanded && (
-                <div className="border-t border-slate-700/50">
-                <div className="grid grid-cols-1 lg:grid-cols-3">
-                  <div className="lg:col-span-2">
+              {showProjectDetail === project.id && renderProjectDetail(project)}
+
+              {isExpanded && showProjectDetail !== project.id && (
+                <div className="border-t border-slate-200">
+                <div className="flex flex-col lg:flex-row max-h-[70vh]">
+                  <div className="flex-1 overflow-y-auto">
 
                   {redoAssignments.length > 0 && (
-                    <div className="px-5 py-4 bg-red-500/10 border-b border-red-500/20">
+                    <div className="px-5 py-4 bg-red-50 border-b border-red-200">
                       <div className="flex items-center gap-2 mb-3">
-                        <div className="w-6 h-6 bg-red-500/20 rounded flex items-center justify-center">
-                          <AlertCircle size={12} className="text-red-400" />
+                        <div className="bg-red-100 flex items-center justify-center">
+                          <AlertCircle size={12} className="text-red-500" />
                         </div>
-                        <h4 className="text-xs font-bold text-red-400 uppercase tracking-wider">Redo Requested by {offPageName}</h4>
+                        <h4 className="text-xs font-bold text-red-500 uppercase tracking-wider">Redo Requested by {offPageName}</h4>
                       </div>
                       <div className="space-y-2">
                         {redoAssignments.map(a => (
-                          <div key={a.id} className="p-3 bg-slate-800/50 border border-red-500/20 rounded-lg">
-                            <p className="text-sm text-red-400 font-medium">{a.text}</p>
+                          <div key={a.id} className="p-3 bg-white border border-red-200 rounded-lg">
+                            <p className="text-sm text-red-500 font-medium">{a.text}</p>
                             <p className="text-[10px] text-slate-500 mt-1">{new Date(a.createdAt).toLocaleString()}</p>
                             <Button size="sm" variant="primary" className="gap-1 mt-2" onClick={() => {
                               const existingPending = workSubmissions.find((w: any) => w.assignmentId === a.id && w.status === 'PENDING_REVIEW');
@@ -182,10 +307,10 @@ export function DesignerDashboard() {
                   )}
 
                   {projectAssignments.filter(a => !a.text || !a.text.includes('rejected')).map(assignment => (
-                    <div key={assignment.id} className="border-b border-slate-700/50">
+                    <div key={assignment.id} className="border-b border-slate-200">
                       <div className="px-4 sm:px-5 py-3">
                         <div className="flex items-center justify-between mb-2">
-                          <p className="text-xs font-bold text-slate-500 flex items-center gap-1"><Palette size={12} /> Design Task from {offPageName}</p>
+                          <p className="text-xs font-bold text-slate-600 flex items-center gap-1"><Palette size={12} /> Design Task from {offPageName}</p>
                           <div className="flex gap-2">
                             {assignment.status === 'PENDING' && (
                               <Button size="sm" onClick={() => updateAssignmentStatus(assignment.id, 'IN_PROGRESS')}>Start Work</Button>
@@ -204,18 +329,18 @@ export function DesignerDashboard() {
                             </Button>
                           </div>
                         </div>
-                        {assignment.text && <p className="text-sm text-slate-300 mb-2">{assignment.text}</p>}
+                        {assignment.text && <p className="text-sm text-slate-600 mb-2">{assignment.text}</p>}
                         {assignment.images.length > 0 && (
                           <div className="flex gap-2 mb-2">
                             {assignment.images.map((img: any, i: number) => (
-                              <a key={i} href={`/uploads/${img.filename}`} target="_blank"><img src={`/uploads/${img.filename}`} className="w-16 h-16 rounded-lg object-cover border border-slate-700/50 hover:shadow-md" /></a>
+                              <a key={i} href={`/uploads/${img.filename}`} target="_blank"><img src={`/uploads/${img.filename}`} className="w-16 h-16 rounded-lg object-cover border border-slate-200 hover:shadow-md" /></a>
                             ))}
                           </div>
                         )}
                         {assignment.documents.length > 0 && (
                           <div className="flex flex-wrap gap-2">
                             {assignment.documents.map((doc: any, i: number) => (
-                              <a key={i} href={`/uploads/${doc.filename}`} target="_blank" download className="flex items-center gap-1 px-2 py-1 bg-blue-500/10 border border-blue-500/20 rounded text-xs text-blue-400 hover:bg-blue-500/20"><Download size={12} /> {doc.originalName}</a>
+                              <a key={i} href={`/uploads/${doc.filename}`} target="_blank" download className="flex items-center gap-1 px-2 py-1 bg-blue-50 border border-blue-200 rounded text-xs text-blue-600 hover:bg-blue-100"><Download size={12} /> {doc.originalName}</a>
                             ))}
                           </div>
                         )}
@@ -232,16 +357,16 @@ export function DesignerDashboard() {
                         return Object.keys(grouped).sort((a, b) => b.localeCompare(a)).map(date => {
                           const dateKey = `work-${assignment.id}-${date}`;
                           return (
-                            <div key={date} className="mx-4 mb-2 bg-slate-800/30 border border-slate-700/30 rounded-lg overflow-hidden">
-                              <div className="px-3 py-2 bg-slate-800/60 flex items-center gap-2 cursor-pointer hover:bg-slate-700/40 transition-colors" onClick={() => toggleWorkDate(dateKey)}>
-                                {expandedWorkDates[dateKey] ? <ChevronUp size={14} className="text-pink-400" /> : <ChevronDown size={14} className="text-pink-400" />}
-                                <span className="text-xs font-semibold text-slate-200">{new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</span>
-                                <span className="text-[10px] text-slate-500 bg-slate-700/50 px-1.5 py-0.5 rounded">{grouped[date].length} item{grouped[date].length !== 1 ? 's' : ''}</span>
+                            <div key={date} className="mx-4 mb-2 bg-slate-50 border border-slate-200 rounded-lg overflow-hidden">
+                              <div className="px-3 py-2 bg-slate-100 flex items-center gap-2 cursor-pointer hover:bg-slate-200 transition-colors" onClick={() => toggleWorkDate(dateKey)}>
+                                {expandedWorkDates[dateKey] ? <ChevronUp size={14} className="text-pink-600" /> : <ChevronDown size={14} className="text-pink-600" />}
+                                <span className="text-xs font-semibold text-slate-800">{new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                                <span className="text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">{grouped[date].length} item{grouped[date].length !== 1 ? 's' : ''}</span>
                               </div>
                               {expandedWorkDates[dateKey] && (
                                 <div className="p-2 space-y-2">
                                   {grouped[date].map((work: any) => (
-                                    <div key={work.id} className="p-3 bg-pink-500/5 border border-pink-500/20 rounded-xl">
+                                    <div key={work.id} className="p-3 bg-pink-50 border border-pink-200 rounded-xl">
                                       <div className="flex items-center justify-between mb-2">
                                         <div className="flex items-center gap-3">
                                           <Badge variant={getStatusColor(work.status) as any} className="text-[10px]">
@@ -253,7 +378,7 @@ export function DesignerDashboard() {
                                           <Edit3 size={12} /> Edit
                                         </Button>
                                       </div>
-                                      {work.text && <p className="text-sm text-slate-300 mb-2">{work.text}</p>}
+                                      {work.text && <p className="text-sm text-slate-600 mb-2">{work.text}</p>}
                                       {work.files.length > 0 && (
                                         <div className="flex flex-wrap gap-2">
                                           {work.files.map((f: any, i: number) => {
@@ -262,9 +387,9 @@ export function DesignerDashboard() {
                                               <div key={i} className="relative group">
                                                 <a href={`/uploads/${f.filename}`} target="_blank" download>
                                                   {isImg ? (
-                                                    <img src={`/uploads/${f.filename}`} className="w-20 h-20 rounded-lg object-cover border border-slate-700/50 hover:shadow-md" />
+                                                    <img src={`/uploads/${f.filename}`} className="w-20 h-20 rounded-lg object-cover border border-slate-200 hover:shadow-md" />
                                                   ) : (
-                                                    <span className="flex items-center gap-1 px-2 py-1 bg-blue-500/10 border border-blue-500/20 rounded text-xs text-blue-400 hover:bg-blue-500/20"><Download size={10} /> {f.originalName}</span>
+                                                    <span className="flex items-center gap-1 px-2 py-1 bg-blue-50 border border-blue-200 rounded text-xs text-blue-600 hover:bg-blue-100"><Download size={10} /> {f.originalName}</span>
                                                   )}
                                                 </a>
                                                 <button onClick={() => deleteWorkFile(work.id, f.filename)} className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[8px]"><X size={8} /></button>
@@ -274,7 +399,7 @@ export function DesignerDashboard() {
                                         </div>
                                       )}
                                       {work.reviewComment && (
-                                        <div className={`p-2 rounded-lg text-xs mt-2 ${work.status === 'APPROVED' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+                                        <div className={`p-2 rounded-lg text-xs mt-2 ${work.status === 'APPROVED' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'}`}>
                                           <span className="font-bold">{offPageName}:</span> {work.reviewComment}
                                         </div>
                                       )}
@@ -289,8 +414,10 @@ export function DesignerDashboard() {
                     </div>
                   ))}
                   </div>
-                  <div className="lg:col-span-1 border-l border-slate-700/50 lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto">
-                    <ChatBox projectId={project.id} />
+                   <div className="w-full lg:w-[340px] shrink-0 border-t lg:border-t-0 lg:border-l border-slate-200">
+                     <div className="h-[50vh] lg:h-[70vh]">
+                      <ChatBox projectId={project.id} />
+                    </div>
                   </div>
                 </div>
                 </div>
@@ -302,16 +429,16 @@ export function DesignerDashboard() {
 
       {showAlreadySentPopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => setShowAlreadySentPopup('')} />
-          <div className="relative bg-slate-800/50 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden z-10">
+          <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setShowAlreadySentPopup('')} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden z-10">
             <div className="px-6 py-5 text-center">
-              <div className="w-14 h-14 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <AlertCircle size={28} className="text-yellow-400" />
+              <div className="w-14 h-14 bg-yellow-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertCircle size={28} className="text-yellow-600" />
               </div>
-              <h3 className="text-lg font-bold text-slate-100 mb-2">Already Sent!</h3>
+              <h3 className="text-lg font-bold text-slate-900 mb-2">Already Sent!</h3>
               <p className="text-sm text-slate-400">{showAlreadySentPopup}</p>
             </div>
-            <div className="px-6 py-4 border-t border-slate-700/50 flex justify-center">
+            <div className="px-6 py-4 border-t border-slate-200 flex justify-center">
               <Button onClick={() => setShowAlreadySentPopup('')}>OK, Got it</Button>
             </div>
           </div>
@@ -320,37 +447,37 @@ export function DesignerDashboard() {
 
       {showSubmitModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => setShowSubmitModal(null)} />
-          <div className="relative bg-slate-800/50 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden z-10">
-            <div className="px-6 py-4 border-b border-slate-700/50 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-slate-100">Submit Design Work</h3>
-              <button onClick={() => setShowSubmitModal(null)} className="p-2 hover:bg-slate-700/50 rounded-lg text-slate-500"><X size={18} /></button>
+          <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setShowSubmitModal(null)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden z-10">
+            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-900">Submit Design Work</h3>
+              <button onClick={() => setShowSubmitModal(null)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"><X size={18} /></button>
             </div>
             <div className="px-6 py-5 space-y-4">
-              <div className="p-3 bg-pink-500/10 border border-pink-500/20 rounded-lg text-sm">
-                <p className="font-semibold text-pink-400">{projects.find(p => p.id === myAssignments.find(a => a.id === showSubmitModal)?.projectId)?.name}</p>
+              <div className="p-3 bg-pink-50 border border-pink-200 rounded-lg text-sm">
+                <p className="font-semibold text-pink-600">{projects.find(p => p.id === myAssignments.find(a => a.id === showSubmitModal)?.projectId)?.name}</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Work Date</label>
-                <input type="date" className="block w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500" value={submitDate} onChange={e => setSubmitDate(e.target.value)} />
+                <label className="block text-sm font-medium text-slate-700 mb-1">Work Date</label>
+                <input type="date" className="block w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500" value={submitDate} onChange={e => setSubmitDate(e.target.value)} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Notes / Description</label>
-                <textarea className="block w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[80px]" placeholder="Describe the design work..." value={submitText} onChange={e => setSubmitText(e.target.value)} />
+                <label className="block text-sm font-medium text-slate-700 mb-1">Notes / Description</label>
+                <textarea className="block w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[80px]" placeholder="Describe the design work..." value={submitText} onChange={e => setSubmitText(e.target.value)} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Upload Design Files</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Upload Design Files</label>
                 <div className="flex items-center gap-3">
                   <Button variant="outline" size="sm" className="gap-1" onClick={() => fileInputRef.current?.click()}><Paperclip size={14} /> Select Files</Button>
                   <span className="text-xs text-slate-500">{selectedFiles ? `${selectedFiles.length} selected` : 'No files'}</span>
                   <input ref={fileInputRef} type="file" multiple className="hidden" onChange={e => setSelectedFiles(e.target.files)} />
                 </div>
-                {selectedFiles && <div className="flex flex-wrap gap-2 mt-2">{Array.from(selectedFiles).map((f: File, i: number) => (<span key={i} className="text-xs bg-slate-900/50 px-2 py-1 rounded">{f.name}</span>))}</div>}
+                {selectedFiles && <div className="flex flex-wrap gap-2 mt-2">{Array.from(selectedFiles).map((f: File, i: number) => (<span key={i} className="text-xs bg-slate-100 px-2 py-1 rounded">{f.name}</span>))}</div>}
               </div>
             </div>
-            <div className="px-6 py-4 border-t border-slate-700/50 flex justify-end gap-3">
+            <div className="px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
               <Button variant="outline" onClick={() => setShowSubmitModal(null)}>Cancel</Button>
-              <Button className="gap-1" onClick={handleSubmitWork}><Send size={14} /> Submit</Button>
+              <Button className="gap-1" onClick={handleSubmitWork} disabled={submitting}>{submitting ? <><Loader2 size={14} className="animate-spin" /> Submitting...</> : <><Send size={14} /> Submit</>}</Button>
             </div>
           </div>
         </div>
@@ -361,31 +488,31 @@ export function DesignerDashboard() {
         if (!work) return null;
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => setShowEditModal(null)} />
-            <div className="relative bg-slate-800/50 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden z-10 max-h-[90vh] overflow-y-auto">
-              <div className="px-6 py-4 border-b border-slate-700/50 flex items-center justify-between">
-                <h3 className="text-lg font-bold text-slate-100">Edit Submission</h3>
-                <button onClick={() => setShowEditModal(null)} className="p-2 hover:bg-slate-700/50 rounded-lg text-slate-500"><X size={18} /></button>
+            <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setShowEditModal(null)} />
+            <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden z-10 max-h-[90vh] overflow-y-auto">
+              <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                <h3 className="text-lg font-bold text-slate-900">Edit Submission</h3>
+                <button onClick={() => setShowEditModal(null)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"><X size={18} /></button>
               </div>
               <div className="px-6 py-5 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Notes</label>
-                  <textarea className="block w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[80px]" value={editText} onChange={e => setEditText(e.target.value)} />
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Notes</label>
+                  <textarea className="block w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[80px]" value={editText} onChange={e => setEditText(e.target.value)} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Current Files</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Current Files</label>
                   <div className="flex flex-wrap gap-2">
                     {work.files.map((f: any, i: number) => (
-                      <div key={i} className="flex items-center gap-2 px-3 py-2 bg-slate-900/50 border border-slate-700/50 rounded-lg">
-                        <a href={`/uploads/${f.filename}`} target="_blank" download className="text-xs text-blue-400 hover:underline flex items-center gap-1"><Download size={12} /> {f.originalName}</a>
-                        <button onClick={() => deleteWorkFile(work.id, f.filename)} className="text-red-400 hover:text-red-600"><X size={14} /></button>
+                      <div key={i} className="flex items-center gap-2 px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg">
+                        <a href={`/uploads/${f.filename}`} target="_blank" download className="text-xs text-blue-600 hover:underline flex items-center gap-1"><Download size={12} /> {f.originalName}</a>
+                        <button onClick={() => deleteWorkFile(work.id, f.filename)} className="text-red-500 hover:text-red-600"><X size={14} /></button>
                       </div>
                     ))}
                     {work.files.length === 0 && <p className="text-xs text-slate-500">No files</p>}
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Add More Files</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Add More Files</label>
                   <div className="flex items-center gap-3">
                     <Button variant="outline" size="sm" className="gap-1" onClick={() => editFileRef.current?.click()}><Paperclip size={14} /> Select Files</Button>
                     <span className="text-xs text-slate-500">{editFiles ? `${editFiles.length} selected` : 'No new files'}</span>
@@ -393,9 +520,9 @@ export function DesignerDashboard() {
                   </div>
                 </div>
               </div>
-              <div className="px-6 py-4 border-t border-slate-700/50 flex justify-end gap-3">
+              <div className="px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
                 <Button variant="outline" onClick={() => setShowEditModal(null)}>Cancel</Button>
-                <Button className="gap-1" onClick={handleUpdateWork}><Send size={14} /> Update</Button>
+                <Button className="gap-1" onClick={handleUpdateWork} disabled={updating}>{updating ? <><Loader2 size={14} className="animate-spin" /> Updating...</> : <><Send size={14} /> Update</>}</Button>
               </div>
             </div>
           </div>

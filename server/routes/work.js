@@ -113,6 +113,26 @@ router.put('/:id', upload.array('files', 10), async (req, res) => {
   }
 });
 
+router.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const work = await WorkSubmission.findByIdAndDelete(id);
+    if (!work) return res.status(404).json({ error: 'Not found' });
+
+    if (work.files && work.files.length > 0) {
+      const fs = await import('fs');
+      work.files.forEach(f => {
+        fs.default.unlink(path.join(uploadsDir, f.filename), () => {});
+      });
+    }
+
+    logger.info('Work deleted', { component: 'work', workId: id });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.delete('/:id/file/:filename', async (req, res) => {
   try {
     const { id, filename } = req.params;

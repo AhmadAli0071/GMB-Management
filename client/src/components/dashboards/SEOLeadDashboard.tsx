@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import {
   ArrowRight, MapPin, Star, Globe, Search, Building2, X, Shield, ExternalLink,
   Send, Clock, ChevronDown, ChevronUp, Paperclip, Image, FileText,
-  CheckCircle2, RotateCcw, Folder, Download, Plus, Trash2, FileUp, Bell, AlertCircle, MessageCircle, Loader2, Palette
+  CheckCircle2, RotateCcw, Folder, Download, Plus, Trash2, FileUp, Bell, AlertCircle, MessageCircle, Loader2, Palette, Calendar
 } from 'lucide-react';
 import { Card, Button, Badge } from '../ui/Common';
 import { useApp } from '../../AppContext';
@@ -43,6 +43,12 @@ export function SEOLeadDashboard() {
   const [updateReviewComment, setUpdateReviewComment] = useState('');
   const [showAlreadySentPopup, setShowAlreadySentPopup] = useState('');
   const [addingWork, setAddingWork] = useState(false);
+  const [sendingAssignment, setSendingAssignment] = useState(false);
+  const [reviewing, setReviewing] = useState(false);
+  const [editingOnPage, setEditingOnPage] = useState(false);
+  const [submittingReport, setSubmittingReport] = useState(false);
+  const [updateReviewing, setUpdateReviewing] = useState(false);
+  const [assigningDesigner, setAssigningDesigner] = useState(false);
   const [showAssignDesignerModal, setShowAssignDesignerModal] = useState(false);
   const [assignDesignerForm, setAssignDesignerForm] = useState({ projectId: '', text: '' });
   const [assignDesignerImages, setAssignDesignerImages] = useState<FileList | null>(null);
@@ -83,21 +89,26 @@ export function SEOLeadDashboard() {
   };
 
   const handleSendAssignment = async () => {
-    const formData = new FormData();
-    formData.append('projectId', assignForm.projectId);
-    formData.append('toId', assignForm.toId);
-    formData.append('text', assignForm.text);
-    if (selectedImages) {
-      for (let i = 0; i < selectedImages.length; i++) formData.append('images', selectedImages[i]);
+    setSendingAssignment(true);
+    try {
+      const formData = new FormData();
+      formData.append('projectId', assignForm.projectId);
+      formData.append('toId', assignForm.toId);
+      formData.append('text', assignForm.text);
+      if (selectedImages) {
+        for (let i = 0; i < selectedImages.length; i++) formData.append('images', selectedImages[i]);
+      }
+      if (selectedDocs) {
+        for (let i = 0; i < selectedDocs.length; i++) formData.append('documents', selectedDocs[i]);
+      }
+      await createAssignment(formData);
+      setShowAssignModal(false);
+      setAssignForm({ projectId: '', toId: '', text: '' });
+      setSelectedImages(null);
+      setSelectedDocs(null);
+    } finally {
+      setSendingAssignment(false);
     }
-    if (selectedDocs) {
-      for (let i = 0; i < selectedDocs.length; i++) formData.append('documents', selectedDocs[i]);
-    }
-    await createAssignment(formData);
-    setShowAssignModal(false);
-    setAssignForm({ projectId: '', toId: '', text: '' });
-    setSelectedImages(null);
-    setSelectedDocs(null);
   };
 
   const openAssignModal = (projectId: string) => {
@@ -115,29 +126,39 @@ export function SEOLeadDashboard() {
   };
 
   const handleAssignDesigner = async () => {
-    const formData = new FormData();
-    formData.append('projectId', assignDesignerForm.projectId);
-    formData.append('toId', designerId);
-    formData.append('text', assignDesignerForm.text);
-    if (assignDesignerImages) {
-      for (let i = 0; i < assignDesignerImages.length; i++) formData.append('images', assignDesignerImages[i]);
+    setAssigningDesigner(true);
+    try {
+      const formData = new FormData();
+      formData.append('projectId', assignDesignerForm.projectId);
+      formData.append('toId', designerId);
+      formData.append('text', assignDesignerForm.text);
+      if (assignDesignerImages) {
+        for (let i = 0; i < assignDesignerImages.length; i++) formData.append('images', assignDesignerImages[i]);
+      }
+      if (assignDesignerDocs) {
+        for (let i = 0; i < assignDesignerDocs.length; i++) formData.append('documents', assignDesignerDocs[i]);
+      }
+      await createAssignment(formData);
+      setShowAssignDesignerModal(false);
+      setAssignDesignerForm({ projectId: '', text: '' });
+      setAssignDesignerImages(null);
+      setAssignDesignerDocs(null);
+    } finally {
+      setAssigningDesigner(false);
     }
-    if (assignDesignerDocs) {
-      for (let i = 0; i < assignDesignerDocs.length; i++) formData.append('documents', assignDesignerDocs[i]);
-    }
-    await createAssignment(formData);
-    setShowAssignDesignerModal(false);
-    setAssignDesignerForm({ projectId: '', text: '' });
-    setAssignDesignerImages(null);
-    setAssignDesignerDocs(null);
   };
 
   const handleReview = async () => {
     if (!showReviewModal) return;
-    await reviewWork(showReviewModal, reviewStatus, reviewCommentText);
-    setShowReviewModal(null);
-    setReviewCommentText('');
-    setReviewStatus('');
+    setReviewing(true);
+    try {
+      await reviewWork(showReviewModal, reviewStatus, reviewCommentText);
+      setShowReviewModal(null);
+      setReviewCommentText('');
+      setReviewStatus('');
+    } finally {
+      setReviewing(false);
+    }
   };
 
   const handleAddOnPage = async () => {
@@ -171,15 +192,20 @@ export function SEOLeadDashboard() {
 
   const handleEditOnPage = async () => {
     if (!showEditOnPageModal) return;
-    const formData = new FormData();
-    formData.append('text', editOnPageForm.text);
-    if (editOnPageFiles) {
-      for (let i = 0; i < editOnPageFiles.length; i++) formData.append('files', editOnPageFiles[i]);
+    setEditingOnPage(true);
+    try {
+      const formData = new FormData();
+      formData.append('text', editOnPageForm.text);
+      if (editOnPageFiles) {
+        for (let i = 0; i < editOnPageFiles.length; i++) formData.append('files', editOnPageFiles[i]);
+      }
+      await updateLeadWork(showEditOnPageModal, formData);
+      setShowEditOnPageModal(null);
+      setEditOnPageForm({ id: '', text: '' });
+      setEditOnPageFiles(null);
+    } finally {
+      setEditingOnPage(false);
     }
-    await updateLeadWork(showEditOnPageModal, formData);
-    setShowEditOnPageModal(null);
-    setEditOnPageForm({ id: '', text: '' });
-    setEditOnPageFiles(null);
   };
 
   const openEditOnPageModal = (item: any) => {
@@ -189,31 +215,36 @@ export function SEOLeadDashboard() {
   };
 
   const handleSubmitReport = async () => {
-    const projectLeadWork = myLeadWork.filter((w: any) => w.projectId === reportForm.projectId);
-    const approvedWork = myWorkReviews.filter(
-      (w: any) => w.projectId === reportForm.projectId && w.status === 'APPROVED'
-    );
+    setSubmittingReport(true);
+    try {
+      const projectLeadWork = myLeadWork.filter((w: any) => w.projectId === reportForm.projectId);
+      const approvedWork = myWorkReviews.filter(
+        (w: any) => w.projectId === reportForm.projectId && w.status === 'APPROVED'
+      );
 
-    const formData = new FormData();
-    formData.append('projectId', reportForm.projectId);
-    formData.append('toId', reportForm.toId);
-    formData.append('reportType', 'STRUCTURED');
-    formData.append('onPageText', projectLeadWork.map((w: any) => w.text).filter(Boolean).join('\n\n'));
-    formData.append('offPageWorkIds', JSON.stringify(approvedWork.map((w: any) => w.id)));
+      const formData = new FormData();
+      formData.append('projectId', reportForm.projectId);
+      formData.append('toId', reportForm.toId);
+      formData.append('reportType', 'STRUCTURED');
+      formData.append('onPageText', projectLeadWork.map((w: any) => w.text).filter(Boolean).join('\n\n'));
+      formData.append('offPageWorkIds', JSON.stringify(approvedWork.map((w: any) => w.id)));
 
-    const onPageFiles: { filename: string; originalName: string }[] = [];
-    for (const item of projectLeadWork) {
-      for (const f of item.files) {
-        onPageFiles.push({ filename: f.filename, originalName: f.originalName });
+      const onPageFiles: { filename: string; originalName: string }[] = [];
+      for (const item of projectLeadWork) {
+        for (const f of item.files) {
+          onPageFiles.push({ filename: f.filename, originalName: f.originalName });
+        }
       }
-    }
-    formData.append('onPageFilesJson', JSON.stringify(onPageFiles));
-    formData.append('workDate', reportDate);
+      formData.append('onPageFilesJson', JSON.stringify(onPageFiles));
+      formData.append('workDate', reportDate);
 
-    await submitProjectUpdate(formData);
-    setShowSubmitReportModal(false);
-    setReportForm({ projectId: '', toId: '' });
-    setReportDate(new Date().toISOString().split('T')[0]);
+      await submitProjectUpdate(formData);
+      setShowSubmitReportModal(false);
+      setReportForm({ projectId: '', toId: '' });
+      setReportDate(new Date().toISOString().split('T')[0]);
+    } finally {
+      setSubmittingReport(false);
+    }
   };
 
   const openSubmitReportModal = (projectId: string, toId: string) => {
@@ -229,10 +260,15 @@ export function SEOLeadDashboard() {
 
   const handleUpdateReview = async () => {
     if (!showUpdateReviewModal) return;
-    await reviewProjectUpdate(showUpdateReviewModal, updateReviewStatus, updateReviewComment);
-    setShowUpdateReviewModal(null);
-    setUpdateReviewComment('');
-    setUpdateReviewStatus('');
+    setUpdateReviewing(true);
+    try {
+      await reviewProjectUpdate(showUpdateReviewModal, updateReviewStatus, updateReviewComment);
+      setShowUpdateReviewModal(null);
+      setUpdateReviewComment('');
+      setUpdateReviewStatus('');
+    } finally {
+      setUpdateReviewing(false);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -275,11 +311,11 @@ export function SEOLeadDashboard() {
 
           return (
             <Card key={project.id} className="overflow-hidden">
-              <div className="p-4 sm:p-5 cursor-pointer hover:bg-slate-700/50 transition-colors" onClick={() => setExpandedProject(isExpanded ? null : project.id)}>
+              <div className="p-4 sm:p-5 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => setExpandedProject(isExpanded ? null : project.id)}>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-4">
                     <div className="relative shrink-0">
-                      <div className="w-14 h-14 bg-blue-500/10 rounded-2xl flex items-center justify-center text-blue-400 relative">
+                      <div className="w-14 h-14 bg-blue-500/10 rounded-2xl flex items-center justify-center text-blue-600 relative">
                         <Folder size={28} />
                         {(pendingCount > 0 || rejectedCount > 0) && !isExpanded && (
                           <span className="absolute -top-1 -right-1 min-w-[20px] h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 animate-pulse">{pendingCount + rejectedCount}</span>
@@ -293,7 +329,7 @@ export function SEOLeadDashboard() {
                     </div>
                     <div>
                       <div className="flex flex-wrap items-center gap-3">
-                        <h3 className="font-bold text-lg text-slate-100">{project.name}</h3>
+                        <h3 className="font-bold text-lg text-slate-900">{project.name}</h3>
                         <Badge variant={STAGE_COLORS[project.stage]}>{STAGE_LABELS[project.stage]}</Badge>
                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${project.verificationStatus === 'VERIFIED' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
                           <Shield size={10} /> {project.verificationStatus === 'VERIFIED' ? 'Verified' : 'Unverified'}
@@ -319,17 +355,17 @@ export function SEOLeadDashboard() {
               </div>
 
               {isExpanded && (
-                <div className="border-t border-slate-700/50">
-                <div className="grid grid-cols-1 lg:grid-cols-3">
-                  <div className="lg:col-span-2">
-                  <div className="flex gap-1 px-4 sm:px-5 pt-3 border-b border-slate-700/50">
-                    <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab === 'details' ? 'bg-slate-800/50 text-blue-400 border-b-2 border-blue-400' : 'text-slate-500 hover:text-slate-300'}`} onClick={() => setActiveTab('details')}>Details</button>
-                    <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab === 'onpage' ? 'bg-slate-800/50 text-purple-400 border-b-2 border-purple-400' : 'text-slate-500 hover:text-slate-300'}`} onClick={() => setActiveTab('onpage')}>On-Page</button>
-                    <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab === 'offpage' ? 'bg-slate-800/50 text-orange-400 border-b-2 border-orange-400' : 'text-slate-500 hover:text-slate-300'}`} onClick={() => setActiveTab('offpage')}>Off-Page</button>
-                    <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab === 'report' ? 'bg-slate-800/50 text-green-400 border-b-2 border-green-400' : 'text-slate-500 hover:text-slate-300'}`} onClick={() => setActiveTab('report')}>Submit Report</button>
+                <div className="border-t border-slate-200">
+                <div className="flex flex-col lg:flex-row">
+                  <div className="flex-1 min-w-0">
+                  <div className="flex gap-1 px-4 sm:px-5 pt-3 border-b border-slate-200">
+                    <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab === 'details' ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveTab('details')}>Details</button>
+                    <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab === 'onpage' ? 'bg-purple-50 text-purple-600 border-b-2 border-purple-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveTab('onpage')}>On-Page</button>
+                    <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab === 'offpage' ? 'bg-orange-50 text-orange-600 border-b-2 border-orange-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveTab('offpage')}>Off-Page</button>
+                    <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab === 'report' ? 'bg-green-50 text-green-600 border-b-2 border-green-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveTab('report')}>Submit Report</button>
                   </div>
                   {activeTab === 'details' && (<>
-                  <div className="p-4 sm:px-5 sm:py-4 border-b border-slate-700/50">
+                  <div className="p-4 sm:px-5 sm:py-4 border-b border-slate-200">
                     <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
                       <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
                         <div className="w-1 h-4 bg-blue-500 rounded-full" />
@@ -347,40 +383,40 @@ export function SEOLeadDashboard() {
                          </Button>
                        </div>
                     </div>
-                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                        <div className="p-2.5 bg-white/[0.04] rounded-lg border border-blue-200/10"><span className="text-[10px] text-blue-300/60 uppercase tracking-wider font-medium">Category</span><p className="text-sm font-medium text-blue-50 mt-0.5 truncate">{project.businessCategory || 'N/A'}</p></div>
-                        <div className="p-2.5 bg-white/[0.04] rounded-lg border border-blue-200/10"><span className="text-[10px] text-blue-300/60 uppercase tracking-wider font-medium">Phone</span><p className="text-sm font-medium text-blue-50 mt-0.5 truncate">{project.businessPhone || 'N/A'}</p></div>
-                        <div className="p-2.5 bg-white/[0.04] rounded-lg border border-blue-200/10"><span className="text-[10px] text-blue-300/60 uppercase tracking-wider font-medium">Email</span><p className="text-sm font-medium text-blue-50 mt-0.5 truncate">{project.businessEmail || 'N/A'}</p></div>
-                        <div className="p-2.5 bg-white/[0.04] rounded-lg border border-blue-200/10"><span className="text-[10px] text-blue-300/60 uppercase tracking-wider font-medium">Website</span><p className="text-sm font-medium text-blue-50 mt-0.5 truncate">{project.businessWebsite || 'N/A'}</p></div>
-                        <div className="p-2.5 bg-white/[0.04] rounded-lg border border-blue-200/10"><span className="text-[10px] text-blue-300/60 uppercase tracking-wider font-medium">Address</span><p className="text-sm font-medium text-blue-50 mt-0.5 truncate">{project.businessAddress}{project.businessCity ? `, ${project.businessCity}` : ''} {project.businessState} {project.businessZip}</p></div>
-                        <div className="p-2.5 bg-white/[0.04] rounded-lg border border-blue-200/10"><span className="text-[10px] text-blue-300/60 uppercase tracking-wider font-medium">Service Areas</span><p className="text-sm font-medium text-blue-50 mt-0.5 truncate">{project.serviceAreas || 'N/A'}</p></div>
-                        <div className="p-2.5 bg-white/[0.04] rounded-lg border border-blue-200/10"><span className="text-[10px] text-blue-300/60 uppercase tracking-wider font-medium">Services</span><p className="text-sm font-medium text-blue-50 mt-0.5 truncate">{project.services || 'N/A'}</p></div>
-                        <div className="p-2.5 bg-white/[0.04] rounded-lg border border-blue-200/10"><span className="text-[10px] text-blue-300/60 uppercase tracking-wider font-medium">What We Offer</span><p className="text-sm font-medium text-blue-50 mt-0.5 truncate">{(project as any).offerServices || 'N/A'}</p></div>
-                        <div className="p-2.5 bg-white/[0.04] rounded-lg border border-blue-200/10"><span className="text-[10px] text-blue-300/60 uppercase tracking-wider font-medium">Business Hours</span><p className="text-sm font-medium text-blue-50 mt-0.5 truncate">{project.businessHours || 'N/A'}</p></div>
-                        <div className="p-2.5 bg-white/[0.04] rounded-lg border border-blue-200/10"><span className="text-[10px] text-blue-300/60 uppercase tracking-wider font-medium">Reviews</span><p className="text-sm font-medium text-blue-50 mt-0.5">{project.currentReviews} ({project.currentRating} rating)</p></div>
-                        <div className="p-2.5 bg-white/[0.04] rounded-lg border border-blue-200/10"><span className="text-[10px] text-blue-300/60 uppercase tracking-wider font-medium">Verification</span><p className="text-sm font-medium text-blue-50 mt-0.5">{project.verificationStatus}</p></div>
-                        <div className="p-2.5 bg-white/[0.04] rounded-lg border border-blue-200/10"><span className="text-[10px] text-blue-300/60 uppercase tracking-wider font-medium">Competitors</span><p className="text-sm font-medium text-blue-50 mt-0.5 truncate">{project.competitors || 'N/A'}</p></div>
-                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                        <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">Category</span><p className="text-sm font-medium text-slate-800 mt-0.5 truncate">{project.businessCategory || 'N/A'}</p></div>
+                        <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">Phone</span><p className="text-sm font-medium text-slate-800 mt-0.5 truncate">{project.businessPhone || 'N/A'}</p></div>
+                        <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">Email</span><p className="text-sm font-medium text-slate-800 mt-0.5 truncate">{project.businessEmail || 'N/A'}</p></div>
+                        <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">Website</span><p className="text-sm font-medium text-slate-800 mt-0.5 truncate">{project.businessWebsite || 'N/A'}</p></div>
+                        <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">Address</span><p className="text-sm font-medium text-slate-800 mt-0.5 truncate">{project.businessAddress}{project.businessCity ? `, ${project.businessCity}` : ''} {project.businessState} {project.businessZip}</p></div>
+                        <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">Service Areas</span><p className="text-sm font-medium text-slate-800 mt-0.5 truncate">{project.serviceAreas || 'N/A'}</p></div>
+                        <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">Services</span><p className="text-sm font-medium text-slate-800 mt-0.5 truncate">{project.services || 'N/A'}</p></div>
+                        <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">What We Offer</span><p className="text-sm font-medium text-slate-800 mt-0.5 truncate">{(project as any).offerServices || 'N/A'}</p></div>
+                        <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">Business Hours</span><p className="text-sm font-medium text-slate-800 mt-0.5 truncate">{project.businessHours || 'N/A'}</p></div>
+                        <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">Reviews</span><p className="text-sm font-medium text-slate-800 mt-0.5">{project.currentReviews} ({project.currentRating} rating)</p></div>
+                        <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">Verification</span><p className="text-sm font-medium text-slate-800 mt-0.5">{project.verificationStatus}</p></div>
+                        <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">Competitors</span><p className="text-sm font-medium text-slate-800 mt-0.5 truncate">{project.competitors || 'N/A'}</p></div>
+                       </div>
                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-3">
-                       {project.googleMapsLink && <a href={project.googleMapsLink} target="_blank" className="flex items-center gap-2 p-2.5 bg-blue-500/5 rounded-lg border border-blue-500/10 hover:bg-blue-500/10 transition-colors"><ExternalLink size={12} className="text-blue-400 shrink-0" /><div className="min-w-0"><span className="text-[10px] text-blue-400/60 uppercase tracking-wider">Google Maps</span><p className="text-xs text-blue-400 truncate">{project.googleMapsLink}</p></div></a>}
-                       {(project as any).yelpLink && <a href={(project as any).yelpLink} target="_blank" className="flex items-center gap-2 p-2.5 bg-blue-500/5 rounded-lg border border-blue-500/10 hover:bg-blue-500/10 transition-colors"><ExternalLink size={12} className="text-blue-400 shrink-0" /><div className="min-w-0"><span className="text-[10px] text-blue-400/60 uppercase tracking-wider">Yelp</span><p className="text-xs text-blue-400 truncate">{(project as any).yelpLink}</p></div></a>}
-                       {(project as any).homeAdvisorLink && <a href={(project as any).homeAdvisorLink} target="_blank" className="flex items-center gap-2 p-2.5 bg-blue-500/5 rounded-lg border border-blue-500/10 hover:bg-blue-500/10 transition-colors"><ExternalLink size={12} className="text-blue-400 shrink-0" /><div className="min-w-0"><span className="text-[10px] text-blue-400/60 uppercase tracking-wider">Home Advisor</span><p className="text-xs text-blue-400 truncate">{(project as any).homeAdvisorLink}</p></div></a>}
+                       {project.googleMapsLink && <a href={project.googleMapsLink} target="_blank" className="flex items-center gap-2 p-2.5 bg-blue-500/5 rounded-lg border border-blue-500/10 hover:bg-blue-500/10 transition-colors"><ExternalLink size={12} className="text-blue-600 shrink-0" /><div className="min-w-0"><span className="text-[10px] text-blue-600/60 uppercase tracking-wider">Google Maps</span><p className="text-xs text-blue-600 truncate">{project.googleMapsLink}</p></div></a>}
+                       {(project as any).yelpLink && <a href={(project as any).yelpLink} target="_blank" className="flex items-center gap-2 p-2.5 bg-blue-500/5 rounded-lg border border-blue-500/10 hover:bg-blue-500/10 transition-colors"><ExternalLink size={12} className="text-blue-600 shrink-0" /><div className="min-w-0"><span className="text-[10px] text-blue-600/60 uppercase tracking-wider">Yelp</span><p className="text-xs text-blue-600 truncate">{(project as any).yelpLink}</p></div></a>}
+                       {(project as any).homeAdvisorLink && <a href={(project as any).homeAdvisorLink} target="_blank" className="flex items-center gap-2 p-2.5 bg-blue-500/5 rounded-lg border border-blue-500/10 hover:bg-blue-500/10 transition-colors"><ExternalLink size={12} className="text-blue-600 shrink-0" /><div className="min-w-0"><span className="text-[10px] text-blue-600/60 uppercase tracking-wider">Home Advisor</span><p className="text-xs text-blue-600 truncate">{(project as any).homeAdvisorLink}</p></div></a>}
                      </div>
                     {project.managerComment && (
-                      <div className="mt-3 p-2.5 bg-blue-500/10 border border-blue-500/20 rounded-lg text-sm text-blue-400">
+                      <div className="mt-3 p-2.5 bg-blue-500/10 border border-blue-500/20 rounded-lg text-sm text-blue-600">
                         <span className="font-bold">{seoManagerName}:</span> {project.managerComment}
                       </div>
                     )}
                     {(project.targetKeywords || project.services) && (
                       <div className="mt-3 space-y-2">
-                        {project.targetKeywords && <div><span className="text-[10px] text-slate-500 uppercase tracking-wider">Keywords</span><div className="mt-1 flex flex-wrap gap-1">{project.targetKeywords.split(',').map((kw, i) => (<span key={i} className="px-2 py-0.5 bg-blue-500/10 text-blue-400 text-xs rounded-full">{kw.trim()}</span>))}</div></div>}
-                        {project.services && <div><span className="text-[10px] text-slate-500 uppercase tracking-wider">Services</span><p className="text-sm font-medium text-slate-200 mt-0.5">{project.services}</p></div>}
+                        {project.targetKeywords && <div><span className="text-[10px] text-slate-500 uppercase tracking-wider">Keywords</span><div className="mt-1 flex flex-wrap gap-1">{project.targetKeywords.split(',').map((kw, i) => (<span key={i} className="px-2 py-0.5 bg-blue-500/10 text-blue-600 text-xs rounded-full">{kw.trim()}</span>))}</div></div>}
+                        {project.services && <div><span className="text-[10px] text-slate-500 uppercase tracking-wider">Services</span><p className="text-sm font-medium text-slate-800 mt-0.5">{project.services}</p></div>}
                       </div>
                     )}
                   </div>
                   </>)}
                   {activeTab === 'onpage' && (<>
-                  <div className="p-4 sm:px-5 sm:py-4 border-b border-slate-700/50">
+                  <div className="p-4 sm:px-5 sm:py-4 border-b border-slate-200">
                     <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                       <div className="flex items-center gap-2">
                         <div className="w-6 h-6 bg-purple-500/20 rounded flex items-center justify-center">
@@ -394,7 +430,7 @@ export function SEOLeadDashboard() {
                     </div>
 
                     {projectOnPageWork.length === 0 ? (
-                      <div className="p-6 bg-slate-900/50 rounded-lg text-center">
+                      <div className="p-6 bg-slate-50 rounded-lg text-center">
                         <FileUp size={24} className="mx-auto text-slate-600 mb-2" />
                         <p className="text-sm text-slate-500">No on-page work added yet. Click "Add Work" to start.</p>
                       </div>
@@ -414,14 +450,14 @@ export function SEOLeadDashboard() {
                                 <div className="px-3 py-2 flex items-center gap-2 cursor-pointer hover:bg-purple-500/10 transition-colors" onClick={() => toggleWorkDate(dateKey)}>
                                   {expandedWorkDates[dateKey] ? <ChevronUp size={14} className="text-purple-400" /> : <ChevronDown size={14} className="text-purple-400" />}
                                   <span className="text-xs font-semibold text-purple-300">{new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</span>
-                                  <span className="text-[10px] text-slate-500 bg-slate-700/50 px-1.5 py-0.5 rounded">{grouped[date].length} item{grouped[date].length !== 1 ? 's' : ''}</span>
+                                  <span className="text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">{grouped[date].length} item{grouped[date].length !== 1 ? 's' : ''}</span>
                                 </div>
                                 {expandedWorkDates[dateKey] && (
                                   <div className="p-2 space-y-2">
                                     {grouped[date].map((item: any) => (
                                       <div key={item.id} className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg">
                                         <div className="flex items-start justify-between mb-2">
-                                          <p className="text-sm text-slate-300 flex-1">{item.text || <span className="text-slate-500 italic">No description</span>}</p>
+                                          <p className="text-sm text-slate-600 flex-1">{item.text || <span className="text-slate-500 italic">No description</span>}</p>
                                           <div className="flex items-center gap-1 ml-2 shrink-0">
                                             <button className="p-1 hover:bg-purple-500/20 rounded text-purple-400" onClick={() => openEditOnPageModal(item)}>
                                               <FileText size={14} />
@@ -438,9 +474,9 @@ export function SEOLeadDashboard() {
                                               return (
                                                 <div key={i} className="relative group">
                                                   {isImg ? (
-                                                    <img src={`/uploads/${f.filename}`} className="w-16 h-16 rounded-lg object-cover border border-slate-700/50" />
+                                                    <img src={`/uploads/${f.filename}`} className="w-16 h-16 rounded-lg object-cover border border-slate-200" />
                                                   ) : (
-                                                    <a href={`/uploads/${f.filename}`} target="_blank" download className="flex items-center gap-1 text-xs text-blue-400 hover:underline bg-slate-800/50 px-2 py-1 rounded border border-slate-700/50">
+                                                    <a href={`/uploads/${f.filename}`} target="_blank" download className="flex items-center gap-1 text-xs text-blue-600 hover:underline bg-white px-2 py-1 rounded border border-slate-200">
                                                       <Download size={12} /> {f.originalName}
                                                     </a>
                                                   )}
@@ -468,47 +504,87 @@ export function SEOLeadDashboard() {
                   </div>
                   </>)}
                   {activeTab === 'offpage' && (<>
-                  <div className="p-4 sm:px-5 sm:py-4 border-b border-slate-700/50">
+                  <div className="p-4 sm:px-5 sm:py-4 border-b border-slate-200">
                     <div className="flex items-center gap-2 mb-3">
                       <div className="w-6 h-6 bg-orange-500/20 rounded flex items-center justify-center">
                         <Globe size={12} className="text-orange-400" />
                       </div>
-                      <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Off-Page Report ({offPageName}'s Approved Work)</h4>
+                      <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">{offPageName}'s Work</h4>
                     </div>
 
-                    {approvedOffPage.length === 0 ? (
-                      <div className="p-6 bg-slate-900/50 rounded-lg text-center">
-                        <p className="text-sm text-slate-500">No approved off-page work yet. Assign tasks to {offPageName} and review their submissions.</p>
+                    {projectAssignments.length === 0 && projectWork.length === 0 ? (
+                      <div className="p-6 bg-slate-50 rounded-lg text-center">
+                        <p className="text-sm text-slate-500">No off-page work yet. Assign tasks to {offPageName}.</p>
                       </div>
                     ) : (
                       <div className="space-y-2">
                         {(() => {
+                          const items: any[] = [];
+                          projectAssignments.forEach(a => {
+                            items.push({ type: 'assignment', data: a, date: new Date(a.createdAt).toISOString().split('T')[0] });
+                          });
+                          projectWork.forEach(w => {
+                            items.push({ type: 'submission', data: w, date: w.workDate || new Date(w.createdAt).toISOString().split('T')[0] });
+                          });
                           const grouped: Record<string, any[]> = {};
-                          approvedOffPage.forEach((work: any) => {
-                            const d = work.workDate || new Date(work.createdAt).toISOString().split('T')[0];
-                            if (!grouped[d]) grouped[d] = [];
-                            grouped[d].push(work);
+                          items.forEach(item => {
+                            if (!grouped[item.date]) grouped[item.date] = [];
+                            grouped[item.date].push(item);
                           });
                           return Object.keys(grouped).sort((a, b) => b.localeCompare(a)).map(date => {
                             const dateKey = `offpage-${project.id}-${date}`;
+                            const pendingInDate = grouped[date].filter(i => i.type === 'submission' && i.data.status === 'PENDING_REVIEW').length;
+                            const rejectedInDate = grouped[date].filter(i => i.type === 'submission' && i.data.status === 'CHANGES_REQUESTED').length;
                             return (
-                              <div key={date} className="bg-orange-500/5 border border-orange-500/20 rounded-lg overflow-hidden">
-                                <div className="px-3 py-2 flex items-center gap-2 cursor-pointer hover:bg-orange-500/10 transition-colors" onClick={() => toggleWorkDate(dateKey)}>
-                                  {expandedWorkDates[dateKey] ? <ChevronUp size={14} className="text-orange-400" /> : <ChevronDown size={14} className="text-orange-400" />}
-                                  <span className="text-xs font-semibold text-orange-300">{new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</span>
-                                  <span className="text-[10px] text-slate-500 bg-slate-700/50 px-1.5 py-0.5 rounded">{grouped[date].length} item{grouped[date].length !== 1 ? 's' : ''}</span>
+                              <div key={date} className="bg-slate-50 border border-slate-200 rounded-lg overflow-hidden">
+                                <div className="px-3 py-2 bg-slate-100 flex items-center gap-2 cursor-pointer hover:bg-slate-200/60 transition-colors" onClick={() => toggleWorkDate(dateKey)}>
+                                  {expandedWorkDates[dateKey] ? <ChevronUp size={14} className="text-slate-500" /> : <ChevronDown size={14} className="text-slate-500" />}
+                                  <Calendar size={13} className="text-blue-600" />
+                                  <span className="text-xs font-semibold text-slate-800">{new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                                  <span className="text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">{grouped[date].length} item{grouped[date].length !== 1 ? 's' : ''}</span>
+                                  {pendingInDate > 0 && <span className="text-[10px] font-semibold text-yellow-600 bg-yellow-50 px-1.5 py-0.5 rounded">{pendingInDate} pending</span>}
+                                  {rejectedInDate > 0 && <span className="text-[10px] font-semibold text-red-500 bg-red-50 px-1.5 py-0.5 rounded">{rejectedInDate} rejected</span>}
                                 </div>
                                 {expandedWorkDates[dateKey] && (
-                                  <div className="p-2 space-y-2">
-                                    {grouped[date].map((work: any) => {
+                                  <div className="p-2 space-y-2 divide-y divide-slate-200">
+                                    {grouped[date].map((item, idx) => {
+                                      if (item.type === 'assignment') {
+                                        const a = item.data;
+                                        return (
+                                          <div key={`a-${a.id}`} className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                            <div className="flex items-center gap-2 mb-1">
+                                              <Badge variant="blue" className="text-[10px]">Task Sent</Badge>
+                                              <span className="text-[10px] text-slate-500">to {offPageName}</span>
+                                            </div>
+                                            {a.text && <p className="text-sm text-slate-600 mb-2">{a.text}</p>}
+                                            {a.images.length > 0 && <div className="flex flex-wrap gap-2 mb-2">{a.images.map((img: any, i: number) => (<img key={i} src={`/uploads/${img.filename}`} className="w-14 h-14 rounded-lg object-cover border border-slate-200" />))}</div>}
+                                            {a.documents.length > 0 && <div className="flex flex-wrap gap-2">{a.documents.map((doc: any, i: number) => (<a key={i} href={`/uploads/${doc.filename}`} target="_blank" className="flex items-center gap-1 text-xs text-blue-600 hover:underline"><FileText size={12} /> {doc.originalName}</a>))}</div>}
+                                          </div>
+                                        );
+                                      }
+                                      const work = item.data;
                                       const fromUser = users[work.fromId];
                                       return (
-                                        <div key={work.id} className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg">
-                                          <div className="flex items-center gap-2 mb-1">
-                                            <Badge variant="green" className="text-[10px]">Approved</Badge>
-                                            <span className="text-[10px] text-slate-500">{fromUser?.name}</span>
+                                        <div key={`w-${work.id}`} className="p-3 bg-white border border-slate-200 rounded-lg">
+                                          <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                                            <div className="flex items-center gap-2">
+                                              <Badge variant={getStatusColor(work.status) as any} className="text-[10px]">
+                                                {work.status === 'APPROVED' ? 'Approved' : work.status === 'CHANGES_REQUESTED' ? 'Changes Requested' : 'Pending Review'}
+                                              </Badge>
+                                              <span className="text-[10px] text-slate-500">{fromUser?.name}</span>
+                                            </div>
+                                            {work.status === 'PENDING_REVIEW' && (
+                                              <div className="flex gap-1">
+                                                <Button size="sm" variant="primary" className="gap-1 text-[11px] px-2 py-1" onClick={() => { setReviewStatus('APPROVED'); setReviewCommentText(''); setShowReviewModal(work.id); }}>
+                                                  <CheckCircle2 size={12} /> Approve
+                                                </Button>
+                                                <Button size="sm" variant="danger" className="gap-1 text-[11px] px-2 py-1" onClick={() => { setReviewStatus('CHANGES_REQUESTED'); setReviewCommentText(''); setShowReviewModal(work.id); }}>
+                                                  <RotateCcw size={12} /> Reject
+                                                </Button>
+                                              </div>
+                                            )}
                                           </div>
-                                          {work.text && <p className="text-sm text-slate-300 mb-2">{work.text}</p>}
+                                          {work.text && <p className="text-sm text-slate-600 mb-2">{work.text}</p>}
                                           {work.files.length > 0 && (
                                             <div className="flex flex-wrap gap-2">
                                               {work.files.map((f: any, i: number) => {
@@ -516,15 +592,18 @@ export function SEOLeadDashboard() {
                                                 return (
                                                   <a key={i} href={`/uploads/${f.filename}`} target="_blank" download>
                                                     {isImg ? (
-                                                      <img src={`/uploads/${f.filename}`} className="w-16 h-16 rounded-lg object-cover border border-slate-700/50" />
+                                                      <img src={`/uploads/${f.filename}`} className="w-16 h-16 rounded-lg object-cover border border-slate-200 hover:shadow-md" />
                                                     ) : (
-                                                      <span className="flex items-center gap-1 text-xs text-blue-400 hover:underline bg-slate-800/50 px-2 py-1 rounded border border-slate-700/50">
-                                                        <Download size={12} /> {f.originalName}
-                                                      </span>
+                                                      <span className="flex items-center gap-1 px-2 py-1 bg-blue-50 border border-blue-200 rounded text-xs text-blue-600 hover:bg-blue-100"><Download size={12} /> {f.originalName}</span>
                                                     )}
                                                   </a>
                                                 );
                                               })}
+                                            </div>
+                                          )}
+                                          {work.reviewComment && (
+                                            <div className={`p-2 rounded-lg text-xs mt-2 ${work.status === 'APPROVED' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'}`}>
+                                              <span className="font-bold">Review:</span> {work.reviewComment}
                                             </div>
                                           )}
                                         </div>
@@ -539,80 +618,12 @@ export function SEOLeadDashboard() {
                       </div>
                     )}
                   </div>
-
-                  {projectWork.filter((w: any) => w.status === 'PENDING_REVIEW').length > 0 && (
-                    <div className="p-4 sm:px-5 sm:py-4 border-b border-slate-700/50">
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className="w-6 h-6 bg-yellow-500/20 rounded flex items-center justify-center">
-                          <Clock size={12} className="text-yellow-400" />
-                        </div>
-                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pending Off-Page Reviews</h4>
-                      </div>
-                      <div className="space-y-2">
-                        {projectWork.filter((w: any) => w.status === 'PENDING_REVIEW').map((work: any) => {
-                          const fromUser = users[work.fromId];
-                          return (
-                            <div key={work.id} className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-                              <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                                <div className="flex items-center gap-2">
-                                  <Badge variant="yellow" className="text-[10px]">Pending Review</Badge>
-                                  <span className="text-[10px] text-slate-500">{fromUser?.name}</span>
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                  <Button size="sm" variant="primary" className="gap-1" onClick={() => { setReviewStatus('APPROVED'); setReviewCommentText(''); setShowReviewModal(work.id); }}>
-                                    <CheckCircle2 size={14} /> Approve
-                                  </Button>
-                                  <Button size="sm" variant="danger" className="gap-1" onClick={() => { setReviewStatus('CHANGES_REQUESTED'); setReviewCommentText(''); setShowReviewModal(work.id); }}>
-                                    <RotateCcw size={14} /> Request Changes
-                                  </Button>
-                                </div>
-                              </div>
-                              {work.text && <p className="text-sm text-slate-300 mb-2">{work.text}</p>}
-                              {work.files.length > 0 && (
-                                <div className="flex flex-wrap gap-2">
-                                  {work.files.map((f: any, i: number) => {
-                                    const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(f.filename);
-                                    return (
-                                      <a key={i} href={`/uploads/${f.filename}`} target="_blank" download>
-                                        {isImg ? (
-                                          <img src={`/uploads/${f.filename}`} className="w-16 h-16 rounded-lg object-cover border border-slate-700/50" />
-                                        ) : (
-                                          <span className="flex items-center gap-1 text-xs text-blue-400 hover:underline bg-slate-800/50 px-2 py-1 rounded border border-slate-700/50"><Download size={12} /> {f.originalName}</span>
-                                        )}
-                                      </a>
-                                    );
-                                  })}
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {projectAssignments.length > 0 && (
-                    <div className="p-4 sm:px-5 sm:py-4 border-b border-slate-700/50">
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className="w-6 h-6 bg-blue-500/20 rounded flex items-center justify-center">
-                          <Send size={12} className="text-blue-400" />
-                        </div>
-                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Sent to {offPageName}</h4>
-                      </div>
-                      {projectAssignments.map(a => (
-                        <div key={a.id} className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg mb-2">
-                          {a.text && <p className="text-sm text-slate-300 mb-2">{a.text}</p>}
-                          {a.images.length > 0 && <div className="flex flex-wrap gap-2 mb-2">{a.images.map((img: any, i: number) => (<img key={i} src={`/uploads/${img.filename}`} className="w-16 h-16 rounded-lg object-cover border border-slate-700/50" />))}</div>}
-                          {a.documents.length > 0 && <div className="flex flex-wrap gap-2">{a.documents.map((doc: any, i: number) => (<a key={i} href={`/uploads/${doc.filename}`} target="_blank" className="flex items-center gap-1 text-xs text-blue-400 hover:underline"><FileText size={12} /> {doc.originalName}</a>))}</div>}
-                        </div>
-                      ))}
-                    </div>
-                  )}
                   </>)}
+
 
                   {activeTab === 'report' && (<>
                   {rejectedReports.length > 0 && (
-                    <div className="p-4 sm:px-5 sm:py-4 border-t border-slate-700/50">
+                    <div className="p-4 sm:px-5 sm:py-4 border-t border-slate-200">
                       <div className="flex items-center gap-2 mb-3">
                         <div className="w-6 h-6 bg-red-500/20 rounded flex items-center justify-center">
                           <RotateCcw size={12} className="text-red-400" />
@@ -629,14 +640,14 @@ export function SEOLeadDashboard() {
                                 <span className="text-[11px] text-slate-500">Sent to {toUser?.name}</span>
                               </div>
                               {report.onPageStatus === 'REJECTED' && (
-                                <div className="mb-2 p-2 bg-slate-800/50 border border-red-500/20 rounded">
+                                <div className="mb-2 p-2 bg-white border border-red-500/20 rounded">
                                   <p className="text-[10px] font-bold text-purple-400 uppercase mb-1">On-Page Rejected</p>
                                   {report.onPageComment && <p className="text-xs text-red-400">{report.onPageComment}</p>}
                                   <p className="text-[10px] text-slate-500 mt-1">Fix your on-page work above and resubmit</p>
                                 </div>
                               )}
                               {report.offPageStatus === 'REJECTED' && (
-                                <div className="p-2 bg-slate-800/50 border border-red-500/20 rounded">
+                                <div className="p-2 bg-white border border-red-500/20 rounded">
                                   <p className="text-[10px] font-bold text-orange-400 uppercase mb-1">Off-Page Rejected</p>
                                   {report.offPageComment && <p className="text-xs text-red-400">{report.offPageComment}</p>}
                                   <div className="flex flex-wrap items-center gap-2 mt-2">
@@ -665,7 +676,7 @@ export function SEOLeadDashboard() {
                     if (allReviewed.length === 0) return null;
 
                     return (
-                      <div className="p-4 sm:px-5 sm:py-4 border-b border-slate-700/50">
+                      <div className="p-4 sm:px-5 sm:py-4 border-b border-slate-200">
                         <div className="flex items-center gap-2 mb-3">
                           <div className="w-6 h-6 bg-green-500/20 rounded flex items-center justify-center">
                             <CheckCircle2 size={12} className="text-green-400" />
@@ -684,7 +695,7 @@ export function SEOLeadDashboard() {
 
                             if (isStructured) {
                               return (
-                                <div key={u.id} className="p-3 bg-slate-800/50 border border-slate-700/50 rounded-lg">
+                                <div key={u.id} className="p-3 bg-white border border-slate-200 rounded-lg">
                                   <div className="flex items-center gap-2 mb-2">
                                     <Badge variant="purple" className="text-[10px]">Structured Report</Badge>
                                     <span className="text-[11px] text-slate-500">Sent to {toUser?.name}</span>
@@ -722,7 +733,7 @@ export function SEOLeadDashboard() {
                     );
                   })()}
 
-                  <div className="p-4 sm:px-5 sm:py-4 bg-slate-900/30">
+                  <div className="p-4 sm:px-5 sm:py-4 bg-white">
                     <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Submit Final Report</h4>
                     <div className="flex flex-wrap gap-3">
                       <Button className="gap-2" onClick={() => openSubmitReportModal(project.id, seoManagerId)}>
@@ -737,11 +748,13 @@ export function SEOLeadDashboard() {
                     </p>
                   </div>
                   </>)}
+                   </div>
+                    <div className="w-full lg:w-80 shrink-0 border-t lg:border-t-0 lg:border-l border-slate-200">
+                      <div className="h-[50vh] lg:h-screen lg:sticky lg:top-0 lg:overflow-y-auto">
+                        <ChatBox projectId={project.id} />
+                      </div>
+                    </div>
                   </div>
-                  <div className="lg:col-span-1 border-l border-slate-700/50 lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto">
-                    <ChatBox projectId={project.id} />
-                  </div>
-                </div>
                 </div>
               )}
             </Card>
@@ -752,15 +765,15 @@ export function SEOLeadDashboard() {
       {showAlreadySentPopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => setShowAlreadySentPopup('')} />
-          <div className="relative bg-slate-800/50 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden z-10">
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden z-10">
             <div className="px-6 py-5 text-center">
               <div className="w-14 h-14 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <AlertCircle size={28} className="text-yellow-400" />
               </div>
-              <h3 className="text-lg font-bold text-slate-100 mb-2">Already Sent!</h3>
+              <h3 className="text-lg font-bold text-slate-900 mb-2">Already Sent!</h3>
               <p className="text-sm text-slate-400">{showAlreadySentPopup}</p>
             </div>
-            <div className="px-6 py-4 border-t border-slate-700/50 flex justify-center">
+            <div className="px-6 py-4 border-t border-slate-200 flex justify-center">
               <Button onClick={() => setShowAlreadySentPopup('')}>OK, Got it</Button>
             </div>
           </div>
@@ -770,21 +783,21 @@ export function SEOLeadDashboard() {
       {showAssignModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => setShowAssignModal(false)} />
-          <div className="relative bg-slate-800/50 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden z-10">
-            <div className="px-6 py-4 border-b border-slate-700/50 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-slate-100">Send to {offPageName}</h3>
-              <button onClick={() => setShowAssignModal(false)} className="p-2 hover:bg-slate-700/50 rounded-lg text-slate-500"><X size={18} /></button>
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden z-10">
+            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-900">Send to {offPageName}</h3>
+              <button onClick={() => setShowAssignModal(false)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"><X size={18} /></button>
             </div>
             <div className="px-6 py-5 space-y-4">
               <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg text-sm">
-                <p className="font-semibold text-blue-400">{projects.find(p => p.id === assignForm.projectId)?.name}</p>
+                <p className="font-semibold text-blue-600">{projects.find(p => p.id === assignForm.projectId)?.name}</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Text / Instructions</label>
-                <textarea className="block w-full px-3 py-2 bg-slate-900/50 border border-slate-700/50 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]" placeholder="Write instructions..." value={assignForm.text} onChange={e => setAssignForm({ ...assignForm, text: e.target.value })} />
+                <label className="block text-sm font-medium text-slate-600 mb-1">Text / Instructions</label>
+                <textarea className="block w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]" placeholder="Write instructions..." value={assignForm.text} onChange={e => setAssignForm({ ...assignForm, text: e.target.value })} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Images</label>
+                <label className="block text-sm font-medium text-slate-600 mb-1">Images</label>
                 <div className="flex flex-wrap items-center gap-3">
                   <Button variant="outline" size="sm" className="gap-1" onClick={() => fileInputRef.current?.click()}><Image size={14} /> Select Images</Button>
                   <span className="text-xs text-slate-500">{selectedImages ? `${selectedImages.length} selected` : 'No images'}</span>
@@ -792,7 +805,7 @@ export function SEOLeadDashboard() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Documents</label>
+                <label className="block text-sm font-medium text-slate-600 mb-1">Documents</label>
                 <div className="flex flex-wrap items-center gap-3">
                   <Button variant="outline" size="sm" className="gap-1" onClick={() => docInputRef.current?.click()}><Paperclip size={14} /> Select Docs</Button>
                   <span className="text-xs text-slate-500">{selectedDocs ? `${selectedDocs.length} selected` : 'No docs'}</span>
@@ -800,9 +813,9 @@ export function SEOLeadDashboard() {
                 </div>
               </div>
             </div>
-            <div className="px-6 py-4 border-t border-slate-700/50 flex justify-end gap-3">
+            <div className="px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
               <Button variant="outline" onClick={() => setShowAssignModal(false)}>Cancel</Button>
-              <Button className="gap-1" onClick={handleSendAssignment}><Send size={14} /> Send</Button>
+              <Button className="gap-1" onClick={handleSendAssignment} disabled={sendingAssignment}>{sendingAssignment ? <><Loader2 size={14} className="animate-spin" /> Sending...</> : <><Send size={14} /> Send</>}</Button>
             </div>
           </div>
         </div>
@@ -811,10 +824,10 @@ export function SEOLeadDashboard() {
       {showReviewModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => setShowReviewModal(null)} />
-          <div className="relative bg-slate-800/50 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden z-10">
-            <div className="px-6 py-4 border-b border-slate-700/50 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-slate-100">{reviewStatus === 'APPROVED' ? 'Approve Submission' : 'Request Changes'}</h3>
-              <button onClick={() => setShowReviewModal(null)} className="p-2 hover:bg-slate-700/50 rounded-lg text-slate-500"><X size={18} /></button>
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden z-10">
+            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-900">{reviewStatus === 'APPROVED' ? 'Approve Submission' : 'Request Changes'}</h3>
+              <button onClick={() => setShowReviewModal(null)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"><X size={18} /></button>
             </div>
             <div className="px-6 py-5 space-y-4">
               {reviewStatus === 'CHANGES_REQUESTED' && (
@@ -823,21 +836,21 @@ export function SEOLeadDashboard() {
                 </div>
               )}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">
+                <label className="block text-sm font-medium text-slate-600 mb-1">
                   {reviewStatus === 'CHANGES_REQUESTED' ? 'Reason / What needs to be fixed' : 'Comment (optional)'}
                 </label>
                 <textarea
-                  className="block w-full px-3 py-2 bg-slate-900/50 border border-slate-700/50 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[120px]"
+                  className="block w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[120px]"
                   placeholder={reviewStatus === 'CHANGES_REQUESTED' ? 'e.g. Backlinks are missing, anchor text needs correction...' : 'Any additional notes...'}
                   value={reviewCommentText}
                   onChange={e => setReviewCommentText(e.target.value)}
                 />
               </div>
             </div>
-            <div className="px-6 py-4 border-t border-slate-700/50 flex justify-end gap-3">
+            <div className="px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
               <Button variant="outline" onClick={() => setShowReviewModal(null)}>Cancel</Button>
-              <Button variant={reviewStatus === 'APPROVED' ? 'primary' : 'danger'} className="gap-1" onClick={handleReview} disabled={reviewStatus === 'CHANGES_REQUESTED' && !reviewCommentText.trim()}>
-                {reviewStatus === 'APPROVED' ? <><CheckCircle2 size={14} /> Approve</> : <><RotateCcw size={14} /> Send Back for Changes</>}
+              <Button variant={reviewStatus === 'APPROVED' ? 'primary' : 'danger'} className="gap-1" onClick={handleReview} disabled={reviewing || (reviewStatus === 'CHANGES_REQUESTED' && !reviewCommentText.trim())}>
+                {reviewing ? <><Loader2 size={14} className="animate-spin" /> Processing...</> : reviewStatus === 'APPROVED' ? <><CheckCircle2 size={14} /> Approve</> : <><RotateCcw size={14} /> Send Back for Changes</>}
               </Button>
             </div>
           </div>
@@ -847,39 +860,39 @@ export function SEOLeadDashboard() {
       {showAddOnPageModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => setShowAddOnPageModal(false)} />
-          <div className="relative bg-slate-800/50 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden z-10">
-            <div className="px-6 py-4 border-b border-slate-700/50 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-slate-100">Add On-Page Work</h3>
-              <button onClick={() => setShowAddOnPageModal(false)} className="p-2 hover:bg-slate-700/50 rounded-lg text-slate-500"><X size={18} /></button>
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden z-10">
+            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-900">Add On-Page Work</h3>
+              <button onClick={() => setShowAddOnPageModal(false)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"><X size={18} /></button>
             </div>
             <div className="px-6 py-5 space-y-4">
               <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg text-sm">
                 <p className="font-semibold text-purple-400">{projects.find(p => p.id === addOnPageForm.projectId)?.name}</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Work Date</label>
-                <input type="date" className="block w-full px-3 py-2 bg-slate-900/50 border border-slate-700/50 rounded-lg text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500" value={addOnPageDate} onChange={e => setAddOnPageDate(e.target.value)} />
+                <label className="block text-sm font-medium text-slate-600 mb-1">Work Date</label>
+                <input type="date" className="block w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" value={addOnPageDate} onChange={e => setAddOnPageDate(e.target.value)} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Description / Notes</label>
+                <label className="block text-sm font-medium text-slate-600 mb-1">Description / Notes</label>
                 <textarea
-                  className="block w-full px-3 py-2 bg-slate-900/50 border border-slate-700/50 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[120px]"
+                  className="block w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[120px]"
                   placeholder="Describe the on-page work done (meta tags, content optimization, schema markup, etc.)..."
                   value={addOnPageForm.text}
                   onChange={e => setAddOnPageForm({ ...addOnPageForm, text: e.target.value })}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Attach Files (Screenshots, Reports)</label>
+                <label className="block text-sm font-medium text-slate-600 mb-1">Attach Files (Screenshots, Reports)</label>
                 <div className="flex flex-wrap items-center gap-3">
                   <Button variant="outline" size="sm" className="gap-1" onClick={() => onPageFileRef.current?.click()}><Paperclip size={14} /> Select Files</Button>
                   <span className="text-xs text-slate-500">{onPageFiles ? `${onPageFiles.length} selected` : 'No files'}</span>
                   <input ref={onPageFileRef} type="file" multiple className="hidden" onChange={e => setOnPageFiles(e.target.files)} />
                 </div>
-                {onPageFiles && <div className="flex flex-wrap gap-2 mt-2">{Array.from(onPageFiles).map((f: File, i: number) => (<span key={i} className="text-xs bg-slate-900/50 px-2 py-1 rounded">{f.name}</span>))}</div>}
+                {onPageFiles && <div className="flex flex-wrap gap-2 mt-2">{Array.from(onPageFiles).map((f: File, i: number) => (<span key={i} className="text-xs bg-slate-50 px-2 py-1 rounded">{f.name}</span>))}</div>}
               </div>
             </div>
-            <div className="px-6 py-4 border-t border-slate-700/50 flex justify-end gap-3">
+            <div className="px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
               <Button variant="outline" onClick={() => setShowAddOnPageModal(false)}>Cancel</Button>
               <Button className="gap-1" onClick={handleAddOnPage} disabled={addingWork}>{addingWork ? <><Loader2 size={14} className="animate-spin" /> Adding...</> : <><Plus size={14} /> Add</>}</Button>
             </div>
@@ -890,44 +903,44 @@ export function SEOLeadDashboard() {
       {showEditOnPageModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => setShowEditOnPageModal(null)} />
-          <div className="relative bg-slate-800/50 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden z-10">
-            <div className="px-6 py-4 border-b border-slate-700/50 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-slate-100">Edit On-Page Work</h3>
-              <button onClick={() => setShowEditOnPageModal(null)} className="p-2 hover:bg-slate-700/50 rounded-lg text-slate-500"><X size={18} /></button>
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden z-10">
+            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-900">Edit On-Page Work</h3>
+              <button onClick={() => setShowEditOnPageModal(null)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"><X size={18} /></button>
             </div>
             <div className="px-6 py-5 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Description / Notes</label>
+                <label className="block text-sm font-medium text-slate-600 mb-1">Description / Notes</label>
                 <textarea
-                  className="block w-full px-3 py-2 bg-slate-900/50 border border-slate-700/50 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[120px]"
+                  className="block w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[120px]"
                   value={editOnPageForm.text}
                   onChange={e => setEditOnPageForm({ ...editOnPageForm, text: e.target.value })}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Add More Files</label>
+                <label className="block text-sm font-medium text-slate-600 mb-1">Add More Files</label>
                 <div className="flex flex-wrap items-center gap-3">
                   <Button variant="outline" size="sm" className="gap-1" onClick={() => editOnPageFileRef.current?.click()}><Paperclip size={14} /> Select Files</Button>
                   <span className="text-xs text-slate-500">{editOnPageFiles ? `${editOnPageFiles.length} selected` : 'No new files'}</span>
                   <input ref={editOnPageFileRef} type="file" multiple className="hidden" onChange={e => setEditOnPageFiles(e.target.files)} />
                 </div>
-                {editOnPageFiles && <div className="flex flex-wrap gap-2 mt-2">{Array.from(editOnPageFiles).map((f: File, i: number) => (<span key={i} className="text-xs bg-slate-900/50 px-2 py-1 rounded">{f.name}</span>))}</div>}
+                {editOnPageFiles && <div className="flex flex-wrap gap-2 mt-2">{Array.from(editOnPageFiles).map((f: File, i: number) => (<span key={i} className="text-xs bg-slate-50 px-2 py-1 rounded">{f.name}</span>))}</div>}
               </div>
               {(() => {
                 const item = myLeadWork.find((w: any) => w.id === showEditOnPageModal);
                 if (!item || item.files.length === 0) return null;
                 return (
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1">Current Files</label>
+                    <label className="block text-sm font-medium text-slate-600 mb-1">Current Files</label>
                     <div className="flex flex-wrap gap-2">
                       {item.files.map((f: any, i: number) => {
                         const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(f.filename);
                         return (
                           <div key={i} className="relative group">
                             {isImg ? (
-                              <img src={`/uploads/${f.filename}`} className="w-16 h-16 rounded-lg object-cover border border-slate-700/50" />
+                              <img src={`/uploads/${f.filename}`} className="w-16 h-16 rounded-lg object-cover border border-slate-200" />
                             ) : (
-                              <span className="flex items-center gap-1 text-xs text-slate-300 bg-slate-800/50 px-2 py-1 rounded border border-slate-700/50"><FileText size={12} /> {f.originalName}</span>
+                              <span className="flex items-center gap-1 text-xs text-slate-600 bg-white px-2 py-1 rounded border border-slate-200"><FileText size={12} /> {f.originalName}</span>
                             )}
                             <button className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-[8px] hidden group-hover:flex items-center justify-center" onClick={() => deleteLeadWorkFile(item.id, f.filename)}>
                               <X size={8} />
@@ -940,9 +953,9 @@ export function SEOLeadDashboard() {
                 );
               })()}
             </div>
-            <div className="px-6 py-4 border-t border-slate-700/50 flex justify-end gap-3">
+            <div className="px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
               <Button variant="outline" onClick={() => setShowEditOnPageModal(null)}>Cancel</Button>
-              <Button className="gap-1" onClick={handleEditOnPage}>Update</Button>
+              <Button className="gap-1" onClick={handleEditOnPage} disabled={editingOnPage}>{editingOnPage ? <><Loader2 size={14} className="animate-spin" /> Updating...</> : 'Update'}</Button>
             </div>
           </div>
         </div>
@@ -958,21 +971,21 @@ export function SEOLeadDashboard() {
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => setShowSubmitReportModal(false)} />
-            <div className="relative bg-slate-800/50 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden z-10 max-h-[90vh] overflow-y-auto">
-              <div className="px-6 py-4 border-b border-slate-700/50 flex items-center justify-between sticky top-0 bg-slate-800/50 z-10">
+            <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden z-10 max-h-[90vh] overflow-y-auto">
+              <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white z-10">
                 <div>
-                  <h3 className="text-lg font-bold text-slate-100">Submit Final Report</h3>
+                  <h3 className="text-lg font-bold text-slate-900">Submit Final Report</h3>
                   <p className="text-xs text-slate-500">To {toName} — {project.name}</p>
                 </div>
-                <button onClick={() => setShowSubmitReportModal(false)} className="p-2 hover:bg-slate-700/50 rounded-lg text-slate-500"><X size={18} /></button>
+                <button onClick={() => setShowSubmitReportModal(false)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"><X size={18} /></button>
               </div>
 
               <div className="px-6 py-5 space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Report Date</label>
+                  <label className="block text-sm font-medium text-slate-600 mb-1">Report Date</label>
                   <input
                     type="date"
-                    className="block w-full px-3 py-2 bg-slate-900/50 border border-slate-700/50 rounded-lg text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="block w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     value={reportDate}
                     onChange={e => setReportDate(e.target.value)}
                   />
@@ -983,7 +996,7 @@ export function SEOLeadDashboard() {
                     On-Page Report ({projectOnPage.length} items)
                   </h4>
                   {projectOnPage.length === 0 ? (
-                    <div className="p-4 bg-slate-900/50 rounded-lg text-center">
+                    <div className="p-4 bg-slate-50 rounded-lg text-center">
                       <p className="text-sm text-slate-500">No on-page work added yet</p>
                       <Button size="sm" variant="outline" className="mt-2 gap-1" onClick={() => { setShowSubmitReportModal(false); openAddOnPageModal(reportForm.projectId); }}>
                         <Plus size={14} /> Add On-Page Work First
@@ -993,15 +1006,15 @@ export function SEOLeadDashboard() {
                     <div className="space-y-2">
                       {projectOnPage.map((item: any) => (
                         <div key={item.id} className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg">
-                          {item.text && <p className="text-sm text-slate-300 mb-2">{item.text}</p>}
+                          {item.text && <p className="text-sm text-slate-600 mb-2">{item.text}</p>}
                           {item.files.length > 0 && (
                             <div className="flex flex-wrap gap-2">
                               {item.files.map((f: any, i: number) => {
                                 const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(f.filename);
                                 return isImg ? (
-                                  <img key={i} src={`/uploads/${f.filename}`} className="w-16 h-16 rounded-lg object-cover border border-slate-700/50" />
+                                  <img key={i} src={`/uploads/${f.filename}`} className="w-16 h-16 rounded-lg object-cover border border-slate-200" />
                                 ) : (
-                                  <span key={i} className="flex items-center gap-1 text-xs text-blue-400 bg-slate-800/50 px-2 py-1 rounded border border-slate-700/50"><FileText size={12} /> {f.originalName}</span>
+                                  <span key={i} className="flex items-center gap-1 text-xs text-blue-600 bg-white px-2 py-1 rounded border border-slate-200"><FileText size={12} /> {f.originalName}</span>
                                 );
                               })}
                             </div>
@@ -1018,22 +1031,22 @@ export function SEOLeadDashboard() {
                     Off-Page Report ({approvedOffPage.length} approved items)
                   </h4>
                   {approvedOffPage.length === 0 ? (
-                    <div className="p-4 bg-slate-900/50 rounded-lg text-center">
+                    <div className="p-4 bg-slate-50 rounded-lg text-center">
                       <p className="text-sm text-slate-500">No approved off-page work yet</p>
                     </div>
                   ) : (
                     <div className="space-y-2">
                       {approvedOffPage.map((work: any) => (
                         <div key={work.id} className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg">
-                          {work.text && <p className="text-sm text-slate-300 mb-2">{work.text}</p>}
+                          {work.text && <p className="text-sm text-slate-600 mb-2">{work.text}</p>}
                           {work.files.length > 0 && (
                             <div className="flex flex-wrap gap-2">
                               {work.files.map((f: any, i: number) => {
                                 const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(f.filename);
                                 return isImg ? (
-                                  <img key={i} src={`/uploads/${f.filename}`} className="w-16 h-16 rounded-lg object-cover border border-slate-700/50" />
+                                  <img key={i} src={`/uploads/${f.filename}`} className="w-16 h-16 rounded-lg object-cover border border-slate-200" />
                                 ) : (
-                                  <span key={i} className="flex items-center gap-1 text-xs text-blue-400 bg-slate-800/50 px-2 py-1 rounded border border-slate-700/50"><FileText size={12} /> {f.originalName}</span>
+                                  <span key={i} className="flex items-center gap-1 text-xs text-blue-600 bg-white px-2 py-1 rounded border border-slate-200"><FileText size={12} /> {f.originalName}</span>
                                 );
                               })}
                             </div>
@@ -1045,10 +1058,10 @@ export function SEOLeadDashboard() {
                 </div>
               </div>
 
-              <div className="px-6 py-4 border-t border-slate-700/50 flex justify-end gap-3 sticky bottom-0 bg-slate-800/50">
+              <div className="px-6 py-4 border-t border-slate-200 flex justify-end gap-3 sticky bottom-0 bg-white">
                 <Button variant="outline" onClick={() => setShowSubmitReportModal(false)}>Cancel</Button>
-                <Button className="gap-2" onClick={handleSubmitReport} disabled={projectOnPage.length === 0 && approvedOffPage.length === 0}>
-                  <Send size={16} /> Submit Report to {toName}
+                <Button className="gap-2" onClick={handleSubmitReport} disabled={submittingReport || (projectOnPage.length === 0 && approvedOffPage.length === 0)}>
+                  {submittingReport ? <><Loader2 size={16} className="animate-spin" /> Submitting...</> : <><Send size={16} /> Submit Report to {toName}</>}
                 </Button>
               </div>
             </div>
@@ -1059,18 +1072,18 @@ export function SEOLeadDashboard() {
       {showUpdateReviewModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => setShowUpdateReviewModal(null)} />
-          <div className="relative bg-slate-800/50 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden z-10">
-            <div className="px-6 py-4 border-b border-slate-700/50 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-slate-100">{updateReviewStatus === 'APPROVED' ? 'Approve' : 'Request Changes'}</h3>
-              <button onClick={() => setShowUpdateReviewModal(null)} className="p-2 hover:bg-slate-700/50 rounded-lg text-slate-500"><X size={18} /></button>
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden z-10">
+            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-900">{updateReviewStatus === 'APPROVED' ? 'Approve' : 'Request Changes'}</h3>
+              <button onClick={() => setShowUpdateReviewModal(null)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"><X size={18} /></button>
             </div>
             <div className="px-6 py-5 space-y-4">
-              <textarea className="block w-full px-3 py-2 bg-slate-900/50 border border-slate-700/50 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]" placeholder={updateReviewStatus === 'CHANGES_REQUESTED' ? 'What needs to be changed...' : 'Optional comment...'} value={updateReviewComment} onChange={e => setUpdateReviewComment(e.target.value)} />
+              <textarea className="block w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]" placeholder={updateReviewStatus === 'CHANGES_REQUESTED' ? 'What needs to be changed...' : 'Optional comment...'} value={updateReviewComment} onChange={e => setUpdateReviewComment(e.target.value)} />
             </div>
-            <div className="px-6 py-4 border-t border-slate-700/50 flex justify-end gap-3">
+            <div className="px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
               <Button variant="outline" onClick={() => setShowUpdateReviewModal(null)}>Cancel</Button>
-              <Button variant={updateReviewStatus === 'APPROVED' ? 'primary' : 'danger'} className="gap-1" onClick={handleUpdateReview} disabled={updateReviewStatus === 'CHANGES_REQUESTED' && !updateReviewComment.trim()}>
-                {updateReviewStatus === 'APPROVED' ? <><CheckCircle2 size={14} /> Approve</> : <><RotateCcw size={14} /> Send Back</>}
+              <Button variant={updateReviewStatus === 'APPROVED' ? 'primary' : 'danger'} className="gap-1" onClick={handleUpdateReview} disabled={updateReviewing || (updateReviewStatus === 'CHANGES_REQUESTED' && !updateReviewComment.trim())}>
+                {updateReviewing ? <><Loader2 size={14} className="animate-spin" /> Processing...</> : updateReviewStatus === 'APPROVED' ? <><CheckCircle2 size={14} /> Approve</> : <><RotateCcw size={14} /> Send Back</>}
               </Button>
             </div>
           </div>
@@ -1080,21 +1093,21 @@ export function SEOLeadDashboard() {
       {showAssignDesignerModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => setShowAssignDesignerModal(false)} />
-          <div className="relative bg-slate-800/50 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden z-10">
-            <div className="px-6 py-4 border-b border-slate-700/50 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-slate-100">Assign Design Task to {designerName}</h3>
-              <button onClick={() => setShowAssignDesignerModal(false)} className="p-2 hover:bg-slate-700/50 rounded-lg text-slate-500"><X size={18} /></button>
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden z-10">
+            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-900">Assign Design Task to {designerName}</h3>
+              <button onClick={() => setShowAssignDesignerModal(false)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"><X size={18} /></button>
             </div>
             <div className="px-6 py-5 space-y-4">
               <div className="p-3 bg-pink-500/10 border border-pink-500/20 rounded-lg text-sm">
                 <p className="font-semibold text-pink-400">{projects.find(p => p.id === assignDesignerForm.projectId)?.name}</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Task Description</label>
-                <textarea className="block w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[80px]" placeholder="Describe what images/designs are needed..." value={assignDesignerForm.text} onChange={e => setAssignDesignerForm({ ...assignDesignerForm, text: e.target.value })} />
+                <label className="block text-sm font-medium text-slate-600 mb-1">Task Description</label>
+                <textarea className="block w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[80px]" placeholder="Describe what images/designs are needed..." value={assignDesignerForm.text} onChange={e => setAssignDesignerForm({ ...assignDesignerForm, text: e.target.value })} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Reference Images</label>
+                <label className="block text-sm font-medium text-slate-600 mb-1">Reference Images</label>
                 <div className="flex items-center gap-3">
                   <Button variant="outline" size="sm" className="gap-1" onClick={() => assignDesignerImgRef.current?.click()}><Image size={14} /> Select Images</Button>
                   <span className="text-xs text-slate-500">{assignDesignerImages ? `${assignDesignerImages.length} selected` : 'None'}</span>
@@ -1102,7 +1115,7 @@ export function SEOLeadDashboard() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Reference Documents</label>
+                <label className="block text-sm font-medium text-slate-600 mb-1">Reference Documents</label>
                 <div className="flex items-center gap-3">
                   <Button variant="outline" size="sm" className="gap-1" onClick={() => assignDesignerDocRef.current?.click()}><Paperclip size={14} /> Select Files</Button>
                   <span className="text-xs text-slate-500">{assignDesignerDocs ? `${assignDesignerDocs.length} selected` : 'None'}</span>
@@ -1110,9 +1123,9 @@ export function SEOLeadDashboard() {
                 </div>
               </div>
             </div>
-            <div className="px-6 py-4 border-t border-slate-700/50 flex justify-end gap-3">
+            <div className="px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
               <Button variant="outline" onClick={() => setShowAssignDesignerModal(false)}>Cancel</Button>
-              <Button className="gap-1" onClick={handleAssignDesigner}><Palette size={14} /> Assign to {designerName}</Button>
+              <Button className="gap-1" onClick={handleAssignDesigner} disabled={assigningDesigner}>{assigningDesigner ? <><Loader2 size={14} className="animate-spin" /> Assigning...</> : <><Palette size={14} /> Assign to {designerName}</>}</Button>
             </div>
           </div>
         </div>

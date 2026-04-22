@@ -60,9 +60,9 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 sm:p-6 relative overflow-hidden">
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
-      <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-purple-600/10 rounded-full translate-y-1/2 -translate-x-1/2 blur-3xl"></div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-slate-50 flex items-center justify-center p-4 sm:p-6 relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-400/10 rounded-full -translate-y-1/3 translate-x-1/3 blur-3xl"></div>
+      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-blue-300/10 rounded-full translate-y-1/3 -translate-x-1/3 blur-3xl"></div>
 
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
@@ -71,30 +71,30 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         className="w-full max-w-md relative z-10"
       >
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-blue-500/30">
+          <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-blue-300">
             <span className="text-white font-bold text-3xl">C</span>
           </div>
-          <h1 className="text-3xl font-bold text-slate-100 tracking-tight">CrossDigi</h1>
-          <p className="text-slate-500 mt-2 font-medium">SEO Project Management System</p>
+          <h1 className="text-3xl font-bold text-slate-800 tracking-tight">CrossDigi</h1>
+          <p className="text-blue-500 mt-2 font-medium">SEO Project Management System</p>
         </div>
 
         {error && (
-          <div className="mb-6 p-3 bg-red-500/15 border border-red-500/30 rounded-xl text-sm text-red-400 text-center">
+          <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-500 text-center">
             {error}
           </div>
         )}
 
-        <Card className="p-6 shadow-2xl shadow-black/30">
-          <div className="flex mb-6 bg-slate-900/50 rounded-xl p-1 border border-slate-700/50">
+        <Card className="p-6 shadow-xl border border-blue-100">
+          <div className="flex mb-6 bg-blue-50 rounded-xl p-1 border border-blue-100">
             <button
               onClick={() => { if (!isLogin) switchMode(); }}
-              className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all ${isLogin ? 'bg-slate-700 text-slate-100 shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+              className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all ${isLogin ? 'bg-white text-blue-600 shadow-sm text-slate-700' : 'text-blue-400 hover:text-blue-500'}`}
             >
               Sign In
             </button>
             <button
               onClick={() => { if (isLogin) switchMode(); }}
-              className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all ${!isLogin ? 'bg-slate-700 text-slate-100 shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+              className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all ${!isLogin ? 'bg-white text-blue-600 shadow-sm text-slate-700' : 'text-blue-400 hover:text-blue-500'}`}
             >
               Sign Up
             </button>
@@ -104,7 +104,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
             <form onSubmit={handleLogin} className="space-y-4">
               <Input label="Email Address" type="email" placeholder="name@crossdigi.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
               <Input label="Password" type="password" placeholder="Enter password" required value={password} onChange={(e) => setPassword(e.target.value)} />
-              <Button type="submit" className="w-full" size="lg" isLoading={loading}>Sign In</Button>
+              <Button type="submit" className="w-full shadow-lg shadow-blue-200" size="lg" isLoading={loading}>Sign In</Button>
             </form>
           ) : (
             <form onSubmit={handleRegister} className="space-y-4">
@@ -117,7 +117,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                   <option key={value} value={value}>{label}</option>
                 ))}
               </Select>
-              <Button type="submit" className="w-full" size="lg" isLoading={loading}>Create Account</Button>
+              <Button type="submit" className="w-full shadow-lg shadow-blue-200" size="lg" isLoading={loading}>Create Account</Button>
             </form>
           )}
         </Card>

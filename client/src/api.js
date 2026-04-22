@@ -104,6 +104,7 @@ export const api = {
     });
   },
   deleteWorkFile: (id, filename) => request('DELETE', `/work/${id}/file/${filename}`),
+  deleteWork: (id) => request('DELETE', `/work/${id}`),
 
   getLeadWork: () => request('GET', '/lead-work'),
   createLeadWork: (formData) => {

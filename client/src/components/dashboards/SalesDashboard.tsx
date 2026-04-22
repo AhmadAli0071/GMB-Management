@@ -4,7 +4,7 @@ import {
   Plus, Send, FolderKanban, Clock, TrendingUp, Calendar,
   ChevronRight, X, MapPin, Globe, Star, Phone, Mail, ExternalLink,
   Search, Building2, ArrowUpRight, Loader2, FileText, Pencil, RotateCcw, ShieldCheck,
-  Folder, ChevronDown, ChevronUp, CheckCircle2, Download, Bell, MessageCircle
+  Folder, ChevronDown, ChevronUp, CheckCircle2, Download, Bell, MessageCircle, Palette
 } from 'lucide-react';
 import { Card, Button, Badge, Modal, Input, Textarea, Select } from '../ui/Common';
 import { useApp } from '../../AppContext';
@@ -55,6 +55,7 @@ export function SalesDashboard() {
   const [editForm, setEditForm] = useState(emptyForm);
   const [editStep, setEditStep] = useState(1);
   const [expandedProject, setExpandedProject] = useState<string | null>(null);
+  const [activeSalesTab, setActiveSalesTab] = useState<Record<string, string>>({});
   const [showUpdateReviewModal, setShowUpdateReviewModal] = useState<string | null>(null);
   const [updateReviewStatus, setUpdateReviewStatus] = useState('');
   const [updateReviewComment, setUpdateReviewComment] = useState('');
@@ -62,6 +63,12 @@ export function SalesDashboard() {
   const [sectionReviewComment, setSectionReviewComment] = useState('');
   const [expandedDates, setExpandedDates] = useState<Record<string, boolean>>({});
   const toggleDate = (key: string) => setExpandedDates(prev => ({ ...prev, [key]: !prev[key] }));
+  const [expandedDetails, setExpandedDetails] = useState<Record<string, boolean>>({});
+  const [creating, setCreating] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [resubmitting, setResubmitting] = useState(false);
+  const [sectionReviewing, setSectionReviewing] = useState(false);
+  const [updateReviewing, setUpdateReviewing] = useState(false);
 
   const myProjects = projects.filter(p => p.createdBy === currentUser.id);
   const workingProjects = myProjects.filter(p => !['COMPLETED', 'CLIENT_COMMUNICATION', 'VERIFICATION'].includes(p.stage));
@@ -85,25 +92,40 @@ export function SalesDashboard() {
 
   const handleUpdateReview = async () => {
     if (!showUpdateReviewModal) return;
-    await reviewProjectUpdate(showUpdateReviewModal, updateReviewStatus, updateReviewComment);
-    setShowUpdateReviewModal(null);
-    setUpdateReviewComment('');
-    setUpdateReviewStatus('');
+    setUpdateReviewing(true);
+    try {
+      await reviewProjectUpdate(showUpdateReviewModal, updateReviewStatus, updateReviewComment);
+      setShowUpdateReviewModal(null);
+      setUpdateReviewComment('');
+      setUpdateReviewStatus('');
+    } finally {
+      setUpdateReviewing(false);
+    }
   };
 
   const handleSectionReview = async () => {
     if (!showSectionReviewModal) return;
-    await reviewSection(showSectionReviewModal.updateId, showSectionReviewModal.section, showSectionReviewModal.status, sectionReviewComment);
-    setShowSectionReviewModal(null);
-    setSectionReviewComment('');
+    setSectionReviewing(true);
+    try {
+      await reviewSection(showSectionReviewModal.updateId, showSectionReviewModal.section, showSectionReviewModal.status, sectionReviewComment);
+      setShowSectionReviewModal(null);
+      setSectionReviewComment('');
+    } finally {
+      setSectionReviewing(false);
+    }
   };
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    createProject(form);
-    setForm(emptyForm);
-    setFormStep(1);
-    setShowCreateModal(false);
+    setCreating(true);
+    try {
+      await createProject(form);
+      setForm(emptyForm);
+      setFormStep(1);
+      setShowCreateModal(false);
+    } finally {
+      setCreating(false);
+    }
   };
 
   const handleSubmitToAli = (projectId: string) => {
@@ -141,20 +163,30 @@ export function SalesDashboard() {
     setEditingProject(projectId);
   };
 
-  const handleEditSave = (e: React.FormEvent) => {
+  const handleEditSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingProject) return;
-    updateProject(editingProject, editForm);
-    setEditingProject(null);
-    setEditStep(1);
+    setSaving(true);
+    try {
+      await updateProject(editingProject, editForm);
+      setEditingProject(null);
+      setEditStep(1);
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleResubmit = () => {
+  const handleResubmit = async () => {
     if (!editingProject) return;
-    updateProject(editingProject, editForm);
-    updateProjectStage(editingProject, 'CLIENT_COMMUNICATION');
-    setEditingProject(null);
-    setEditStep(1);
+    setResubmitting(true);
+    try {
+      await updateProject(editingProject, editForm);
+      await updateProjectStage(editingProject, 'CLIENT_COMMUNICATION');
+      setEditingProject(null);
+      setEditStep(1);
+    } finally {
+      setResubmitting(false);
+    }
   };
 
   const updateEdit = (field: string, value: any) => setEditForm(prev => ({ ...prev, [field]: value }));
@@ -209,7 +241,7 @@ export function SalesDashboard() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-xl font-bold text-slate-100">Dashboard</h2>
+            <h2 className="text-xl font-bold text-slate-900">Dashboard</h2>
             <p className="text-sm text-slate-500 mt-0.5">Manage GMB optimization projects</p>
           </div>
           <Button className="gap-2" onClick={() => { setForm(emptyForm); setFormStep(1); setShowCreateModal(true); }}>
@@ -221,14 +253,14 @@ export function SalesDashboard() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
           <Card className="p-5">
             <div className="flex items-center justify-between">
-              <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center"><FolderKanban size={18} className="text-blue-600" /></div>
+              <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center"><FolderKanban size={18} className="text-blue-600" /></div>
               <span className="text-2xl font-bold text-slate-400">{myProjects.length}</span>
             </div>
             <p className="text-xs text-slate-400 mt-2 font-semibold">Total Projects</p>
           </Card>
-          <Card className={`p-5 ${pendingUpdatesCount > 0 ? 'border-red-500/20 bg-red-500/10' : ''}`}>
+          <Card className={`p-5 ${pendingUpdatesCount > 0 ? 'border-red-200 bg-red-50' : ''}`}>
             <div className="flex items-center justify-between">
-              <div className="w-10 h-10 bg-yellow-500/10 rounded-xl flex items-center justify-center relative">
+              <div className="w-10 h-10 bg-yellow-50 rounded-xl flex items-center justify-center relative">
                 <Clock size={18} className="text-yellow-600" />
                 {pendingUpdatesCount > 0 && (
                   <span className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-red-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center px-0.5 animate-pulse">{pendingUpdatesCount}</span>
@@ -240,7 +272,7 @@ export function SalesDashboard() {
           </Card>
           <Card className="p-5">
             <div className="flex items-center justify-between">
-              <div className="w-10 h-10 bg-green-500/10 rounded-xl flex items-center justify-center"><TrendingUp size={18} className="text-green-600" /></div>
+              <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center"><TrendingUp size={18} className="text-green-600" /></div>
               <span className="text-2xl font-bold text-slate-400">{completedProjects.length}</span>
             </div>
             <p className="text-xs text-slate-400 mt-2 font-semibold">Completed</p>
@@ -270,12 +302,12 @@ export function SalesDashboard() {
             const projectUnread = (Object.values(projectUnreadMap) as number[]).reduce((sum, val) => sum + val, 0);
 
             return (
-              <Card key={project.id} className={`overflow-hidden ${pendingForProject > 0 ? 'border-red-500/20' : ''}`}>
-                <div className="p-4 sm:p-5 cursor-pointer hover:bg-slate-900/30 transition-colors" onClick={() => setExpandedProject(isExpanded ? null : project.id)}>
+              <Card key={project.id} className={`overflow-hidden ${pendingForProject > 0 ? 'border-red-200' : ''}`}>
+                <div className="p-4 sm:p-5 cursor-pointer hover:bg-blue-50/50 transition-colors" onClick={() => setExpandedProject(isExpanded ? null : project.id)}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3 sm:gap-4">
                       <div className="relative shrink-0">
-                        <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center ${isCompleted ? 'bg-green-500/10 text-green-600' : isNew ? 'bg-yellow-500/10 text-yellow-600' : pendingForProject > 0 ? 'bg-red-500/10 text-red-600' : 'bg-blue-500/10 text-blue-600'}`}>
+                        <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center bg-blue-500 text-white">
                           <Folder size={28} />
                           {pendingForProject > 0 && !isExpanded && (
                             <span className="absolute -top-1 -right-1 min-w-[20px] h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 animate-pulse">{pendingForProject}</span>
@@ -289,16 +321,16 @@ export function SalesDashboard() {
                       </div>
                       <div>
                         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                          <h3 className="font-bold text-lg text-slate-100">{project.name}</h3>
+                          <h3 className="font-bold text-lg text-slate-900">{project.name}</h3>
                           <Badge variant={STAGE_COLORS[project.stage]}>{STAGE_LABELS[project.stage]}</Badge>
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${project.verificationStatus === 'VERIFIED' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${project.verificationStatus === 'VERIFIED' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'}`}>
                             <ShieldCheck size={10} /> {project.verificationStatus === 'VERIFIED' ? 'Verified' : 'Unverified'}
                           </span>
                           {pendingForProject > 0 && !isExpanded && (
-                            <span className="text-[10px] font-semibold text-red-400 bg-red-500/10 px-2 py-0.5 rounded-full animate-pulse">{pendingForProject} report{pendingForProject !== 1 ? 's' : ''}</span>
+                            <span className="text-[10px] font-semibold text-red-500 bg-red-50 px-2 py-0.5 rounded-full animate-pulse">{pendingForProject} report{pendingForProject !== 1 ? 's' : ''}</span>
                           )}
                         </div>
-                        <p className="text-sm text-slate-400">{project.businessCategory || 'N/A'}</p>
+                        <p className="text-sm text-slate-500">{project.businessCategory || 'N/A'}</p>
                         <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-slate-500">
                           <span className="flex items-center gap-1"><MapPin size={10} /> {project.businessCity}{project.businessState ? `, ${project.businessState}` : ''}</span>
                           <span className="flex items-center gap-1"><Star size={10} /> {project.currentRating} ({project.currentReviews} reviews)</span>
@@ -325,262 +357,318 @@ export function SalesDashboard() {
                 </div>
 
                 {isExpanded && (
-                  <div className="border-t border-slate-700/50">
-                  <div className="grid grid-cols-1 lg:grid-cols-3">
-                    <div className="lg:col-span-2">
-                    <div className="p-4 sm:p-5 border-b border-slate-700/50">
-                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                        <div className="w-1 h-4 bg-blue-500 rounded-full" />
-                        Project Details
-                      </h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                        <div className="p-2.5 bg-white/[0.04] rounded-lg border border-blue-200/10"><span className="text-[10px] text-blue-300/60 uppercase tracking-wider font-medium">Category</span><p className="text-sm font-medium text-blue-50 mt-0.5 truncate">{project.businessCategory || 'N/A'}</p></div>
-                        <div className="p-2.5 bg-white/[0.04] rounded-lg border border-blue-200/10"><span className="text-[10px] text-blue-300/60 uppercase tracking-wider font-medium">Phone</span><p className="text-sm font-medium text-blue-50 mt-0.5 truncate">{project.businessPhone}</p></div>
-                        <div className="p-2.5 bg-white/[0.04] rounded-lg border border-blue-200/10"><span className="text-[10px] text-blue-300/60 uppercase tracking-wider font-medium">Email</span><p className="text-sm font-medium text-blue-50 mt-0.5 truncate">{project.businessEmail}</p></div>
-                        <div className="p-2.5 bg-white/[0.04] rounded-lg border border-blue-200/10"><span className="text-[10px] text-blue-300/60 uppercase tracking-wider font-medium">Website</span><p className="text-sm font-medium text-blue-50 mt-0.5 truncate">{project.businessWebsite || 'N/A'}</p></div>
-                        <div className="p-2.5 bg-white/[0.04] rounded-lg border border-blue-200/10"><span className="text-[10px] text-blue-300/60 uppercase tracking-wider font-medium">Address</span><p className="text-sm font-medium text-blue-50 mt-0.5 truncate">{project.businessAddress}, {project.businessCity} {project.businessState} {project.businessZip}</p></div>
-                        <div className="p-2.5 bg-white/[0.04] rounded-lg border border-blue-200/10"><span className="text-[10px] text-blue-300/60 uppercase tracking-wider font-medium">Service Areas</span><p className="text-sm font-medium text-blue-50 mt-0.5 truncate">{project.serviceAreas || 'N/A'}</p></div>
-                        <div className="p-2.5 bg-white/[0.04] rounded-lg border border-blue-200/10"><span className="text-[10px] text-blue-300/60 uppercase tracking-wider font-medium">Services</span><p className="text-sm font-medium text-blue-50 mt-0.5 truncate">{project.services || 'N/A'}</p></div>
-                        <div className="p-2.5 bg-white/[0.04] rounded-lg border border-blue-200/10"><span className="text-[10px] text-blue-300/60 uppercase tracking-wider font-medium">What We Offer</span><p className="text-sm font-medium text-blue-50 mt-0.5 truncate">{(project as any).offerServices || 'N/A'}</p></div>
-                        <div className="p-2.5 bg-white/[0.04] rounded-lg border border-blue-200/10"><span className="text-[10px] text-blue-300/60 uppercase tracking-wider font-medium">Business Hours</span><p className="text-sm font-medium text-blue-50 mt-0.5 truncate">{project.businessHours || 'N/A'}</p></div>
-                        <div className="p-2.5 bg-white/[0.04] rounded-lg border border-blue-200/10"><span className="text-[10px] text-blue-300/60 uppercase tracking-wider font-medium">Reviews</span><p className="text-sm font-medium text-blue-50 mt-0.5">{project.currentReviews} ({project.currentRating} rating)</p></div>
-                        <div className="p-2.5 bg-white/[0.04] rounded-lg border border-blue-200/10"><span className="text-[10px] text-blue-300/60 uppercase tracking-wider font-medium">Verification</span><p className="text-sm font-medium text-blue-50 mt-0.5">{project.verificationStatus}</p></div>
-                        <div className="p-2.5 bg-white/[0.04] rounded-lg border border-blue-200/10"><span className="text-[10px] text-blue-300/60 uppercase tracking-wider font-medium">Competitors</span><p className="text-sm font-medium text-blue-50 mt-0.5 truncate">{project.competitors || 'N/A'}</p></div>
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-3">
-                        {project.googleMapsLink && <a href={project.googleMapsLink} target="_blank" className="flex items-center gap-2 p-2.5 bg-blue-500/5 rounded-lg border border-blue-500/10 hover:bg-blue-500/10 transition-colors"><ExternalLink size={12} className="text-blue-400 shrink-0" /><div className="min-w-0"><span className="text-[10px] text-blue-400/60 uppercase tracking-wider">Google Maps</span><p className="text-xs text-blue-400 truncate">{project.googleMapsLink}</p></div></a>}
-                        {(project as any).yelpLink && <a href={(project as any).yelpLink} target="_blank" className="flex items-center gap-2 p-2.5 bg-blue-500/5 rounded-lg border border-blue-500/10 hover:bg-blue-500/10 transition-colors"><ExternalLink size={12} className="text-blue-400 shrink-0" /><div className="min-w-0"><span className="text-[10px] text-blue-400/60 uppercase tracking-wider">Yelp</span><p className="text-xs text-blue-400 truncate">{(project as any).yelpLink}</p></div></a>}
-                        {(project as any).homeAdvisorLink && <a href={(project as any).homeAdvisorLink} target="_blank" className="flex items-center gap-2 p-2.5 bg-blue-500/5 rounded-lg border border-blue-500/10 hover:bg-blue-500/10 transition-colors"><ExternalLink size={12} className="text-blue-400 shrink-0" /><div className="min-w-0"><span className="text-[10px] text-blue-400/60 uppercase tracking-wider">Home Advisor</span><p className="text-xs text-blue-400 truncate">{(project as any).homeAdvisorLink}</p></div></a>}
-                      </div>
-                      {project.targetKeywords && (
-                        <div className="mt-3">
-                          <span className="text-[10px] text-slate-500 uppercase tracking-wider">Keywords</span>
-                          <div className="mt-1 flex flex-wrap gap-1">
-                            {project.targetKeywords.split(',').map((kw, i) => (<span key={i} className="px-2 py-0.5 bg-blue-500/10 text-blue-400 text-xs rounded-full">{kw.trim()}</span>))}
-                          </div>
-                        </div>
-                      )}
-                      {project.specialInstructions && (
-                        <div className="mt-3 p-2.5 bg-yellow-500/10 border border-yellow-500/20 rounded-lg text-sm text-yellow-400">{project.specialInstructions}</div>
-                      )}
+                  <div className="border-t border-slate-200">
+                  <div className="flex gap-1 px-4 sm:px-5 pt-3 border-b border-slate-200">
+                    <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${(activeSalesTab[project.id] || 'details') === 'details' ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveSalesTab(p => ({ ...p, [project.id]: 'details' }))}>Details</button>
+                    <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeSalesTab[project.id] === 'records' ? 'bg-green-50 text-green-600 border-b-2 border-green-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveSalesTab(p => ({ ...p, [project.id]: 'records' }))}>Records</button>
+                    <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeSalesTab[project.id] === 'chat' ? 'bg-purple-50 text-purple-600 border-b-2 border-purple-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveSalesTab(p => ({ ...p, [project.id]: 'chat' }))}>
+                      Chat{projectUnread > 0 && <span className="ml-1.5 min-w-[16px] h-4 bg-red-500 text-white text-[8px] font-bold rounded-full inline-flex items-center justify-center px-0.5">{projectUnread > 99 ? '99+' : projectUnread}</span>}
+                    </button>
+                  </div>
+
+                  {(activeSalesTab[project.id] || 'details') === 'details' && (
+                  <div className="p-4 sm:p-5 max-h-[70vh] overflow-y-auto">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                      <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">Category</span><p className="text-sm font-medium text-slate-800 mt-0.5 truncate">{project.businessCategory || 'N/A'}</p></div>
+                      <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">Phone</span><p className="text-sm font-medium text-slate-800 mt-0.5 truncate">{project.businessPhone}</p></div>
+                      <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">Email</span><p className="text-sm font-medium text-slate-800 mt-0.5 truncate">{project.businessEmail}</p></div>
+                      <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">Website</span><p className="text-sm font-medium text-slate-800 mt-0.5 truncate">{project.businessWebsite || 'N/A'}</p></div>
+                      <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">Address</span><p className="text-sm font-medium text-slate-800 mt-0.5 truncate">{project.businessAddress}, {project.businessCity} {project.businessState} {project.businessZip}</p></div>
+                      <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">Service Areas</span><p className="text-sm font-medium text-slate-800 mt-0.5 truncate">{project.serviceAreas || 'N/A'}</p></div>
+                      <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">Services</span><p className="text-sm font-medium text-slate-800 mt-0.5 truncate">{project.services || 'N/A'}</p></div>
+                      <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">What We Offer</span><p className="text-sm font-medium text-slate-800 mt-0.5 truncate">{(project as any).offerServices || 'N/A'}</p></div>
+                      <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">Business Hours</span><p className="text-sm font-medium text-slate-800 mt-0.5 truncate">{project.businessHours || 'N/A'}</p></div>
+                      <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">Reviews</span><p className="text-sm font-medium text-slate-800 mt-0.5">{project.currentReviews} ({project.currentRating} rating)</p></div>
+                      <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">Verification</span><p className="text-sm font-medium text-slate-800 mt-0.5">{project.verificationStatus}</p></div>
+                      <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">Competitors</span><p className="text-sm font-medium text-slate-800 mt-0.5 truncate">{project.competitors || 'N/A'}</p></div>
                     </div>
-
-                    {isActive && (() => {
-                      const progress = getProgressPercent(project.id);
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-3">
+                      {project.googleMapsLink && <a href={project.googleMapsLink} target="_blank" className="flex items-center gap-2 p-2.5 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors"><ExternalLink size={12} className="text-blue-600 shrink-0" /><div className="min-w-0"><span className="text-[10px] text-blue-600/60 uppercase tracking-wider">Google Maps</span><p className="text-xs text-blue-600 truncate">{project.googleMapsLink}</p></div></a>}
+                      {(project as any).yelpLink && <a href={(project as any).yelpLink} target="_blank" className="flex items-center gap-2 p-2.5 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors"><ExternalLink size={12} className="text-blue-600 shrink-0" /><div className="min-w-0"><span className="text-[10px] text-blue-600/60 uppercase tracking-wider">Yelp</span><p className="text-xs text-blue-600 truncate">{(project as any).yelpLink}</p></div></a>}
+                      {(project as any).homeAdvisorLink && <a href={(project as any).homeAdvisorLink} target="_blank" className="flex items-center gap-2 p-2.5 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors"><ExternalLink size={12} className="text-blue-600 shrink-0" /><div className="min-w-0"><span className="text-[10px] text-blue-600/60 uppercase tracking-wider">Home Advisor</span><p className="text-xs text-blue-600 truncate">{(project as any).homeAdvisorLink}</p></div></a>}
+                    </div>
+                    {project.targetKeywords && (
+                      <div className="mt-3">
+                        <span className="text-[10px] text-slate-500 uppercase tracking-wider">Keywords</span>
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {project.targetKeywords.split(',').map((kw, i) => (<span key={i} className="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs rounded-full">{kw.trim()}</span>))}
+                        </div>
+                      </div>
+                    )}
+                    {project.specialInstructions && (
+                      <div className="mt-3 p-2.5 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-600">{project.specialInstructions}</div>
+                    )}
+                    {(() => {
+                      const designerUser = (Object.values(users) as any[]).find(u => u.role === 'DESIGNER');
+                      if (!designerUser) return null;
+                      const designerWorkForProject = workSubmissions.filter((w: any) => w.projectId === project.id && w.fromId === designerUser.id);
+                      if (designerWorkForProject.length === 0) return null;
                       return (
-                        <div className="px-4 sm:px-5 py-4 border-b border-slate-700/50">
-                          <div className="flex items-center justify-between mb-2">
-                            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Progress</h4>
-                            <span className="text-xs font-bold text-blue-600">{progress}%</span>
+                        <div className="mt-4 pt-4 border-t border-slate-200">
+                          <div className="flex items-center gap-2 mb-3">
+                            <div className="w-6 h-6 bg-pink-50 rounded flex items-center justify-center"><Palette size={12} className="text-pink-600" /></div>
+                            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">{designerUser.name}'s Design Work</h4>
                           </div>
-                          <div className="w-full h-2 bg-slate-700/50 rounded-full overflow-hidden">
-                            <motion.div initial={{ width: 0 }} animate={{ width: `${progress}%` }} transition={{ duration: 0.6 }} className="h-full bg-blue-600 rounded-full" />
-                          </div>
-                          <p className="text-xs text-slate-500 mt-2"><span className="font-medium text-slate-400">Next:</span> {getNextStep(project.stage)}</p>
-                        </div>
-                      );
-                    })()}
-
-                    {projectUpdates.length > 0 && (
-                      <div className="p-4 sm:p-5">
-                        <div className="flex items-center gap-2 mb-3">
-                          <div className="w-6 h-6 bg-green-500/10 rounded flex items-center justify-center">
-                            <FileText size={12} className="text-green-600" />
-                          </div>
-                          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-                            <div className="w-1 h-4 bg-green-500 rounded-full" />
-                            Project Records
-                          </h4>
-                        </div>
-                        <div className="space-y-2">
-                          {(() => {
-                            const grouped: Record<string, any[]> = {};
-                            projectUpdates.forEach((u: any) => {
-                              const d = u.workDate || new Date(u.createdAt).toISOString().split('T')[0];
-                              if (!grouped[d]) grouped[d] = [];
-                              grouped[d].push(u);
-                            });
-                            return Object.keys(grouped).sort((a: string, b: string) => b.localeCompare(a)).map((date: string) => (
-                              <div key={date} className="bg-slate-800/30 rounded-lg border border-slate-700/30 overflow-hidden">
-                                <div className="px-4 py-2.5 bg-slate-800/60 flex items-center gap-2 cursor-pointer hover:bg-slate-700/40 transition-colors" onClick={() => toggleDate(`${project.id}-${date}`)}>
-                                  {expandedDates[`${project.id}-${date}`] ? <ChevronUp size={14} className="text-slate-500" /> : <ChevronDown size={14} className="text-slate-500" />}
-                                  <Calendar size={13} className="text-blue-400" />
-                                  <span className="text-sm font-semibold text-slate-200">{new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</span>
-                                  <span className="text-[10px] text-slate-500 bg-slate-700/50 px-1.5 py-0.5 rounded">{grouped[date].length} report{grouped[date].length !== 1 ? 's' : ''}</span>
-                                </div>
-                                <div className={`divide-y divide-slate-700/30 p-3 space-y-3 ${expandedDates[`${project.id}-${date}`] ? '' : 'hidden'}`}>
-                                  {grouped[date].map((update: any) => {
-                            const fromUser = users[update.fromId];
-                            const isStructured = update.reportType === 'STRUCTURED';
-                            const offPageWorks = (update.offPageWorkIds || []).map((id: string) => workSubmissions.find((w: any) => w.id === id)).filter(Boolean);
-
-                            return (
-                              <div key={update.id} className="p-4 bg-slate-800/50 border border-slate-700/50 rounded-xl">
-                                <div className="flex items-center justify-between mb-3">
-                                  <div className="flex items-center gap-3">
-                                    <Badge variant={getStatusColor(update.status)} className="text-[10px]">
-                                      {update.status === 'APPROVED' ? 'Approved' : update.status === 'CHANGES_REQUESTED' ? 'Changes Requested' : 'Pending Review'}
-                                    </Badge>
-                                    {isStructured && <Badge variant="purple" className="text-[10px]">Structured Report</Badge>}
-                                    <span className="text-[11px] text-slate-500">{fromUser?.name} — {new Date(update.createdAt).toLocaleString()}</span>
-                                  </div>
-                                  {!isStructured && update.status === 'PENDING_REVIEW' && (
-                                    <div className="flex gap-2">
-                                      <Button size="sm" variant="primary" className="gap-1" onClick={() => { setUpdateReviewStatus('APPROVED'); setUpdateReviewComment(''); setShowUpdateReviewModal(update.id); }}>
-                                        <CheckCircle2 size={14} /> Approve
-                                      </Button>
-                                      <Button size="sm" variant="danger" className="gap-1" onClick={() => { setUpdateReviewStatus('CHANGES_REQUESTED'); setUpdateReviewComment(''); setShowUpdateReviewModal(update.id); }}>
-                                        <RotateCcw size={14} /> Request Changes
-                                      </Button>
+                          <div className="space-y-2">
+                            {(() => {
+                              const grouped: Record<string, any[]> = {};
+                              designerWorkForProject.forEach((w: any) => {
+                                const d = w.workDate || new Date(w.createdAt).toISOString().split('T')[0];
+                                if (!grouped[d]) grouped[d] = [];
+                                grouped[d].push(w);
+                              });
+                              return Object.keys(grouped).sort((a, b) => b.localeCompare(a)).map(date => {
+                                const dateKey = `designer-sales-${project.id}-${date}`;
+                                return (
+                                  <div key={date} className="bg-pink-50 border border-pink-200 rounded-lg overflow-hidden">
+                                    <div className="px-3 py-2 bg-pink-50 flex items-center gap-2 cursor-pointer hover:bg-pink-100 transition-colors" onClick={() => toggleDate(dateKey)}>
+                                      {expandedDates[dateKey] ? <ChevronUp size={14} className="text-pink-600" /> : <ChevronDown size={14} className="text-pink-600" />}
+                                      <span className="text-xs font-semibold text-slate-800">{new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                                      <span className="text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">{grouped[date].length} item{grouped[date].length !== 1 ? 's' : ''}</span>
                                     </div>
-                                  )}
-                                </div>
-
-                                {isStructured ? (
-                                  <div className="space-y-4">
-                                    {(update.onPageText || (update.onPageFiles && update.onPageFiles.length > 0)) && (
-                                      <div>
-                                        <div className="flex items-center justify-between mb-2">
-                                          <h5 className="text-xs font-bold text-purple-400 uppercase tracking-wider flex items-center gap-1"><FileText size={10} /> On-Page Report</h5>
-                                          <div className="flex items-center gap-2">
-                                            {update.onPageStatus !== 'PENDING' && (
-                                              <Badge variant={update.onPageStatus === 'APPROVED' ? 'green' : 'red'} className="text-[10px]">
-                                                {update.onPageStatus === 'APPROVED' ? 'Approved' : 'Rejected'}
-                                              </Badge>
+                                    {expandedDates[dateKey] && (
+                                      <div className="p-2 space-y-2">
+                                        {grouped[date].map((work: any) => (
+                                          <div key={work.id} className="p-3 bg-white border border-pink-200 rounded-lg">
+                                            <div className="flex items-center gap-2 mb-2">
+                                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${work.status === 'APPROVED' ? 'bg-green-50 text-green-600 border-green-200' : work.status === 'CHANGES_REQUESTED' ? 'bg-red-50 text-red-500 border-red-200' : 'bg-amber-50 text-amber-600 border-amber-200'}`}>
+                                                {work.status === 'APPROVED' ? 'Approved' : work.status === 'CHANGES_REQUESTED' ? 'Changes Requested' : 'Pending Review'}
+                                              </span>
+                                              <span className="text-[10px] text-slate-500">{new Date(work.createdAt).toLocaleString()}</span>
+                                            </div>
+                                            {work.text && <p className="text-sm text-slate-600 mb-2">{work.text}</p>}
+                                            {work.files.length > 0 && (
+                                              <div className="flex flex-wrap gap-2">
+                                                {work.files.map((f: any, i: number) => {
+                                                  const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(f.filename);
+                                                  return (
+                                                    <a key={i} href={`/uploads/${f.filename}`} target="_blank" download>
+                                                      {isImg ? (
+                                                        <img src={`/uploads/${f.filename}`} className="w-20 h-20 rounded-lg object-cover border border-slate-200 hover:shadow-md" />
+                                                      ) : (
+                                                        <span className="flex items-center gap-1 px-2 py-1 bg-blue-50 border border-blue-200 rounded text-xs text-blue-600"><Download size={10} /> {f.originalName}</span>
+                                                      )}
+                                                    </a>
+                                                  );
+                                                })}
+                                              </div>
                                             )}
-                                            {update.onPageStatus === 'PENDING' && (
-                                              <div className="flex gap-1">
-                                                <Button size="sm" variant="primary" className="gap-1 text-[11px] px-2 py-1" onClick={() => { setShowSectionReviewModal({ updateId: update.id, section: 'onPage', status: 'APPROVED' }); setSectionReviewComment(''); }}>
-                                                  <CheckCircle2 size={12} /> Approve
-                                                </Button>
-                                                <Button size="sm" variant="danger" className="gap-1 text-[11px] px-2 py-1" onClick={() => { setShowSectionReviewModal({ updateId: update.id, section: 'onPage', status: 'REJECTED' }); setSectionReviewComment(''); }}>
-                                                  <X size={12} /> Reject
-                                                </Button>
+                                            {work.reviewComment && (
+                                              <div className={`p-2 rounded-lg text-xs mt-2 ${work.status === 'APPROVED' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'}`}>
+                                                <span className="font-bold">Review:</span> {work.reviewComment}
                                               </div>
                                             )}
                                           </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              });
+                            })()}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                  )}
+
+                  {activeSalesTab[project.id] === 'records' && (
+                  <div className="p-4 sm:p-5 max-h-[70vh] overflow-y-auto">
+                    {projectUpdates.length > 0 ? (
+                      <div className="space-y-2">
+                        {(() => {
+                          const grouped: Record<string, any[]> = {};
+                          projectUpdates.forEach((u: any) => {
+                            const d = u.workDate || new Date(u.createdAt).toISOString().split('T')[0];
+                            if (!grouped[d]) grouped[d] = [];
+                            grouped[d].push(u);
+                          });
+                          return Object.keys(grouped).sort((a: string, b: string) => b.localeCompare(a)).map((date: string) => (
+                            <div key={date} className="bg-slate-50 rounded-lg border border-slate-200 overflow-hidden">
+                              <div className="px-4 py-2.5 bg-slate-100 flex items-center gap-2 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => toggleDate(`${project.id}-${date}`)}>
+                                {expandedDates[`${project.id}-${date}`] ? <ChevronUp size={14} className="text-slate-500" /> : <ChevronDown size={14} className="text-slate-500" />}
+                                <Calendar size={13} className="text-blue-600" />
+                                <span className="text-sm font-semibold text-slate-800">{new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                                <span className="text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">{grouped[date].length} report{grouped[date].length !== 1 ? 's' : ''}</span>
+                              </div>
+                              <div className={`divide-y divide-slate-700/30 p-3 space-y-3 ${expandedDates[`${project.id}-${date}`] ? '' : 'hidden'}`}>
+                                {grouped[date].map((update: any) => {
+                                  const fromUser = users[update.fromId];
+                                  const isStructured = update.reportType === 'STRUCTURED';
+                                  const offPageWorks = (update.offPageWorkIds || []).map((id: string) => workSubmissions.find((w: any) => w.id === id)).filter(Boolean);
+                                  return (
+                                    <div key={update.id} className="p-4 bg-white border border-slate-200 rounded-xl">
+                                      <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                          <Badge variant={getStatusColor(update.status)} className="text-[10px]">
+                                            {update.status === 'APPROVED' ? 'Approved' : update.status === 'CHANGES_REQUESTED' ? 'Changes Requested' : 'Pending Review'}
+                                          </Badge>
+                                          {isStructured && <Badge variant="purple" className="text-[10px]">Structured Report</Badge>}
+                                          <span className="text-[11px] text-slate-500">{fromUser?.name} — {new Date(update.createdAt).toLocaleString()}</span>
                                         </div>
-                                        <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg">
-                                          {update.onPageText && <p className="text-sm text-slate-300 mb-2 whitespace-pre-wrap">{update.onPageText}</p>}
-                                          {update.onPageFiles && update.onPageFiles.length > 0 && (
-                                            <div className="flex flex-wrap gap-2">
-                                              {update.onPageFiles.map((f: any, i: number) => {
+                                        {!isStructured && update.status === 'PENDING_REVIEW' && (
+                                          <div className="flex gap-2">
+                                            <Button size="sm" variant="primary" className="gap-1" onClick={() => { setUpdateReviewStatus('APPROVED'); setUpdateReviewComment(''); setShowUpdateReviewModal(update.id); }}>
+                                              <CheckCircle2 size={14} /> Approve
+                                            </Button>
+                                            <Button size="sm" variant="danger" className="gap-1" onClick={() => { setUpdateReviewStatus('CHANGES_REQUESTED'); setUpdateReviewComment(''); setShowUpdateReviewModal(update.id); }}>
+                                              <RotateCcw size={14} /> Request Changes
+                                            </Button>
+                                          </div>
+                                        )}
+                                      </div>
+                                      {isStructured ? (
+                                        <div className="space-y-4">
+                                          {(update.onPageText || (update.onPageFiles && update.onPageFiles.length > 0)) && (
+                                            <div>
+                                              <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                                                <h5 className="text-xs font-bold text-purple-600 uppercase tracking-wider flex items-center gap-1"><FileText size={10} /> On-Page Report</h5>
+                                                <div className="flex items-center gap-2">
+                                                  {update.onPageStatus !== 'PENDING' && (
+                                                    <Badge variant={update.onPageStatus === 'APPROVED' ? 'green' : 'red'} className="text-[10px]">
+                                                      {update.onPageStatus === 'APPROVED' ? 'Approved' : 'Rejected'}
+                                                    </Badge>
+                                                  )}
+                                                  {update.onPageStatus === 'PENDING' && (
+                                                    <div className="flex gap-1">
+                                                      <Button size="sm" variant="primary" className="gap-1 text-[11px] px-2 py-1" onClick={() => { setShowSectionReviewModal({ updateId: update.id, section: 'onPage', status: 'APPROVED' }); setSectionReviewComment(''); }}>
+                                                        <CheckCircle2 size={12} /> Approve
+                                                      </Button>
+                                                      <Button size="sm" variant="danger" className="gap-1 text-[11px] px-2 py-1" onClick={() => { setShowSectionReviewModal({ updateId: update.id, section: 'onPage', status: 'REJECTED' }); setSectionReviewComment(''); }}>
+                                                        <X size={12} /> Reject
+                                                      </Button>
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              </div>
+                                              <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                                                {update.onPageText && <p className="text-sm text-slate-600 mb-2 whitespace-pre-wrap">{update.onPageText}</p>}
+                                                {update.onPageFiles && update.onPageFiles.length > 0 && (
+                                                  <div className="flex flex-wrap gap-2">
+                                                    {update.onPageFiles.map((f: any, i: number) => {
+                                                      const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(f.filename);
+                                                      return (
+                                                        <a key={i} href={`/uploads/${f.filename}`} target="_blank" download>
+                                                          {isImg ? (
+                                                            <img src={`/uploads/${f.filename}`} className="w-20 h-20 rounded-lg object-cover border border-slate-200 hover:shadow-md" />
+                                                          ) : (
+                                                            <span className="flex items-center gap-1 px-3 py-2 bg-white border border-blue-500/20 rounded-lg text-xs text-blue-600 hover:bg-blue-100"><Download size={14} /> {f.originalName}</span>
+                                                          )}
+                                                        </a>
+                                                      );
+                                                    })}
+                                                  </div>
+                                                )}
+                                              </div>
+                                              {update.onPageComment && (
+                                                <div className={`p-2 rounded-lg text-xs mt-1 ${update.onPageStatus === 'APPROVED' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'}`}>
+                                                  <span className="font-bold">Review:</span> {update.onPageComment}
+                                                </div>
+                                              )}
+                                            </div>
+                                          )}
+                                          {offPageWorks.length > 0 && (
+                                            <div>
+                                              <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                                                <h5 className="text-xs font-bold text-orange-600 uppercase tracking-wider flex items-center gap-1"><Globe size={10} /> Off-Page Report</h5>
+                                                <div className="flex items-center gap-2">
+                                                  {update.offPageStatus !== 'PENDING' && (
+                                                    <Badge variant={update.offPageStatus === 'APPROVED' ? 'green' : 'red'} className="text-[10px]">
+                                                      {update.offPageStatus === 'APPROVED' ? 'Approved' : 'Rejected'}
+                                                    </Badge>
+                                                  )}
+                                                  {update.offPageStatus === 'PENDING' && (
+                                                    <div className="flex gap-1">
+                                                      <Button size="sm" variant="primary" className="gap-1 text-[11px] px-2 py-1" onClick={() => { setShowSectionReviewModal({ updateId: update.id, section: 'offPage', status: 'APPROVED' }); setSectionReviewComment(''); }}>
+                                                        <CheckCircle2 size={12} /> Approve
+                                                      </Button>
+                                                      <Button size="sm" variant="danger" className="gap-1 text-[11px] px-2 py-1" onClick={() => { setShowSectionReviewModal({ updateId: update.id, section: 'offPage', status: 'REJECTED' }); setSectionReviewComment(''); }}>
+                                                        <X size={12} /> Reject
+                                                      </Button>
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              </div>
+                                              <div className="space-y-2">
+                                                {offPageWorks.map((work: any) => (
+                                                  <div key={work.id} className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                                                    {work.text && <p className="text-sm text-slate-600 mb-2">{work.text}</p>}
+                                                    {work.files && work.files.length > 0 && (
+                                                      <div className="flex flex-wrap gap-2">
+                                                        {work.files.map((f: any, i: number) => {
+                                                          const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(f.filename);
+                                                          return (
+                                                            <a key={i} href={`/uploads/${f.filename}`} target="_blank" download>
+                                                              {isImg ? (
+                                                                <img src={`/uploads/${f.filename}`} className="w-20 h-20 rounded-lg object-cover border border-slate-200 hover:shadow-md" />
+                                                              ) : (
+                                                                <span className="flex items-center gap-1 px-3 py-2 bg-white border border-blue-500/20 rounded-lg text-xs text-blue-600 hover:bg-blue-100"><Download size={14} /> {f.originalName}</span>
+                                                              )}
+                                                            </a>
+                                                          );
+                                                        })}
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                ))}
+                                              </div>
+                                              {update.offPageComment && (
+                                                <div className={`p-2 rounded-lg text-xs mt-1 ${update.offPageStatus === 'APPROVED' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'}`}>
+                                                  <span className="font-bold">Review:</span> {update.offPageComment}
+                                                </div>
+                                              )}
+                                            </div>
+                                          )}
+                                        </div>
+                                      ) : (
+                                        <>
+                                          {update.text && <p className="text-sm text-slate-600 mb-2">{update.text}</p>}
+                                          {update.files.length > 0 && (
+                                            <div className="flex flex-wrap gap-3 mb-2">
+                                              {update.files.map((f: any, i: number) => {
                                                 const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(f.filename);
                                                 return (
                                                   <a key={i} href={`/uploads/${f.filename}`} target="_blank" download>
                                                     {isImg ? (
-                                                      <img src={`/uploads/${f.filename}`} className="w-20 h-20 rounded-lg object-cover border border-slate-700/50 hover:shadow-md" />
+                                                      <img src={`/uploads/${f.filename}`} className="w-20 h-20 rounded-lg object-cover border border-slate-200 hover:shadow-md" />
                                                     ) : (
-                                                      <span className="flex items-center gap-1 px-3 py-2 bg-slate-800/50 border border-blue-500/20 rounded-lg text-xs text-blue-400 hover:bg-blue-500/20"><Download size={14} /> {f.originalName}</span>
+                                                      <span className="flex items-center gap-1 px-3 py-2 bg-blue-50 border border-blue-500/20 rounded-lg text-xs text-blue-600 hover:bg-blue-100"><Download size={14} /> {f.originalName}</span>
                                                     )}
                                                   </a>
                                                 );
                                               })}
                                             </div>
                                           )}
+                                        </>
+                                      )}
+                                      {update.reviewComment && (
+                                        <div className={`p-2 rounded-lg text-xs mt-2 ${update.status === 'APPROVED' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'}`}>
+                                          <span className="font-bold">Your review:</span> {update.reviewComment}
                                         </div>
-                                        {update.onPageComment && (
-                                          <div className={`p-2 rounded-lg text-xs mt-1 ${update.onPageStatus === 'APPROVED' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
-                                            <span className="font-bold">Review:</span> {update.onPageComment}
-                                          </div>
-                                        )}
-                                      </div>
-                                    )}
-                                    {offPageWorks.length > 0 && (
-                                      <div>
-                                        <div className="flex items-center justify-between mb-2">
-                                          <h5 className="text-xs font-bold text-orange-400 uppercase tracking-wider flex items-center gap-1"><Globe size={10} /> Off-Page Report</h5>
-                                          <div className="flex items-center gap-2">
-                                            {update.offPageStatus !== 'PENDING' && (
-                                              <Badge variant={update.offPageStatus === 'APPROVED' ? 'green' : 'red'} className="text-[10px]">
-                                                {update.offPageStatus === 'APPROVED' ? 'Approved' : 'Rejected'}
-                                              </Badge>
-                                            )}
-                                            {update.offPageStatus === 'PENDING' && (
-                                              <div className="flex gap-1">
-                                                <Button size="sm" variant="primary" className="gap-1 text-[11px] px-2 py-1" onClick={() => { setShowSectionReviewModal({ updateId: update.id, section: 'offPage', status: 'APPROVED' }); setSectionReviewComment(''); }}>
-                                                  <CheckCircle2 size={12} /> Approve
-                                                </Button>
-                                                <Button size="sm" variant="danger" className="gap-1 text-[11px] px-2 py-1" onClick={() => { setShowSectionReviewModal({ updateId: update.id, section: 'offPage', status: 'REJECTED' }); setSectionReviewComment(''); }}>
-                                                  <X size={12} /> Reject
-                                                </Button>
-                                              </div>
-                                            )}
-                                          </div>
-                                        </div>
-                                        <div className="space-y-2">
-                                          {offPageWorks.map((work: any) => (
-                                            <div key={work.id} className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg">
-                                              {work.text && <p className="text-sm text-slate-300 mb-2">{work.text}</p>}
-                                              {work.files && work.files.length > 0 && (
-                                                <div className="flex flex-wrap gap-2">
-                                                  {work.files.map((f: any, i: number) => {
-                                                    const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(f.filename);
-                                                    return (
-                                                      <a key={i} href={`/uploads/${f.filename}`} target="_blank" download>
-                                                        {isImg ? (
-                                                          <img src={`/uploads/${f.filename}`} className="w-20 h-20 rounded-lg object-cover border border-slate-700/50 hover:shadow-md" />
-                                                        ) : (
-                                                          <span className="flex items-center gap-1 px-3 py-2 bg-slate-800/50 border border-blue-500/20 rounded-lg text-xs text-blue-400 hover:bg-blue-500/20"><Download size={14} /> {f.originalName}</span>
-                                                        )}
-                                                      </a>
-                                                    );
-                                                  })}
-                                                </div>
-                                              )}
-                                            </div>
-                                          ))}
-                                        </div>
-                                        {update.offPageComment && (
-                                          <div className={`p-2 rounded-lg text-xs mt-1 ${update.offPageStatus === 'APPROVED' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
-                                            <span className="font-bold">Review:</span> {update.offPageComment}
-                                          </div>
-                                        )}
-                                      </div>
-                                    )}
-                                  </div>
-                                ) : (
-                                  <>
-                                    {update.text && <p className="text-sm text-slate-300 mb-2">{update.text}</p>}
-                                    {update.files.length > 0 && (
-                                      <div className="flex flex-wrap gap-3 mb-2">
-                                        {update.files.map((f: any, i: number) => {
-                                          const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(f.filename);
-                                          return (
-                                            <a key={i} href={`/uploads/${f.filename}`} target="_blank" download>
-                                              {isImg ? (
-                                                <img src={`/uploads/${f.filename}`} className="w-20 h-20 rounded-lg object-cover border border-slate-700/50 hover:shadow-md" />
-                                              ) : (
-                                                <span className="flex items-center gap-1 px-3 py-2 bg-blue-500/10 border border-blue-500/20 rounded-lg text-xs text-blue-400 hover:bg-blue-500/20"><Download size={14} /> {f.originalName}</span>
-                                              )}
-                                            </a>
-                                          );
-                                        })}
-                                      </div>
-                                    )}
-                                  </>
-                                )}
-
-                                {update.reviewComment && (
-                                  <div className={`p-2 rounded-lg text-xs mt-2 ${update.status === 'APPROVED' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
-                                    <span className="font-bold">Your review:</span> {update.reviewComment}
-                                  </div>
-                                )}
+                                      )}
+                                    </div>
+                                  );
+                                })}
                               </div>
-                            );
-                          })}
-                                </div>
-                              </div>
-                            ));
-                          })()}
-                        </div>
+                            </div>
+                          ));
+                        })()}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12">
+                        <FileText size={36} className="mx-auto text-slate-300 mb-3" />
+                        <p className="text-sm text-slate-500">No records yet</p>
                       </div>
                     )}
-                    </div>
-                    <div className="lg:col-span-1 border-l border-slate-700/50 lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto">
-                      <ChatBox projectId={project.id} />
-                    </div>
                   </div>
+                  )}
+
+                  {activeSalesTab[project.id] === 'chat' && (
+                  <div className="h-[70vh]">
+                    <ChatBox projectId={project.id} />
+                  </div>
+                  )}
                   </div>
                 )}
               </Card>
@@ -595,10 +683,10 @@ export function SalesDashboard() {
             {[1, 2, 3].map(step => (
               <React.Fragment key={step}>
                 <button type="button" onClick={() => { if (step < formStep) setFormStep(step); }}
-                  className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full text-[11px] sm:text-xs font-bold flex items-center justify-center transition-colors ${step <= formStep ? 'bg-blue-600 text-white' : 'bg-slate-700/50 text-slate-500'}`}>
+                  className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full text-[11px] sm:text-xs font-bold flex items-center justify-center transition-colors ${step <= formStep ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
                   {step}
                 </button>
-                {step < 3 && <div className={`flex-1 h-0.5 rounded ${step < formStep ? 'bg-blue-600' : 'bg-slate-700/50'}`} />}
+                {step < 3 && <div className={`flex-1 h-0.5 rounded ${step < formStep ? 'bg-blue-600' : 'bg-slate-100'}`} />}
               </React.Fragment>
             ))}
           </div>
@@ -608,8 +696,8 @@ export function SalesDashboard() {
               <Input label="Business Name (Project Name) *" placeholder="e.g. BurgerHouse" required value={form.name} onChange={e => update('name', e.target.value)} />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-1">
-                  <label className="block text-xs sm:text-sm font-medium text-slate-300">Business Category *</label>
-                  <input list="business-categories" placeholder="Select or type category..." value={form.businessCategory} onChange={e => update('businessCategory', e.target.value)} className="block w-full px-3 py-2 sm:px-4 sm:py-2.5 bg-slate-900/50 border border-slate-700/50 rounded-lg sm:rounded-xl text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all" />
+                  <label className="block text-xs sm:text-sm font-medium text-slate-600">Business Category *</label>
+                  <input list="business-categories" placeholder="Select or type category..." value={form.businessCategory} onChange={e => update('businessCategory', e.target.value)} className="block w-full px-3 py-2 sm:px-4 sm:py-2.5 bg-slate-50 border border-slate-200 rounded-lg sm:rounded-xl text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all" />
                   <datalist id="business-categories">
                     {BUSINESS_CATEGORIES.map(c => <option key={c} value={c} />)}
                   </datalist>
@@ -661,7 +749,7 @@ export function SalesDashboard() {
               <Textarea label="Special Instructions / Notes" placeholder="Any additional info, client preferences, access details..." value={form.specialInstructions} onChange={e => update('specialInstructions', e.target.value)} />
               <div className="flex flex-col-reverse sm:flex-row justify-between gap-2 pt-2">
                 <Button type="button" variant="outline" onClick={() => setFormStep(2)} className="w-full sm:w-auto">Back</Button>
-                <Button type="submit" className="gap-2 w-full sm:w-auto"><Plus size={16} /> Create Project</Button>
+                <Button type="submit" className="gap-2 w-full sm:w-auto" disabled={creating}>{creating ? <><Loader2 size={16} className="animate-spin" /> Creating...</> : <><Plus size={16} /> Create Project</>}</Button>
               </div>
             </div>
           )}
@@ -678,15 +766,15 @@ export function SalesDashboard() {
                 {[1, 2, 3].map(step => (
                   <React.Fragment key={step}>
                     <button type="button" onClick={() => { if (step < editStep) setEditStep(step); }}
-                      className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full text-[11px] sm:text-xs font-bold flex items-center justify-center transition-colors ${step <= editStep ? 'bg-blue-600 text-white' : 'bg-slate-700/50 text-slate-500'}`}>
+                      className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full text-[11px] sm:text-xs font-bold flex items-center justify-center transition-colors ${step <= editStep ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
                       {step}
                     </button>
-                    {step < 3 && <div className={`flex-1 h-0.5 rounded ${step < editStep ? 'bg-blue-600' : 'bg-slate-700/50'}`} />}
+                    {step < 3 && <div className={`flex-1 h-0.5 rounded ${step < editStep ? 'bg-blue-600' : 'bg-slate-100'}`} />}
                   </React.Fragment>
                 ))}
               </div>
 
-              <div className="flex items-center gap-2 mb-4 p-2.5 sm:p-3 bg-blue-500/10 rounded-lg">
+              <div className="flex items-center gap-2 mb-4 p-2.5 sm:p-3 bg-blue-50 rounded-lg">
                 <Badge variant={STAGE_COLORS[project.stage]}>{STAGE_LABELS[project.stage]}</Badge>
                 <span className="text-xs text-slate-400">Created {new Date(project.createdAt).toLocaleDateString()}</span>
               </div>
@@ -696,8 +784,8 @@ export function SalesDashboard() {
                   <Input label="Business Name (Project Name) *" placeholder="e.g. BurgerHouse" required value={editForm.name} onChange={e => updateEdit('name', e.target.value)} />
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div className="space-y-1">
-                      <label className="block text-xs sm:text-sm font-medium text-slate-300">Business Category *</label>
-                      <input list="business-categories-edit" placeholder="Select or type category..." value={editForm.businessCategory} onChange={e => updateEdit('businessCategory', e.target.value)} className="block w-full px-3 py-2 sm:px-4 sm:py-2.5 bg-slate-900/50 border border-slate-700/50 rounded-lg sm:rounded-xl text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all" />
+                      <label className="block text-xs sm:text-sm font-medium text-slate-600">Business Category *</label>
+                      <input list="business-categories-edit" placeholder="Select or type category..." value={editForm.businessCategory} onChange={e => updateEdit('businessCategory', e.target.value)} className="block w-full px-3 py-2 sm:px-4 sm:py-2.5 bg-slate-50 border border-slate-200 rounded-lg sm:rounded-xl text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all" />
                       <datalist id="business-categories-edit">
                         {BUSINESS_CATEGORIES.map(c => <option key={c} value={c} />)}
                       </datalist>
@@ -747,15 +835,15 @@ export function SalesDashboard() {
                   <Textarea label="Target Keywords *" placeholder="e.g. best burger restaurant near me" required value={editForm.targetKeywords} onChange={e => updateEdit('targetKeywords', e.target.value)} />
                   <Textarea label="Competitor Businesses" placeholder="e.g. Burger King, McDonald's" value={editForm.competitors} onChange={e => updateEdit('competitors', e.target.value)} />
                   <Textarea label="Special Instructions / Notes" placeholder="Any additional info..." value={editForm.specialInstructions} onChange={e => updateEdit('specialInstructions', e.target.value)} />
-                  <div className="flex flex-col sm:flex-row justify-between pt-4 border-t border-slate-700/50 gap-2">
+                  <div className="flex flex-col sm:flex-row justify-between pt-4 border-t border-slate-200 gap-2">
                     <Button type="button" variant="outline" onClick={() => setEditStep(2)} className="w-full sm:w-auto">Back</Button>
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                      <Button type="button" variant="outline" className="gap-2 w-full sm:w-auto" onClick={handleResubmit}>
-                        <RotateCcw size={16} /> Save & Resubmit
-                      </Button>
-                      <Button type="submit" className="gap-2 w-full sm:w-auto">
-                        <Pencil size={16} /> Save Changes
-                      </Button>
+                       <Button type="button" variant="outline" className="gap-2 w-full sm:w-auto" onClick={handleResubmit} disabled={resubmitting}>
+                         {resubmitting ? <><Loader2 size={16} className="animate-spin" /> Resubmitting...</> : <><RotateCcw size={16} /> Save & Resubmit</>}
+                       </Button>
+                       <Button type="submit" className="gap-2 w-full sm:w-auto" disabled={saving}>
+                         {saving ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : <><Pencil size={16} /> Save Changes</>}
+                       </Button>
                     </div>
                   </div>
                 </div>
@@ -767,29 +855,29 @@ export function SalesDashboard() {
 
       {showSectionReviewModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} onClick={() => setShowSectionReviewModal(null)} className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" />
-          <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} className="relative bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden z-10">
-            <div className="px-4 sm:px-6 py-4 border-b border-slate-700/50 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-slate-100">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} onClick={() => setShowSectionReviewModal(null)} className="absolute inset-0 bg-black/20 backdrop-blur-sm" />
+          <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden z-10">
+            <div className="px-4 sm:px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-900">
                 {showSectionReviewModal.status === 'APPROVED' ? 'Approve' : 'Reject'} {showSectionReviewModal.section === 'onPage' ? 'On-Page' : 'Off-Page'} Report
               </h3>
-              <button onClick={() => setShowSectionReviewModal(null)} className="p-2 hover:bg-slate-700/50 rounded-lg text-slate-500"><X size={18} /></button>
+              <button onClick={() => setShowSectionReviewModal(null)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"><X size={18} /></button>
             </div>
             <div className="px-4 sm:px-6 py-5 space-y-4">
               {showSectionReviewModal.status === 'REJECTED' && (
-                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-xs text-red-400">Please describe what needs to be fixed.</div>
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-500">Please describe what needs to be fixed.</div>
               )}
               <textarea
-                className="block w-full px-3 py-2 bg-slate-800 border border-slate-700/50 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[120px]"
+                className="block w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[120px]"
                 placeholder={showSectionReviewModal.status === 'REJECTED' ? 'What needs to be fixed...' : 'Optional comment...'}
                 value={sectionReviewComment}
                 onChange={e => setSectionReviewComment(e.target.value)}
               />
             </div>
-            <div className="px-4 sm:px-6 py-4 border-t border-slate-700/50 flex justify-end gap-3">
+            <div className="px-4 sm:px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
               <Button variant="outline" onClick={() => setShowSectionReviewModal(null)}>Cancel</Button>
-              <Button variant={showSectionReviewModal.status === 'APPROVED' ? 'primary' : 'danger'} className="gap-1" onClick={handleSectionReview} disabled={showSectionReviewModal.status === 'REJECTED' && !sectionReviewComment.trim()}>
-                {showSectionReviewModal.status === 'APPROVED' ? <><CheckCircle2 size={14} /> Approve</> : <><X size={14} /> Reject</>}
+              <Button variant={showSectionReviewModal.status === 'APPROVED' ? 'primary' : 'danger'} className="gap-1" onClick={handleSectionReview} disabled={sectionReviewing || (showSectionReviewModal.status === 'REJECTED' && !sectionReviewComment.trim())}>
+                {sectionReviewing ? <><Loader2 size={14} className="animate-spin" /> Processing...</> : showSectionReviewModal.status === 'APPROVED' ? <><CheckCircle2 size={14} /> Approve</> : <><X size={14} /> Reject</>}
               </Button>
             </div>
           </motion.div>
@@ -798,46 +886,46 @@ export function SalesDashboard() {
 
       {showUpdateReviewModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} onClick={() => setShowUpdateReviewModal(null)} className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" />
-          <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} className="relative bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden z-10">
-            <div className="px-4 sm:px-6 py-4 border-b border-slate-700/50 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-slate-100">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} onClick={() => setShowUpdateReviewModal(null)} className="absolute inset-0 bg-black/20 backdrop-blur-sm" />
+          <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden z-10">
+            <div className="px-4 sm:px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-900">
                 {updateReviewStatus === 'APPROVED' ? 'Approve Update' : 'Request Changes'}
               </h3>
-              <button onClick={() => setShowUpdateReviewModal(null)} className="p-2 hover:bg-slate-700/50 rounded-lg text-slate-500"><X size={18} /></button>
+              <button onClick={() => setShowUpdateReviewModal(null)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"><X size={18} /></button>
             </div>
             <div className="px-4 sm:px-6 py-5 space-y-4">
               {updateReviewStatus === 'CHANGES_REQUESTED' && (
-                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-xs text-red-400">
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-500">
                   Please describe what needs to be changed.
                 </div>
               )}
               {updateReviewStatus === 'APPROVED' && (
-                <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg text-xs text-green-400">
+                <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-xs text-green-600">
                   You can add an optional comment with this approval.
                 </div>
               )}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">
+                <label className="block text-sm font-medium text-slate-600 mb-1">
                   {updateReviewStatus === 'CHANGES_REQUESTED' ? 'Reason / What needs to be fixed' : 'Comment (optional)'}
                 </label>
                 <textarea
-                  className="block w-full px-3 py-2 bg-slate-800 border border-slate-700/50 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[120px]"
+                  className="block w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[120px]"
                   placeholder={updateReviewStatus === 'CHANGES_REQUESTED' ? 'e.g. Report format needs correction, missing screenshots...' : 'Any additional notes...'}
                   value={updateReviewComment}
                   onChange={e => setUpdateReviewComment(e.target.value)}
                 />
               </div>
             </div>
-            <div className="px-4 sm:px-6 py-4 border-t border-slate-700/50 flex justify-end gap-3">
+            <div className="px-4 sm:px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
               <Button variant="outline" onClick={() => setShowUpdateReviewModal(null)}>Cancel</Button>
               <Button
                 variant={updateReviewStatus === 'APPROVED' ? 'primary' : 'danger'}
                 className="gap-1"
                 onClick={handleUpdateReview}
-                disabled={updateReviewStatus === 'CHANGES_REQUESTED' && !updateReviewComment.trim()}
+                disabled={updateReviewing || (updateReviewStatus === 'CHANGES_REQUESTED' && !updateReviewComment.trim())}
               >
-                {updateReviewStatus === 'APPROVED' ? <><CheckCircle2 size={14} /> Approve</> : <><RotateCcw size={14} /> Send Back for Changes</>}
+                {updateReviewing ? <><Loader2 size={14} className="animate-spin" /> Processing...</> : updateReviewStatus === 'APPROVED' ? <><CheckCircle2 size={14} /> Approve</> : <><RotateCcw size={14} /> Send Back for Changes</>}
               </Button>
             </div>
           </motion.div>

@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import {
   ArrowRight, MapPin, Star, Globe, Search, Building2, X, ExternalLink, Calendar,
   Shield, Send, Clock, Folder, ChevronDown, ChevronUp,
-  CheckCircle2, RotateCcw, Download, FileText, Bell, Users, MessageCircle
+  CheckCircle2, RotateCcw, Download, FileText, Bell, Users, MessageCircle, Loader2
 } from 'lucide-react';
 import { Card, Button, Badge, Textarea } from '../ui/Common';
 import { useApp } from '../../AppContext';
@@ -24,6 +24,10 @@ export function SEOManagerDashboard() {
   const [updateReviewComment, setUpdateReviewComment] = useState('');
   const [expandedDates, setExpandedDates] = useState<Record<string, boolean>>({});
   const toggleDate = (key: string) => setExpandedDates(prev => ({ ...prev, [key]: !prev[key] }));
+  const [expandedDetails, setExpandedDetails] = useState<Record<string, boolean>>({});
+  const [assigning, setAssigning] = useState(false);
+  const [sectionReviewing, setSectionReviewing] = useState(false);
+  const [updateReviewing, setUpdateReviewing] = useState(false);
 
   const salesManager = (Object.values(users) as any[]).find(u => u.role === 'SALES_MANAGER');
   const salesManagerName = salesManager?.name || 'Sales Manager';
@@ -39,26 +43,41 @@ export function SEOManagerDashboard() {
   const activeProjects = projects.filter(p => ['ASSIGNED_TO_LEAD', 'ON_PAGE_IN_PROGRESS', 'OFF_PAGE_IN_PROGRESS', 'REVIEW'].includes(p.stage));
   const allDisplayProjects = [...newProjects, ...activeProjects];
 
-  const handleAssign = () => {
+  const handleAssign = async () => {
     if (!showAssignPopup) return;
-    assignToLead(showAssignPopup, seoLeadId, assignComment);
-    setShowAssignPopup(null);
-    setAssignComment('');
+    setAssigning(true);
+    try {
+      await assignToLead(showAssignPopup, seoLeadId, assignComment);
+      setShowAssignPopup(null);
+      setAssignComment('');
+    } finally {
+      setAssigning(false);
+    }
   };
 
   const handleUpdateReview = async () => {
     if (!showUpdateReviewModal) return;
-    await reviewProjectUpdate(showUpdateReviewModal, updateReviewStatus, updateReviewComment);
-    setShowUpdateReviewModal(null);
-    setUpdateReviewComment('');
-    setUpdateReviewStatus('');
+    setUpdateReviewing(true);
+    try {
+      await reviewProjectUpdate(showUpdateReviewModal, updateReviewStatus, updateReviewComment);
+      setShowUpdateReviewModal(null);
+      setUpdateReviewComment('');
+      setUpdateReviewStatus('');
+    } finally {
+      setUpdateReviewing(false);
+    }
   };
 
   const handleSectionReview = async () => {
     if (!showSectionReviewModal) return;
-    await reviewSection(showSectionReviewModal.updateId, showSectionReviewModal.section, showSectionReviewModal.status, sectionReviewComment);
-    setShowSectionReviewModal(null);
-    setSectionReviewComment('');
+    setSectionReviewing(true);
+    try {
+      await reviewSection(showSectionReviewModal.updateId, showSectionReviewModal.section, showSectionReviewModal.status, sectionReviewComment);
+      setShowSectionReviewModal(null);
+      setSectionReviewComment('');
+    } finally {
+      setSectionReviewing(false);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -76,16 +95,16 @@ export function SEOManagerDashboard() {
     <div className="space-y-4 sm:space-y-6 max-w-6xl mx-auto p-4 sm:p-0">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-100">SEO Operations Dashboard</h1>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">SEO Operations Dashboard</h1>
           <p className="text-slate-500 mt-1 text-sm sm:text-base">Manage GMB projects</p>
         </div>
         {pendingUpdatesCount > 0 && (
-          <div className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-xl">
+          <div className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-red-50 border border-red-200 rounded-xl">
             <div className="relative">
-              <Bell size={20} className="text-red-400" />
+              <Bell size={20} className="text-red-600" />
               <span className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5">{pendingUpdatesCount}</span>
             </div>
-            <span className="text-xs sm:text-sm font-semibold text-red-400">{pendingUpdatesCount} new report{pendingUpdatesCount !== 1 ? 's' : ''} from {seoLeadName}</span>
+            <span className="text-xs sm:text-sm font-semibold text-red-600">{pendingUpdatesCount} new report{pendingUpdatesCount !== 1 ? 's' : ''} from {seoLeadName}</span>
           </div>
         )}
       </div>
@@ -110,11 +129,11 @@ export function SEOManagerDashboard() {
 
           return (
             <Card key={project.id} className="overflow-hidden">
-              <div className="p-4 sm:p-5 cursor-pointer hover:bg-slate-700/50 transition-colors" onClick={() => setExpandedProject(isExpanded ? null : project.id)}>
+              <div className="p-4 sm:p-5 cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => setExpandedProject(isExpanded ? null : project.id)}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3 sm:gap-4">
                     <div className="relative shrink-0">
-                      <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center ${isNew ? 'bg-purple-500/10 text-purple-400' : 'bg-blue-500/10 text-blue-400'}`}>
+                      <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center ${'bg-blue-500 text-white'}`}>
                         <Folder size={28} />
                         {pendingForProject > 0 && !isExpanded && (
                           <span className="absolute -top-1 -right-1 min-w-[20px] h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 animate-pulse">{pendingForProject}</span>
@@ -128,16 +147,16 @@ export function SEOManagerDashboard() {
                     </div>
                     <div>
                       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                        <h3 className="font-bold text-base sm:text-lg text-slate-100">{project.name}</h3>
+                        <h3 className="font-bold text-base sm:text-lg text-slate-900">{project.name}</h3>
                         <Badge variant={badge.color as any}>{badge.label}</Badge>
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${project.verificationStatus === 'VERIFIED' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${project.verificationStatus === 'VERIFIED' ? 'bg-green-50 text-green-600 border-green-200' : 'bg-red-50 text-red-500 border-red-200'}`}>
                           <Shield size={10} /> {project.verificationStatus === 'VERIFIED' ? 'Verified' : 'Unverified'}
                         </span>
                         {pendingForProject > 0 && !isExpanded && (
-                          <span className="text-[10px] font-semibold text-red-400 bg-red-500/20 px-2 py-0.5 rounded-full animate-pulse">{pendingForProject} new report{pendingForProject !== 1 ? 's' : ''}</span>
+                          <span className="text-[10px] font-semibold text-red-500 bg-red-50 px-2 py-0.5 rounded-full animate-pulse">{pendingForProject} new report{pendingForProject !== 1 ? 's' : ''}</span>
                         )}
                       </div>
-                      <p className="text-sm text-slate-400">{project.businessCategory || 'N/A'}</p>
+                      <p className="text-sm text-slate-600">{project.businessCategory || 'N/A'}</p>
                       <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-1 text-xs text-slate-500">
                         <span className="flex items-center gap-1"><MapPin size={10} /> {project.businessCity}{project.businessState ? `, ${project.businessState}` : ''}</span>
                         <span className="flex items-center gap-1"><Star size={10} /> {project.currentRating} ({project.currentReviews} reviews)</span>
@@ -149,7 +168,7 @@ export function SEOManagerDashboard() {
                     {isActive && (
                       <div className="text-right text-xs text-slate-500 hidden sm:block">
                         <p>{projectUpdates.length} report{projectUpdates.length !== 1 ? 's' : ''}</p>
-                        {pendingForProject > 0 && <p className="text-red-400 font-semibold">{pendingForProject} pending</p>}
+                        {pendingForProject > 0 && <p className="text-red-500 font-semibold">{pendingForProject} pending</p>}
                       </div>
                     )}
                     {isExpanded ? <ChevronUp size={20} className="text-slate-500" /> : <ChevronDown size={20} className="text-slate-500" />}
@@ -158,74 +177,85 @@ export function SEOManagerDashboard() {
               </div>
 
               {isExpanded && (
-                <div className="border-t border-slate-700/50">
-                <div className="grid grid-cols-1 lg:grid-cols-3">
-                  <div className="lg:col-span-2">
-                  <div className="p-4 sm:p-5 border-b border-slate-700/50">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 gap-2">
-                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-                        <div className="w-1 h-4 bg-blue-500 rounded-full" />
-                        Project Details
-                      </h4>
-                      {isNew && (
-                        <Button size="sm" className="gap-1" onClick={(e) => { e.stopPropagation(); setShowAssignPopup(project.id); }}>
-                          Assign to {seoLeadName} <ArrowRight size={14} />
-                        </Button>
-                      )}
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                       <div className="p-2.5 bg-white/[0.04] rounded-lg border border-blue-200/10"><span className="text-[10px] text-blue-300/60 uppercase tracking-wider font-medium">Category</span><p className="text-sm font-medium text-blue-50 mt-0.5 truncate">{project.businessCategory || 'N/A'}</p></div>
-                       <div className="p-2.5 bg-white/[0.04] rounded-lg border border-blue-200/10"><span className="text-[10px] text-blue-300/60 uppercase tracking-wider font-medium">Phone</span><p className="text-sm font-medium text-blue-50 mt-0.5 truncate">{project.businessPhone || 'N/A'}</p></div>
-                       <div className="p-2.5 bg-white/[0.04] rounded-lg border border-blue-200/10"><span className="text-[10px] text-blue-300/60 uppercase tracking-wider font-medium">Email</span><p className="text-sm font-medium text-blue-50 mt-0.5 truncate">{project.businessEmail || 'N/A'}</p></div>
-                       <div className="p-2.5 bg-white/[0.04] rounded-lg border border-blue-200/10"><span className="text-[10px] text-blue-300/60 uppercase tracking-wider font-medium">Website</span><p className="text-sm font-medium text-blue-50 mt-0.5 truncate">{project.businessWebsite || 'N/A'}</p></div>
-                       <div className="p-2.5 bg-white/[0.04] rounded-lg border border-blue-200/10"><span className="text-[10px] text-blue-300/60 uppercase tracking-wider font-medium">Address</span><p className="text-sm font-medium text-blue-50 mt-0.5 truncate">{project.businessAddress}{project.businessCity ? `, ${project.businessCity}` : ''} {project.businessState} {project.businessZip}</p></div>
-                       <div className="p-2.5 bg-white/[0.04] rounded-lg border border-blue-200/10"><span className="text-[10px] text-blue-300/60 uppercase tracking-wider font-medium">Service Areas</span><p className="text-sm font-medium text-blue-50 mt-0.5 truncate">{project.serviceAreas || 'N/A'}</p></div>
-                       <div className="p-2.5 bg-white/[0.04] rounded-lg border border-blue-200/10"><span className="text-[10px] text-blue-300/60 uppercase tracking-wider font-medium">Services</span><p className="text-sm font-medium text-blue-50 mt-0.5 truncate">{project.services || 'N/A'}</p></div>
-                       <div className="p-2.5 bg-white/[0.04] rounded-lg border border-blue-200/10"><span className="text-[10px] text-blue-300/60 uppercase tracking-wider font-medium">What We Offer</span><p className="text-sm font-medium text-blue-50 mt-0.5 truncate">{(project as any).offerServices || 'N/A'}</p></div>
-                       <div className="p-2.5 bg-white/[0.04] rounded-lg border border-blue-200/10"><span className="text-[10px] text-blue-300/60 uppercase tracking-wider font-medium">Business Hours</span><p className="text-sm font-medium text-blue-50 mt-0.5 truncate">{project.businessHours || 'N/A'}</p></div>
-                       <div className="p-2.5 bg-white/[0.04] rounded-lg border border-blue-200/10"><span className="text-[10px] text-blue-300/60 uppercase tracking-wider font-medium">Reviews</span><p className="text-sm font-medium text-blue-50 mt-0.5">{project.currentReviews} ({project.currentRating} rating)</p></div>
-                       <div className="p-2.5 bg-white/[0.04] rounded-lg border border-blue-200/10"><span className="text-[10px] text-blue-300/60 uppercase tracking-wider font-medium">Verification</span><p className="text-sm font-medium text-blue-50 mt-0.5">{project.verificationStatus}</p></div>
-                       <div className="p-2.5 bg-white/[0.04] rounded-lg border border-blue-200/10"><span className="text-[10px] text-blue-300/60 uppercase tracking-wider font-medium">Competitors</span><p className="text-sm font-medium text-blue-50 mt-0.5 truncate">{project.competitors || 'N/A'}</p></div>
+                <div className="border-t border-slate-200">
+                 <div className="flex flex-col lg:flex-row max-h-[70vh]">
+                   <div className="flex-1 overflow-y-auto">
+                   <div className="border-b border-slate-200">
+                     <button
+                       onClick={() => setExpandedDetails(prev => ({ ...prev, [project.id]: !prev[project.id] }))}
+                       className="w-full px-4 sm:px-5 py-3 flex items-center justify-between hover:bg-blue-50/50 transition-colors"
+                     >
+                       <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                         <div className="w-1 h-4 bg-blue-500 rounded-full" />
+                         <FileText size={14} className="text-blue-500" />
+                         Project Details
+                       </h4>
+                       <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                         {isNew && (
+                           <Button size="sm" className="gap-1" onClick={(e) => { e.stopPropagation(); setShowAssignPopup(project.id); }}>
+                             Assign to {seoLeadName} <ArrowRight size={14} />
+                           </Button>
+                         )}
+                         {expandedDetails[project.id] ? <ChevronUp size={16} className="text-slate-500" /> : <ChevronDown size={16} className="text-slate-500" />}
+                       </div>
+                     </button>
+                     {expandedDetails[project.id] && (
+                     <div className="px-4 sm:px-5 pb-4">
+                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                        <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">Category</span><p className="text-sm font-medium text-slate-800 mt-0.5 truncate">{project.businessCategory || 'N/A'}</p></div>
+                        <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">Phone</span><p className="text-sm font-medium text-slate-800 mt-0.5 truncate">{project.businessPhone || 'N/A'}</p></div>
+                        <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">Email</span><p className="text-sm font-medium text-slate-800 mt-0.5 truncate">{project.businessEmail || 'N/A'}</p></div>
+                        <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">Website</span><p className="text-sm font-medium text-slate-800 mt-0.5 truncate">{project.businessWebsite || 'N/A'}</p></div>
+                        <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">Address</span><p className="text-sm font-medium text-slate-800 mt-0.5 truncate">{project.businessAddress}{project.businessCity ? `, ${project.businessCity}` : ''} {project.businessState} {project.businessZip}</p></div>
+                        <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">Service Areas</span><p className="text-sm font-medium text-slate-800 mt-0.5 truncate">{project.serviceAreas || 'N/A'}</p></div>
+                        <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">Services</span><p className="text-sm font-medium text-slate-800 mt-0.5 truncate">{project.services || 'N/A'}</p></div>
+                        <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">What We Offer</span><p className="text-sm font-medium text-slate-800 mt-0.5 truncate">{(project as any).offerServices || 'N/A'}</p></div>
+                        <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">Business Hours</span><p className="text-sm font-medium text-slate-800 mt-0.5 truncate">{project.businessHours || 'N/A'}</p></div>
+                        <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">Reviews</span><p className="text-sm font-medium text-slate-800 mt-0.5">{project.currentReviews} ({project.currentRating} rating)</p></div>
+                        <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">Verification</span><p className="text-sm font-medium text-slate-800 mt-0.5">{project.verificationStatus}</p></div>
+                        <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">Competitors</span><p className="text-sm font-medium text-slate-800 mt-0.5 truncate">{project.competitors || 'N/A'}</p></div>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-3">
+                        {project.googleMapsLink && <a href={project.googleMapsLink} target="_blank" className="flex items-center gap-2 p-2.5 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-50 transition-colors"><ExternalLink size={12} className="text-blue-600 shrink-0" /><div className="min-w-0"><span className="text-[10px] text-blue-600/60 uppercase tracking-wider">Google Maps</span><p className="text-xs text-blue-600 truncate">{project.googleMapsLink}</p></div></a>}
+                        {(project as any).yelpLink && <a href={(project as any).yelpLink} target="_blank" className="flex items-center gap-2 p-2.5 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-50 transition-colors"><ExternalLink size={12} className="text-blue-600 shrink-0" /><div className="min-w-0"><span className="text-[10px] text-blue-600/60 uppercase tracking-wider">Yelp</span><p className="text-xs text-blue-600 truncate">{(project as any).yelpLink}</p></div></a>}
+                        {(project as any).homeAdvisorLink && <a href={(project as any).homeAdvisorLink} target="_blank" className="flex items-center gap-2 p-2.5 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-50 transition-colors"><ExternalLink size={12} className="text-blue-600 shrink-0" /><div className="min-w-0"><span className="text-[10px] text-blue-600/60 uppercase tracking-wider">Home Advisor</span><p className="text-xs text-blue-600 truncate">{(project as any).homeAdvisorLink}</p></div></a>}
+                      </div>
+                     {project.managerComment && (
+                       <div className="mt-3 p-2.5 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+                         <span className="font-bold">{salesManagerName}:</span> {project.managerComment}
+                       </div>
+                     )}
+                     {project.targetKeywords && (
+                       <div className="mt-3">
+                         <span className="text-[10px] text-slate-500 uppercase tracking-wider">Keywords</span>
+                         <div className="mt-1 flex flex-wrap gap-1">
+                           {project.targetKeywords.split(',').map((kw, i) => (<span key={i} className="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs rounded-full">{kw.trim()}</span>))}
+                         </div>
+                       </div>
+                     )}
+                     {project.specialInstructions && (
+                       <div className="mt-3 p-2.5 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-700">{project.specialInstructions}</div>
+                     )}
+                     {isActive && project.assignedTo.length > 0 && (
+                       <div className="mt-3 flex items-center gap-2">
+                         <Users size={14} className="text-slate-500" />
+                         <div className="flex -space-x-2">
+                           {project.assignedTo.map(id => (<img key={id} src={users[id]?.avatar} className="w-6 h-6 rounded-full border-2 border-white ring-1 ring-slate-200" referrerPolicy="no-referrer" />))}
+                         </div>
+                         <span className="text-xs text-slate-500">{project.assignedTo.map(id => users[id]?.name).join(', ')}</span>
+                       </div>
+                     )}
                      </div>
-                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-3">
-                       {project.googleMapsLink && <a href={project.googleMapsLink} target="_blank" className="flex items-center gap-2 p-2.5 bg-blue-500/5 rounded-lg border border-blue-500/10 hover:bg-blue-500/10 transition-colors"><ExternalLink size={12} className="text-blue-400 shrink-0" /><div className="min-w-0"><span className="text-[10px] text-blue-400/60 uppercase tracking-wider">Google Maps</span><p className="text-xs text-blue-400 truncate">{project.googleMapsLink}</p></div></a>}
-                       {(project as any).yelpLink && <a href={(project as any).yelpLink} target="_blank" className="flex items-center gap-2 p-2.5 bg-blue-500/5 rounded-lg border border-blue-500/10 hover:bg-blue-500/10 transition-colors"><ExternalLink size={12} className="text-blue-400 shrink-0" /><div className="min-w-0"><span className="text-[10px] text-blue-400/60 uppercase tracking-wider">Yelp</span><p className="text-xs text-blue-400 truncate">{(project as any).yelpLink}</p></div></a>}
-                       {(project as any).homeAdvisorLink && <a href={(project as any).homeAdvisorLink} target="_blank" className="flex items-center gap-2 p-2.5 bg-blue-500/5 rounded-lg border border-blue-500/10 hover:bg-blue-500/10 transition-colors"><ExternalLink size={12} className="text-blue-400 shrink-0" /><div className="min-w-0"><span className="text-[10px] text-blue-400/60 uppercase tracking-wider">Home Advisor</span><p className="text-xs text-blue-400 truncate">{(project as any).homeAdvisorLink}</p></div></a>}
-                     </div>
-                    {project.managerComment && (
-                      <div className="mt-3 p-2.5 bg-blue-500/10 border border-blue-500/20 rounded-lg text-sm text-blue-400">
-                        <span className="font-bold">{salesManagerName}:</span> {project.managerComment}
-                      </div>
-                    )}
-                    {project.targetKeywords && (
-                      <div className="mt-3">
-                        <span className="text-[10px] text-slate-500 uppercase tracking-wider">Keywords</span>
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          {project.targetKeywords.split(',').map((kw, i) => (<span key={i} className="px-2 py-0.5 bg-blue-500/10 text-blue-400 text-xs rounded-full">{kw.trim()}</span>))}
-                        </div>
-                      </div>
-                    )}
-                    {project.specialInstructions && (
-                      <div className="mt-3 p-2.5 bg-yellow-500/10 border border-yellow-500/20 rounded-lg text-sm text-yellow-300">{project.specialInstructions}</div>
-                    )}
-                    {isActive && project.assignedTo.length > 0 && (
-                      <div className="mt-3 flex items-center gap-2">
-                        <Users size={14} className="text-slate-500" />
-                        <div className="flex -space-x-2">
-                          {project.assignedTo.map(id => (<img key={id} src={users[id]?.avatar} className="w-6 h-6 rounded-full border-2 border-slate-800 ring-1 ring-slate-700" referrerPolicy="no-referrer" />))}
-                        </div>
-                        <span className="text-xs text-slate-500">{project.assignedTo.map(id => users[id]?.name).join(', ')}</span>
-                      </div>
-                    )}
-                  </div>
+                     )}
+                   </div>
 
                   {isActive && projectUpdates.length > 0 && (
                     <div className="p-4 sm:p-5">
                       <div className="flex items-center gap-2 mb-3">
-                        <div className="w-6 h-6 bg-green-500/20 rounded flex items-center justify-center">
-                          <FileText size={12} className="text-green-400" />
+                        <div className="w-6 h-6 bg-green-50 rounded flex items-center justify-center">
+                          <FileText size={12} className="text-green-600" />
                         </div>
-                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                        <h4 className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-2">
                           <div className="w-1 h-4 bg-green-500 rounded-full" />
                           Project Records
                         </h4>
@@ -239,21 +269,21 @@ export function SEOManagerDashboard() {
                             grouped[d].push(u);
                           });
                           return Object.keys(grouped).sort((a: string, b: string) => b.localeCompare(a)).map((date: string) => (
-                            <div key={date} className="bg-slate-800/30 rounded-lg border border-slate-700/30 overflow-hidden">
-                                <div className="px-4 py-2.5 bg-slate-800/60 flex items-center gap-2 cursor-pointer hover:bg-slate-700/40 transition-colors" onClick={() => toggleDate(`${project.id}-${date}`)}>
+                            <div key={date} className="bg-slate-50 rounded-lg border border-slate-200 overflow-hidden">
+                                <div className="px-4 py-2.5 bg-slate-100 flex items-center gap-2 cursor-pointer hover:bg-slate-200/60 transition-colors" onClick={() => toggleDate(`${project.id}-${date}`)}>
                                   {expandedDates[`${project.id}-${date}`] ? <ChevronUp size={14} className="text-slate-500" /> : <ChevronDown size={14} className="text-slate-500" />}
-                                  <Calendar size={13} className="text-blue-400" />
-                                <span className="text-sm font-semibold text-slate-200">{new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</span>
-                                <span className="text-[10px] text-slate-500 bg-slate-700/50 px-1.5 py-0.5 rounded">{grouped[date].length} report{grouped[date].length !== 1 ? 's' : ''}</span>
+                                  <Calendar size={13} className="text-blue-600" />
+                                <span className="text-sm font-semibold text-slate-800">{new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                                <span className="text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">{grouped[date].length} report{grouped[date].length !== 1 ? 's' : ''}</span>
                               </div>
-                                <div className={`divide-y divide-slate-700/30 p-3 space-y-3 ${expandedDates[`${project.id}-${date}`] ? '' : 'hidden'}`}>
+                                <div className={`divide-y divide-slate-200 p-3 space-y-3 ${expandedDates[`${project.id}-${date}`] ? '' : 'hidden'}`}>
                                   {grouped[date].map((update: any) => {
                           const fromUser = users[update.fromId];
                           const isStructured = update.reportType === 'STRUCTURED';
                           const offPageWorks = (update.offPageWorkIds || []).map((id: string) => workSubmissions.find((w: any) => w.id === id)).filter(Boolean);
 
                           return (
-                            <div key={update.id} className="p-3 sm:p-4 bg-slate-800/50 border border-slate-700/50 rounded-xl">
+                            <div key={update.id} className="p-3 sm:p-4 bg-white border border-slate-200 rounded-xl">
                               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 gap-2">
                                 <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                                   <Badge variant={getStatusColor(update.status)} className="text-[10px]">
@@ -279,7 +309,7 @@ export function SEOManagerDashboard() {
                                   {(update.onPageText || (update.onPageFiles && update.onPageFiles.length > 0)) && (
                                     <div>
                                       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2 gap-2">
-                                        <h5 className="text-xs font-bold text-purple-400 uppercase tracking-wider flex items-center gap-1">
+                                        <h5 className="text-xs font-bold text-purple-600 uppercase tracking-wider flex items-center gap-1">
                                           <FileText size={10} /> On-Page Report
                                         </h5>
                                         <div className="flex items-center gap-2">
@@ -300,8 +330,8 @@ export function SEOManagerDashboard() {
                                           )}
                                         </div>
                                       </div>
-                                      <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg">
-                                        {update.onPageText && <p className="text-sm text-slate-300 mb-2 whitespace-pre-wrap">{update.onPageText}</p>}
+                                      <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                                        {update.onPageText && <p className="text-sm text-slate-600 mb-2 whitespace-pre-wrap">{update.onPageText}</p>}
                                         {update.onPageFiles && update.onPageFiles.length > 0 && (
                                           <div className="flex flex-wrap gap-2">
                                             {update.onPageFiles.map((f: any, i: number) => {
@@ -309,9 +339,9 @@ export function SEOManagerDashboard() {
                                               return (
                                                 <a key={i} href={`/uploads/${f.filename}`} target="_blank" download>
                                                   {isImg ? (
-                                                    <img src={`/uploads/${f.filename}`} className="w-20 h-20 rounded-lg object-cover border border-slate-700/50 hover:shadow-md" />
+                                                    <img src={`/uploads/${f.filename}`} className="w-20 h-20 rounded-lg object-cover border border-slate-200 hover:shadow-md" />
                                                   ) : (
-                                                    <span className="flex items-center gap-1 px-3 py-2 bg-slate-700/50 border border-blue-500/20 rounded-lg text-xs text-blue-400 hover:bg-slate-700"><Download size={14} /> {f.originalName}</span>
+                                                    <span className="flex items-center gap-1 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-600 hover:bg-blue-100"><Download size={14} /> {f.originalName}</span>
                                                   )}
                                                 </a>
                                               );
@@ -320,7 +350,7 @@ export function SEOManagerDashboard() {
                                         )}
                                       </div>
                                       {update.onPageComment && (
-                                        <div className={`p-2 rounded-lg text-xs mt-1 ${update.onPageStatus === 'APPROVED' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+                                        <div className={`p-2 rounded-lg text-xs mt-1 ${update.onPageStatus === 'APPROVED' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'}`}>
                                           <span className="font-bold">Review:</span> {update.onPageComment}
                                         </div>
                                       )}
@@ -329,7 +359,7 @@ export function SEOManagerDashboard() {
                                   {offPageWorks.length > 0 && (
                                     <div>
                                       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2 gap-2">
-                                        <h5 className="text-xs font-bold text-orange-400 uppercase tracking-wider flex items-center gap-1">
+                                        <h5 className="text-xs font-bold text-orange-600 uppercase tracking-wider flex items-center gap-1">
                                           <Globe size={10} /> Off-Page Report
                                         </h5>
                                         <div className="flex items-center gap-2">
@@ -352,8 +382,8 @@ export function SEOManagerDashboard() {
                                       </div>
                                       <div className="space-y-2">
                                         {offPageWorks.map((work: any) => (
-                                          <div key={work.id} className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg">
-                                            {work.text && <p className="text-sm text-slate-300 mb-2">{work.text}</p>}
+                                          <div key={work.id} className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                                            {work.text && <p className="text-sm text-slate-600 mb-2">{work.text}</p>}
                                             {work.files && work.files.length > 0 && (
                                               <div className="flex flex-wrap gap-2">
                                                 {work.files.map((f: any, i: number) => {
@@ -361,9 +391,9 @@ export function SEOManagerDashboard() {
                                                   return (
                                                     <a key={i} href={`/uploads/${f.filename}`} target="_blank" download>
                                                       {isImg ? (
-                                                        <img src={`/uploads/${f.filename}`} className="w-20 h-20 rounded-lg object-cover border border-slate-700/50 hover:shadow-md" />
+                                                        <img src={`/uploads/${f.filename}`} className="w-20 h-20 rounded-lg object-cover border border-slate-200 hover:shadow-md" />
                                                       ) : (
-                                                        <span className="flex items-center gap-1 px-3 py-2 bg-slate-700/50 border border-blue-500/20 rounded-lg text-xs text-blue-400 hover:bg-slate-700"><Download size={14} /> {f.originalName}</span>
+                                                        <span className="flex items-center gap-1 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-600 hover:bg-blue-100"><Download size={14} /> {f.originalName}</span>
                                                       )}
                                                     </a>
                                                   );
@@ -374,7 +404,7 @@ export function SEOManagerDashboard() {
                                         ))}
                                       </div>
                                       {update.offPageComment && (
-                                        <div className={`p-2 rounded-lg text-xs mt-1 ${update.offPageStatus === 'APPROVED' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+                                        <div className={`p-2 rounded-lg text-xs mt-1 ${update.offPageStatus === 'APPROVED' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'}`}>
                                           <span className="font-bold">Review:</span> {update.offPageComment}
                                         </div>
                                       )}
@@ -383,7 +413,7 @@ export function SEOManagerDashboard() {
                                 </div>
                               ) : (
                                 <>
-                                  {update.text && <p className="text-sm text-slate-300 mb-2">{update.text}</p>}
+                                  {update.text && <p className="text-sm text-slate-600 mb-2">{update.text}</p>}
                                   {update.files.length > 0 && (
                                     <div className="flex flex-wrap gap-2 sm:gap-3 mb-2">
                                       {update.files.map((f: any, i: number) => {
@@ -391,9 +421,9 @@ export function SEOManagerDashboard() {
                                         return (
                                           <a key={i} href={`/uploads/${f.filename}`} target="_blank" download>
                                             {isImg ? (
-                                              <img src={`/uploads/${f.filename}`} className="w-20 h-20 rounded-lg object-cover border border-slate-700/50 hover:shadow-md" />
+                                              <img src={`/uploads/${f.filename}`} className="w-20 h-20 rounded-lg object-cover border border-slate-200 hover:shadow-md" />
                                             ) : (
-                                              <span className="flex items-center gap-1 px-3 py-2 bg-blue-500/10 border border-blue-500/20 rounded-lg text-xs text-blue-400 hover:bg-blue-500/20"><Download size={14} /> {f.originalName}</span>
+                                              <span className="flex items-center gap-1 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-600 hover:bg-blue-100"><Download size={14} /> {f.originalName}</span>
                                             )}
                                           </a>
                                         );
@@ -404,7 +434,7 @@ export function SEOManagerDashboard() {
                               )}
 
                               {update.reviewComment && (
-                                <div className={`p-2 rounded-lg text-xs mt-2 ${update.status === 'APPROVED' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+                                <div className={`p-2 rounded-lg text-xs mt-2 ${update.status === 'APPROVED' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'}`}>
                                   <span className="font-bold">Your review:</span> {update.reviewComment}
                                 </div>
                               )}
@@ -418,12 +448,14 @@ export function SEOManagerDashboard() {
                       </div>
                     </div>
                   )}
-                  </div>
-                  <div className="lg:col-span-1 border-l border-slate-700/50 lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto">
-                    <ChatBox projectId={project.id} />
-                  </div>
-                </div>
-                </div>
+                   </div>
+                   <div className="w-full lg:w-[340px] shrink-0 border-t lg:border-t-0 lg:border-l border-slate-200">
+                     <div className="h-[50vh] lg:h-[70vh]">
+                       <ChatBox projectId={project.id} />
+                     </div>
+                   </div>
+                 </div>
+                 </div>
               )}
             </Card>
           );
@@ -432,16 +464,16 @@ export function SEOManagerDashboard() {
 
       {showAssignPopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} onClick={() => setShowAssignPopup(null)} className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" />
-          <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} className="relative bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden z-10">
-            <div className="px-4 sm:px-6 py-4 border-b border-slate-700/50 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-slate-100">Send to {seoLeadName}</h3>
-              <button onClick={() => setShowAssignPopup(null)} className="p-2 hover:bg-slate-700/50 rounded-lg text-slate-500"><X size={18} /></button>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} onClick={() => setShowAssignPopup(null)} className="absolute inset-0 bg-black/20 backdrop-blur-sm" />
+          <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden z-10">
+            <div className="px-4 sm:px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-900">Send to {seoLeadName}</h3>
+              <button onClick={() => setShowAssignPopup(null)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"><X size={18} /></button>
             </div>
             <div className="px-4 sm:px-6 py-5 space-y-4">
-              <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg text-sm">
-                <p className="font-semibold text-purple-400">{projects.find(p => p.id === showAssignPopup)?.name}</p>
-                <p className="text-xs text-purple-400 mt-0.5">{projects.find(p => p.id === showAssignPopup)?.businessCategory || 'GMB Project'}</p>
+              <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg text-sm">
+                <p className="font-semibold text-purple-600">{projects.find(p => p.id === showAssignPopup)?.name}</p>
+                <p className="text-xs text-purple-600 mt-0.5">{projects.find(p => p.id === showAssignPopup)?.businessCategory || 'GMB Project'}</p>
               </div>
               <Textarea
                 label="Comment for SEO Lead"
@@ -450,10 +482,10 @@ export function SEOManagerDashboard() {
                 onChange={e => setAssignComment(e.target.value)}
               />
             </div>
-            <div className="px-4 sm:px-6 py-4 border-t border-slate-700/50 flex justify-end gap-3">
+            <div className="px-4 sm:px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
               <Button variant="outline" onClick={() => setShowAssignPopup(null)}>Cancel</Button>
-              <Button className="gap-1" onClick={handleAssign}>
-                Send to {seoLeadName} <ArrowRight size={14} />
+              <Button className="gap-1" onClick={handleAssign} disabled={assigning}>
+                {assigning ? <><Loader2 size={14} className="animate-spin" /> Assigning...</> : <>Send to {seoLeadName} <ArrowRight size={14} /></>}
               </Button>
             </div>
           </motion.div>
@@ -462,31 +494,31 @@ export function SEOManagerDashboard() {
 
       {showSectionReviewModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} onClick={() => setShowSectionReviewModal(null)} className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" />
-          <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} className="relative bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden z-10">
-            <div className="px-4 sm:px-6 py-4 border-b border-slate-700/50 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-slate-100">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} onClick={() => setShowSectionReviewModal(null)} className="absolute inset-0 bg-black/20 backdrop-blur-sm" />
+          <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden z-10">
+            <div className="px-4 sm:px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-900">
                 {showSectionReviewModal.status === 'APPROVED' ? 'Approve' : 'Reject'} {showSectionReviewModal.section === 'onPage' ? 'On-Page' : 'Off-Page'} Report
               </h3>
-              <button onClick={() => setShowSectionReviewModal(null)} className="p-2 hover:bg-slate-700/50 rounded-lg text-slate-500"><X size={18} /></button>
+              <button onClick={() => setShowSectionReviewModal(null)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"><X size={18} /></button>
             </div>
             <div className="px-4 sm:px-6 py-5 space-y-4">
               {showSectionReviewModal.status === 'REJECTED' && (
-                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-xs text-red-400">
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-500">
                   Please describe what needs to be fixed.
                 </div>
               )}
               <textarea
-                className="block w-full px-3 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[120px]"
+                className="block w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[120px]"
                 placeholder={showSectionReviewModal.status === 'REJECTED' ? 'What needs to be fixed...' : 'Optional comment...'}
                 value={sectionReviewComment}
                 onChange={e => setSectionReviewComment(e.target.value)}
               />
             </div>
-            <div className="px-4 sm:px-6 py-4 border-t border-slate-700/50 flex justify-end gap-3">
+            <div className="px-4 sm:px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
               <Button variant="outline" onClick={() => setShowSectionReviewModal(null)}>Cancel</Button>
-              <Button variant={showSectionReviewModal.status === 'APPROVED' ? 'primary' : 'danger'} className="gap-1" onClick={handleSectionReview} disabled={showSectionReviewModal.status === 'REJECTED' && !sectionReviewComment.trim()}>
-                {showSectionReviewModal.status === 'APPROVED' ? <><CheckCircle2 size={14} /> Approve</> : <><X size={14} /> Reject</>}
+              <Button variant={showSectionReviewModal.status === 'APPROVED' ? 'primary' : 'danger'} className="gap-1" onClick={handleSectionReview} disabled={sectionReviewing || (showSectionReviewModal.status === 'REJECTED' && !sectionReviewComment.trim())}>
+                {sectionReviewing ? <><Loader2 size={14} className="animate-spin" /> Processing...</> : showSectionReviewModal.status === 'APPROVED' ? <><CheckCircle2 size={14} /> Approve</> : <><X size={14} /> Reject</>}
               </Button>
             </div>
           </motion.div>
@@ -495,46 +527,46 @@ export function SEOManagerDashboard() {
 
       {showUpdateReviewModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} onClick={() => setShowUpdateReviewModal(null)} className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" />
-          <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} className="relative bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden z-10">
-            <div className="px-4 sm:px-6 py-4 border-b border-slate-700/50 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-slate-100">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} onClick={() => setShowUpdateReviewModal(null)} className="absolute inset-0 bg-black/20 backdrop-blur-sm" />
+          <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden z-10">
+            <div className="px-4 sm:px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-900">
                 {updateReviewStatus === 'APPROVED' ? 'Approve Update' : 'Request Changes'}
               </h3>
-              <button onClick={() => setShowUpdateReviewModal(null)} className="p-2 hover:bg-slate-700/50 rounded-lg text-slate-500"><X size={18} /></button>
+              <button onClick={() => setShowUpdateReviewModal(null)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"><X size={18} /></button>
             </div>
             <div className="px-4 sm:px-6 py-5 space-y-4">
               {updateReviewStatus === 'CHANGES_REQUESTED' && (
-                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-xs text-red-400">
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-500">
                   Please describe what needs to be changed so {seoLeadName} can fix and resubmit.
                 </div>
               )}
               {updateReviewStatus === 'APPROVED' && (
-                <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg text-xs text-green-400">
+                <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-xs text-green-600">
                   You can add an optional comment with this approval.
                 </div>
               )}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">
+                <label className="block text-sm font-medium text-slate-600 mb-1">
                   {updateReviewStatus === 'CHANGES_REQUESTED' ? 'Reason / What needs to be fixed' : 'Comment (optional)'}
                 </label>
                 <textarea
-                  className="block w-full px-3 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[120px]"
+                  className="block w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[120px]"
                   placeholder={updateReviewStatus === 'CHANGES_REQUESTED' ? 'e.g. Report format needs correction, missing screenshots...' : 'Any additional notes...'}
                   value={updateReviewComment}
                   onChange={e => setUpdateReviewComment(e.target.value)}
                 />
               </div>
             </div>
-            <div className="px-4 sm:px-6 py-4 border-t border-slate-700/50 flex justify-end gap-3">
+            <div className="px-4 sm:px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
               <Button variant="outline" onClick={() => setShowUpdateReviewModal(null)}>Cancel</Button>
               <Button
                 variant={updateReviewStatus === 'APPROVED' ? 'primary' : 'danger'}
                 className="gap-1"
                 onClick={handleUpdateReview}
-                disabled={updateReviewStatus === 'CHANGES_REQUESTED' && !updateReviewComment.trim()}
+                disabled={updateReviewing || (updateReviewStatus === 'CHANGES_REQUESTED' && !updateReviewComment.trim())}
               >
-                {updateReviewStatus === 'APPROVED' ? <><CheckCircle2 size={14} /> Approve</> : <><RotateCcw size={14} /> Send Back for Changes</>}
+                {updateReviewing ? <><Loader2 size={14} className="animate-spin" /> Processing...</> : updateReviewStatus === 'APPROVED' ? <><CheckCircle2 size={14} /> Approve</> : <><RotateCcw size={14} /> Send Back for Changes</>}
               </Button>
             </div>
           </motion.div>
