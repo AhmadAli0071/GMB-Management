@@ -1,19 +1,52 @@
 {
-  "name": "gmb-management",
+  "name": "cd-gbp-portal",
   "version": "1.0.0",
+  "description": "CD-GBP-Portal - GMB Management Tool",
   "private": true,
+  "main": "main.js",
   "scripts": {
-    "dev": "npx concurrently \"npm run dev --workspace=server\" \"npm run dev --workspace=client\"",
-    "dev:server": "npm run dev --workspace=server",
-    "dev:client": "npm run dev --workspace=client",
+    "dev": "npx concurrently \"cd server && npm run dev\" \"cd client && npm run dev\"",
+    "dev:server": "cd server && npm run dev",
+    "dev:client": "cd client && npm run dev",
     "build": "cd client && npm install && npm run build",
-    "start": "cd server && npm install && node index.js"
+    "start": "cd server && npm install && node index.js",
+    "electron": "electron .",
+    "electron:dev": "electron .",
+    "dist": "npm run build && electron-builder",
+    "dist:win": "electron-builder --win"
   },
-  "workspaces": [
-    "client",
-    "server"
-  ],
+  "build": {
+    "appId": "com.crossdigi.cd-gbp-portal",
+    "productName": "CD-GBP-Portal",
+    "directories": {
+      "output": "C:/temp/gmb-release"
+    },
+    "files": [
+      "main.js"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "CD-GBP-Portal"
+    }
+  },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "concurrently": "^9.1.2",
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1",
+    "wait-on": "^7.2.0"
   }
 }
