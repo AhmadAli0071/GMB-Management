@@ -1,4 +1,15 @@
-const { app, BrowserWindow, ipcMain, Notification } = require('electron');
+let electron;
+try {
+  electron = require('electron');
+} catch (e) {
+  const { execSync } = require('child_process');
+  const path = require('path');
+  execSync('npm install --production', { cwd: path.join(__dirname, 'server'), stdio: 'inherit' });
+  require('./server/index.js');
+  return;
+}
+
+const { app, BrowserWindow, ipcMain, Notification } = electron;
 const path = require('path');
 const https = require('https');
 
