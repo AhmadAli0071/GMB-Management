@@ -2,9 +2,6 @@ let electron;
 try {
   electron = require('electron');
 } catch (e) {
-  const { execSync } = require('child_process');
-  const path = require('path');
-  execSync('npm install --production', { cwd: path.join(__dirname, 'server'), stdio: 'inherit' });
   require('./server/index.js');
   return;
 }
@@ -94,7 +91,6 @@ async function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: path.join(__dirname, 'preload.js'),
     },
     autoHideMenuBar: true,
     show: false,
@@ -107,18 +103,16 @@ async function createWindow() {
   mainWindow.webContents.on('dom-ready', () => {
     mainWindow.webContents.executeJavaScript(`
       (function() {
-        if (window.electronAPI && window.electronAPI.isElectron) {
-          const OrigNotification = window.Notification;
-          window.Notification = function(title, options) {
-            window.electronAPI.sendNotification(title, options && options.body);
-          };
-          window.Notification.permission = 'granted';
-          window.Notification.requestPermission = function() { return Promise.resolve('granted'); };
-          Object.defineProperty(window.Notification, 'permission', {
-            get: function() { return 'granted'; },
-            configurable: true
-          });
-        }
+        const OrigNotification = window.Notification;
+        window.Notification = function(title, options) {
+          try { new OrigNotification(title, options); } catch(e) {}
+        };
+        window.Notification.permission = 'granted';
+        window.Notification.requestPermission = function() { return Promise.resolve('granted'); };
+        Object.defineProperty(window.Notification, 'permission', {
+          get: function() { return 'granted'; },
+          configurable: true
+        });
       })();
     `);
   });
