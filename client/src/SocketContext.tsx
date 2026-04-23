@@ -27,6 +27,10 @@ interface SocketContextType {
   offDMChatCleared: (callback: (data: any) => void) => void;
   onDMNotification: (callback: (data: any) => void) => void;
   offDMNotification: (callback: (data: any) => void) => void;
+  onDataChanged: (callback: (data: any) => void) => void;
+  offDataChanged: (callback: (data: any) => void) => void;
+  onActivityNotification: (callback: (data: any) => void) => void;
+  offActivityNotification: (callback: (data: any) => void) => void;
 }
 
 const SocketContext = createContext<SocketContextType | null>(null);
@@ -153,6 +157,22 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     socket?.off('dm-notification', callback);
   }, [socket]);
 
+  const onDataChanged = useCallback((callback: (data: any) => void) => {
+    socket?.on('data-changed', callback);
+  }, [socket]);
+
+  const offDataChanged = useCallback((callback: (data: any) => void) => {
+    socket?.off('data-changed', callback);
+  }, [socket]);
+
+  const onActivityNotification = useCallback((callback: (data: any) => void) => {
+    socket?.on('activity-notification', callback);
+  }, [socket]);
+
+  const offActivityNotification = useCallback((callback: (data: any) => void) => {
+    socket?.off('activity-notification', callback);
+  }, [socket]);
+
   return (
     <SocketContext.Provider value={{
       socket, connected,
@@ -167,6 +187,8 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       onDMMessageDeleted, offDMMessageDeleted,
       onDMChatCleared, offDMChatCleared,
       onDMNotification, offDMNotification,
+      onDataChanged, offDataChanged,
+      onActivityNotification, offActivityNotification,
     }}>
       {children}
     </SocketContext.Provider>

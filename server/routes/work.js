@@ -68,6 +68,13 @@ router.post('/', upload.array('files', 10), async (req, res) => {
     });
 
     logger.info('Work submitted', { component: 'work', workId, fromId: userId });
+
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('data-changed', { type: 'WORK_SUBMITTED', projectId, userId });
+      io.to(`user:${toId}`).emit('activity-notification', { type: 'WORK_SUBMITTED', message: 'New work has been submitted for your review', projectId, fromUserId: userId });
+    }
+
     res.json(formatWork(work));
   } catch (err) {
     logger.error('Work submit error', { component: 'work', error: err.message });
@@ -86,6 +93,13 @@ router.put('/:id/review', async (req, res) => {
     if (!work) return res.status(404).json({ error: 'Work submission not found' });
 
     logger.info('Work reviewed', { component: 'work', workId: id, status });
+
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('data-changed', { type: 'WORK_REVIEWED', projectId: work.projectId, userId: req.user.id });
+      io.to(`user:${work.fromId}`).emit('activity-notification', { type: 'WORK_REVIEWED', message: `Your work has been ${status === 'APPROVED' ? 'approved' : 'rejected'}`, projectId: work.projectId, fromUserId: req.user.id });
+    }
+
     res.json(formatWork(work));
   } catch (err) {
     res.status(500).json({ error: err.message });

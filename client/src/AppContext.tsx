@@ -4,6 +4,7 @@ import {
   ProjectStage, TaskStatus, Priority, TaskType,
 } from './types';
 import { api } from './api';
+import { useSocket } from './SocketContext';
 
 interface AppContextType {
   currentUser: User;
@@ -57,6 +58,7 @@ export function useApp() {
 }
 
 export function AppProvider({ currentUser, onLogout, children }: { currentUser: User; onLogout: () => void; children: ReactNode }) {
+  const { onDataChanged, offDataChanged } = useSocket();
   const [projects, setProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [requests, setRequests] = useState<InfoRequest[]>([]);
@@ -100,6 +102,16 @@ export function AppProvider({ currentUser, onLogout, children }: { currentUser: 
   useEffect(() => {
     refreshData();
   }, [refreshData]);
+
+  useEffect(() => {
+    const handler = (data: any) => {
+      if (data.userId !== currentUser.id) {
+        refreshData();
+      }
+    };
+    onDataChanged(handler);
+    return () => { offDataChanged(handler); };
+  }, [onDataChanged, offDataChanged, refreshData, currentUser.id]);
 
   const createProject = useCallback(async (data: any) => {
     await api.createProject(data);

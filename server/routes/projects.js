@@ -99,6 +99,9 @@ router.post('/', async (req, res) => {
 
     logger.info('Project created', { component: 'projects', projectId, userId });
 
+    const io = req.app.get('io');
+    if (io) io.emit('data-changed', { type: 'PROJECT_CREATED', projectId, userId });
+
     res.status(201).json(formatProject(project));
   } catch (err) {
     logger.error('Create project error', { component: 'projects', error: err.message, stack: err.stack });
@@ -185,6 +188,9 @@ router.put('/:id/stage', async (req, res) => {
 
     logger.info('Project stage updated', { component: 'projects', projectId: id, stage, userId });
 
+    const io = req.app.get('io');
+    if (io) io.emit('data-changed', { type: 'STAGE_CHANGED', projectId: id, userId });
+
     res.json(formatProject(project));
   } catch (err) {
     logger.error('Update stage error', { component: 'projects', error: err.message, stack: err.stack });
@@ -224,6 +230,12 @@ router.put('/:id/assign', async (req, res) => {
     });
 
     logger.info('Project assigned', { component: 'projects', projectId: id, leadId, userId });
+
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('data-changed', { type: 'PROJECT_ASSIGNED', projectId: id, userId });
+      io.to(`user:${leadId}`).emit('activity-notification', { type: 'PROJECT_ASSIGNED', message: 'A new project has been assigned to you', projectId: id, fromUserId: userId });
+    }
 
     res.json(formatProject(project));
   } catch (err) {

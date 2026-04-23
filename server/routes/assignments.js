@@ -67,6 +67,13 @@ router.post('/', upload.fields([{ name: 'images', maxCount: 5 }, { name: 'docume
     });
 
     logger.info('Assignment created', { component: 'assignments', assignmentId, fromId: userId, toId });
+
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('data-changed', { type: 'ASSIGNMENT_CREATED', projectId, userId });
+      io.to(`user:${toId}`).emit('activity-notification', { type: 'ASSIGNMENT_CREATED', message: 'You have received a new task assignment', projectId, fromUserId: userId });
+    }
+
     res.json(formatAssignment(assignment));
   } catch (err) {
     logger.error('Create assignment error', { component: 'assignments', error: err.message });

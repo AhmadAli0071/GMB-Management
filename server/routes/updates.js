@@ -102,6 +102,13 @@ router.post('/', upload.array('files', 10), async (req, res) => {
     const update = await ProjectUpdate.create(updateData);
 
     logger.info('Project update submitted', { component: 'updates', updateId, fromId: userId, toId, reportType: updateData.reportType });
+
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('data-changed', { type: 'REPORT_SUBMITTED', projectId, userId });
+      io.to(`user:${toId}`).emit('activity-notification', { type: 'REPORT_SUBMITTED', message: 'A new report has been submitted', projectId, fromUserId: userId });
+    }
+
     res.json(formatUpdate(update));
   } catch (err) {
     logger.error('Project update error', { component: 'updates', error: err.message });
@@ -120,6 +127,13 @@ router.put('/:id/review', async (req, res) => {
     if (!update) return res.status(404).json({ error: 'Not found' });
 
     logger.info('Project update reviewed', { component: 'updates', updateId: id, status });
+
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('data-changed', { type: 'REPORT_REVIEWED', projectId: update.projectId, userId: req.user.id });
+      io.to(`user:${update.fromId}`).emit('activity-notification', { type: 'REPORT_REVIEWED', message: `Your report has been ${status === 'APPROVED' ? 'approved' : 'rejected'}`, projectId: update.projectId, fromUserId: req.user.id });
+    }
+
     res.json(formatUpdate(update));
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -143,6 +157,13 @@ router.put('/:id/review-section', async (req, res) => {
     if (!update) return res.status(404).json({ error: 'Not found' });
 
     logger.info('Section reviewed', { component: 'updates', updateId: id, section, status });
+
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('data-changed', { type: 'SECTION_REVIEWED', projectId: update.projectId, userId: req.user.id });
+      io.to(`user:${update.fromId}`).emit('activity-notification', { type: 'SECTION_REVIEWED', message: `Your ${section === 'onPage' ? 'On-Page' : 'Off-Page'} report has been ${status === 'APPROVED' ? 'approved' : 'rejected'}`, projectId: update.projectId, fromUserId: req.user.id });
+    }
+
     res.json(formatUpdate(update));
   } catch (err) {
     res.status(500).json({ error: err.message });
