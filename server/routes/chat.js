@@ -8,13 +8,14 @@ import { authMiddleware } from '../middleware/auth.js';
 import logger from '../utils/logger.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const uploadsBase = process.env.UPLOADS_DIR || path.join(__dirname, '../uploads');
 
 function getConvId(u1, u2, projectId) {
   return [u1, u2].sort().join('_dm_') + '_' + projectId;
 }
 
 const storage = multer.diskStorage({
-  destination: path.join(__dirname, '../uploads/chat'),
+  destination: path.join(uploadsBase, 'chat'),
   filename: (_req, file, cb) => {
     const ext = path.extname(file.originalname);
     cb(null, `${crypto.randomBytes(8).toString('hex')}${ext}`);

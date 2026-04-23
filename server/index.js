@@ -36,7 +36,8 @@ app.set('io', io);
 
 app.use(cors());
 app.use(express.json());
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+const uploadsDir = process.env.UPLOADS_DIR || path.join(__dirname, 'uploads');
+app.use('/uploads', express.static(uploadsDir));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
@@ -114,8 +115,9 @@ process.on('unhandledRejection', (reason) => {
 
 async function start() {
   try {
-    const uploadsDir = path.join(__dirname, 'uploads');
     if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+    const chatUploadsDir = path.join(uploadsDir, 'chat');
+    if (!fs.existsSync(chatUploadsDir)) fs.mkdirSync(chatUploadsDir, { recursive: true });
 
     await connectDB();
     const collections = ['users', 'activities', 'projects', 'tasks', 'inforequests', 'leadworks'];

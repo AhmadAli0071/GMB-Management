@@ -8,7 +8,7 @@ import { authMiddleware } from '../middleware/auth.js';
 import logger from '../utils/logger.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const uploadsDir = path.join(__dirname, '../uploads');
+const uploadsDir = process.env.UPLOADS_DIR || path.join(__dirname, '../uploads');
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -143,7 +143,7 @@ router.delete('/:id/file/:filename', async (req, res) => {
     await work.save();
 
     const fs = await import('fs');
-    fs.default.unlink(`uploads/${filename}`, () => {});
+    fs.default.unlink(path.join(uploadsDir, filename), () => {});
 
     res.json(formatWork(work));
   } catch (err) {

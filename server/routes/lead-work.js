@@ -8,7 +8,7 @@ import { authMiddleware } from '../middleware/auth.js';
 import logger from '../utils/logger.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const uploadsDir = path.join(__dirname, '../uploads');
+const uploadsDir = process.env.UPLOADS_DIR || path.join(__dirname, '../uploads');
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -113,7 +113,7 @@ router.delete('/:id/file/:filename', async (req, res) => {
     await item.save();
 
     const fs = await import('fs');
-    fs.default.unlink(`uploads/${filename}`, () => {});
+    fs.default.unlink(path.join(uploadsDir, filename), () => {});
 
     res.json(formatLeadWork(item));
   } catch (err) {
@@ -129,7 +129,7 @@ router.delete('/:id', async (req, res) => {
 
     for (const f of item.files) {
       const fs = await import('fs');
-      fs.default.unlink(`uploads/${f.filename}`, () => {});
+      fs.default.unlink(path.join(uploadsDir, f.filename), () => {});
     }
 
     await LeadWork.findByIdAndDelete(id);

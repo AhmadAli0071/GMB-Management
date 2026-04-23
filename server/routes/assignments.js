@@ -8,7 +8,7 @@ import { authMiddleware } from '../middleware/auth.js';
 import logger from '../utils/logger.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const uploadsDir = path.join(__dirname, '../uploads');
+const uploadsDir = process.env.UPLOADS_DIR || path.join(__dirname, '../uploads');
 
 const router = express.Router();
 router.use(authMiddleware);
