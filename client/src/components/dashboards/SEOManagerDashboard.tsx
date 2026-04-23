@@ -132,15 +132,6 @@ export function SEOManagerDashboard() {
           <p className="text-slate-500 mt-1 text-sm sm:text-base">Manage GMB projects</p>
         </div>
         <div className="flex items-center gap-3">
-          {pendingUpdatesCount > 0 && (
-            <div className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-red-50 border border-red-200 rounded-xl">
-              <div className="relative">
-                <Bell size={20} className="text-red-600" />
-                <span className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5">{pendingUpdatesCount}</span>
-              </div>
-              <span className="text-xs sm:text-sm font-semibold text-red-600">{pendingUpdatesCount} new report{pendingUpdatesCount !== 1 ? 's' : ''} from {seoLeadName}</span>
-            </div>
-          )}
           <div className="relative" ref={notifRef}>
             <button
               onClick={() => setShowNotifDropdown(!showNotifDropdown)}
