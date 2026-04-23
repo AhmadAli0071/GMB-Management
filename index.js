@@ -2,6 +2,18 @@ const { execSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
+const crashLog = path.join(__dirname, 'crash.log');
+process.on('uncaughtException', (err) => {
+  const msg = `${new Date().toISOString()} UNCAUGHT: ${err.message}\n${err.stack}\n\n`;
+  try { fs.appendFileSync(crashLog, msg); } catch(e) {}
+  console.error(msg);
+});
+process.on('unhandledRejection', (reason) => {
+  const msg = `${new Date().toISOString()} UNHANDLED: ${String(reason)}\n\n`;
+  try { fs.appendFileSync(crashLog, msg); } catch(e) {}
+  console.error(msg);
+});
+
 const envPath = path.join(__dirname, '.env');
 if (fs.existsSync(envPath)) {
   const envContent = fs.readFileSync(envPath, 'utf8');
