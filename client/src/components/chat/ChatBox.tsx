@@ -110,12 +110,16 @@ export function ChatBox({ projectId }: ChatBoxProps) {
 
   const handleNewDM = useCallback((data: any) => {
     if (data.conversationId === conversationId) {
+      if (data.senderId === currentUser.id) {
+        setUploading(false);
+        setSending(false);
+      }
       setMessages(prev => {
         if (prev.some(m => m._id === data._id)) return prev;
         return [...prev, data];
       });
     }
-  }, [conversationId]);
+  }, [conversationId, currentUser.id]);
 
   const handleDMEdited = useCallback((data: any) => {
     if (data.conversationId === conversationId) {
