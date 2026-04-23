@@ -499,11 +499,23 @@ export function ChatBox({ projectId }: ChatBoxProps) {
                               {msg.type === 'FILE' && msg.fileUrl && (
                                 <div className="space-y-1">
                                   {msg.fileType?.startsWith('image/') ? (
-                                    <img src={`/uploads/chat/${msg.fileUrl}`} alt={msg.fileName} className="max-w-full rounded max-h-48 object-cover" />
+                                    <div className="relative group/img rounded overflow-hidden">
+                                      <a href={`/uploads/chat/${msg.fileUrl}`} target="_blank" className="block">
+                                        <img src={`/uploads/chat/${msg.fileUrl}`} alt={msg.fileName} className="max-w-full rounded max-h-48 object-cover cursor-pointer hover:opacity-90 transition-opacity" />
+                                      </a>
+                                      <a href={`/uploads/chat/${msg.fileUrl}`} download className="absolute bottom-1.5 right-1.5 p-1.5 bg-black/60 text-white rounded-lg opacity-0 group-hover/img:opacity-100 transition-opacity hover:bg-black/80" title="Download">
+                                        <Download size={14} />
+                                      </a>
+                                    </div>
                                   ) : (
-                                    <a href={`/uploads/chat/${msg.fileUrl}`} target="_blank" download className="flex items-center gap-1 text-blue-500 hover:underline text-xs">
-                                      <Download size={12} /> {msg.fileName || 'File'}
-                                    </a>
+                                    <div className="flex items-center gap-2">
+                                      <a href={`/uploads/chat/${msg.fileUrl}`} target="_blank" className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors text-xs">
+                                        <Paperclip size={12} /> {msg.fileName || 'File'}
+                                      </a>
+                                      <a href={`/uploads/chat/${msg.fileUrl}`} download className="flex items-center gap-1 p-1.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors text-xs" title="Download">
+                                        <Download size={12} />
+                                      </a>
+                                    </div>
                                   )}
                                   {msg.text && <p className="whitespace-pre-wrap break-words">{msg.text}</p>}
                                 </div>
