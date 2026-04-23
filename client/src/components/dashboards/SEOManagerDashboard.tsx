@@ -48,6 +48,7 @@ export function SEOManagerDashboard() {
 
   const clearNotifications = () => setNotifications([]);
   const [expandedProject, setExpandedProject] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<string>('details');
   const [showAssignPopup, setShowAssignPopup] = useState<string | null>(null);
   const [assignComment, setAssignComment] = useState('');
   const [showSectionReviewModal, setShowSectionReviewModal] = useState<{ updateId: string; section: string; status: string } | null>(null);
@@ -57,7 +58,6 @@ export function SEOManagerDashboard() {
   const [updateReviewComment, setUpdateReviewComment] = useState('');
   const [expandedDates, setExpandedDates] = useState<Record<string, boolean>>({});
   const toggleDate = (key: string) => setExpandedDates(prev => ({ ...prev, [key]: !prev[key] }));
-  const [expandedDetails, setExpandedDetails] = useState<Record<string, boolean>>({});
   const [assigning, setAssigning] = useState(false);
   const [sectionReviewing, setSectionReviewing] = useState(false);
   const [updateReviewing, setUpdateReviewing] = useState(false);
@@ -212,7 +212,7 @@ export function SEOManagerDashboard() {
 
           return (
             <Card key={project.id} className="overflow-hidden">
-              <div className="p-4 sm:p-5 cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => setExpandedProject(isExpanded ? null : project.id)}>
+              <div className="p-4 sm:p-5 cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => { setExpandedProject(isExpanded ? null : project.id); if (!isExpanded) setActiveTab('details'); }}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3 sm:gap-4">
                     <div className="relative shrink-0">
@@ -261,30 +261,28 @@ export function SEOManagerDashboard() {
 
               {isExpanded && (
                 <div className="border-t border-slate-200">
-                 <div className="flex flex-col lg:flex-row max-h-[70vh]">
-                   <div className="flex-1 overflow-y-auto">
-                   <div className="border-b border-slate-200">
-                     <button
-                       onClick={() => setExpandedDetails(prev => ({ ...prev, [project.id]: !prev[project.id] }))}
-                       className="w-full px-4 sm:px-5 py-3 flex items-center justify-between hover:bg-blue-50/50 transition-colors"
-                     >
-                       <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-                         <div className="w-1 h-4 bg-blue-500 rounded-full" />
-                         <FileText size={14} className="text-blue-500" />
-                         Project Details
-                       </h4>
-                       <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                         {isNew && (
-                           <Button size="sm" className="gap-1" onClick={(e) => { e.stopPropagation(); setShowAssignPopup(project.id); }}>
-                             Assign to {seoLeadName} <ArrowRight size={14} />
-                           </Button>
-                         )}
-                         {expandedDetails[project.id] ? <ChevronUp size={16} className="text-slate-500" /> : <ChevronDown size={16} className="text-slate-500" />}
-                       </div>
-                     </button>
-                     {expandedDetails[project.id] && (
-                     <div className="px-4 sm:px-5 pb-4">
-                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                  <div className="flex gap-1 px-4 sm:px-5 pt-3 border-b border-slate-200">
+                    <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab === 'details' ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveTab('details')}>Details</button>
+                    <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab === 'records' ? 'bg-green-50 text-green-600 border-b-2 border-green-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveTab('records')}>Records</button>
+                    <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab === 'chat' ? 'bg-purple-50 text-purple-600 border-b-2 border-purple-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveTab('chat')}>Chat{projectUnread > 0 && <span className="ml-1.5 min-w-[16px] h-4 bg-red-500 text-white text-[8px] font-bold rounded-full inline-flex items-center justify-center px-0.5">{projectUnread > 99 ? '99+' : projectUnread}</span>}</button>
+                  </div>
+
+                  {activeTab === 'details' && (<>
+                  <div className="p-4 sm:px-5 sm:py-4 border-b border-slate-200">
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                        <div className="w-1 h-4 bg-blue-500 rounded-full" />
+                        Project Details
+                      </h4>
+                      <div className="flex items-center gap-2">
+                        {isNew && (
+                          <Button size="sm" className="gap-1" onClick={() => setShowAssignPopup(project.id)}>
+                            Assign to {seoLeadName} <ArrowRight size={14} />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                         <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">Category</span><p className="text-sm font-medium text-slate-800 mt-0.5 truncate">{project.businessCategory || 'N/A'}</p></div>
                         <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">Phone</span><p className="text-sm font-medium text-slate-800 mt-0.5 truncate">{project.businessPhone || 'N/A'}</p></div>
                         <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">Email</span><p className="text-sm font-medium text-slate-800 mt-0.5 truncate">{project.businessEmail || 'N/A'}</p></div>
@@ -327,23 +325,14 @@ export function SEOManagerDashboard() {
                          </div>
                          <span className="text-xs text-slate-500">{project.assignedTo.map(id => users[id]?.name).join(', ')}</span>
                        </div>
-                     )}
-                     </div>
-                     )}
-                   </div>
+                      )}
+                    </div>
+                  </>)}
 
-                  {isActive && projectUpdates.length > 0 && (
-                    <div className="p-4 sm:p-5">
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className="w-6 h-6 bg-green-50 rounded flex items-center justify-center">
-                          <FileText size={12} className="text-green-600" />
-                        </div>
-                        <h4 className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-2">
-                          <div className="w-1 h-4 bg-green-500 rounded-full" />
-                          Project Records
-                        </h4>
-                      </div>
-                      <div className="space-y-2">
+                  {activeTab === 'records' && (<>
+                    {isActive && projectUpdates.length > 0 && (
+                    <div className="p-4 sm:px-5 sm:py-4">
+                       <div className="space-y-2">
                         {(() => {
                           const grouped: Record<string, any[]> = {};
                           projectUpdates.forEach((u: any) => {
@@ -529,17 +518,17 @@ export function SEOManagerDashboard() {
                           ));
                         })()}
                       </div>
+                     </div>
+                    )}
+                  </>)}
+
+                  {activeTab === 'chat' && (
+                    <div className="h-[70vh]">
+                      <ChatBox projectId={project.id} />
                     </div>
                   )}
-                   </div>
-                   <div className="w-full lg:w-[340px] shrink-0 border-t lg:border-t-0 lg:border-l border-slate-200">
-                     <div className="h-[50vh] lg:h-[70vh]">
-                       <ChatBox projectId={project.id} />
-                     </div>
-                   </div>
-                 </div>
-                 </div>
-              )}
+                  </div>
+                )}
             </Card>
           );
         })}
