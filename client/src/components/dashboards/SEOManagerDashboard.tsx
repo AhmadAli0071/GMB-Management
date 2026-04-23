@@ -254,6 +254,11 @@ export function SEOManagerDashboard() {
                         {pendingForProject > 0 && <p className="text-red-500 font-semibold">{pendingForProject} pending</p>}
                       </div>
                     )}
+                    {isNew && !isExpanded && (
+                      <Button size="sm" className="gap-1 shrink-0" onClick={(e: React.MouseEvent) => { e.stopPropagation(); setShowAssignPopup(project.id); }}>
+                        Assign to {seoLeadName} <ArrowRight size={14} />
+                      </Button>
+                    )}
                     {isExpanded ? <ChevronUp size={20} className="text-slate-500" /> : <ChevronDown size={20} className="text-slate-500" />}
                   </div>
                 </div>
