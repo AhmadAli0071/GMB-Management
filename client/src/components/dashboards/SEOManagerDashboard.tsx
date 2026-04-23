@@ -78,11 +78,17 @@ export function SEOManagerDashboard() {
 
   const handleAssign = async () => {
     if (!showAssignPopup) return;
+    if (!seoLeadId) {
+      alert('SEO Lead not found. Please refresh the page and try again.');
+      return;
+    }
     setAssigning(true);
     try {
       await assignToLead(showAssignPopup, seoLeadId, assignComment);
       setShowAssignPopup(null);
       setAssignComment('');
+    } catch (err) {
+      alert('Assignment failed: ' + (err.message || 'Unknown error'));
     } finally {
       setAssigning(false);
     }
