@@ -1,15 +1,27 @@
-import React, { useState, Component, type ReactNode } from 'react';
+import React, { useState, lazy, Suspense, Component, type ReactNode } from 'react';
 import { User, ROLE_LABELS } from './types';
 import { AppProvider, useApp } from './AppContext';
 import { SocketProvider } from './SocketContext';
 import { ChatNotifyProvider } from './ChatNotifyContext';
 import { LoginPage } from './components/LoginPage';
-import { SalesDashboard } from './components/dashboards/SalesDashboard';
-import { SEOManagerDashboard } from './components/dashboards/SEOManagerDashboard';
-import { SEOLeadDashboard } from './components/dashboards/SEOLeadDashboard';
-import { OffPageDashboard } from './components/dashboards/OffPageDashboard';
-import { DesignerDashboard } from './components/dashboards/DesignerDashboard';
-import { BossDashboard } from './components/dashboards/BossDashboard';
+
+const SalesDashboard = lazy(() => import('./components/dashboards/SalesDashboard').then(m => ({ default: m.SalesDashboard })));
+const SEOManagerDashboard = lazy(() => import('./components/dashboards/SEOManagerDashboard').then(m => ({ default: m.SEOManagerDashboard })));
+const SEOLeadDashboard = lazy(() => import('./components/dashboards/SEOLeadDashboard').then(m => ({ default: m.SEOLeadDashboard })));
+const OffPageDashboard = lazy(() => import('./components/dashboards/OffPageDashboard').then(m => ({ default: m.OffPageDashboard })));
+const DesignerDashboard = lazy(() => import('./components/dashboards/DesignerDashboard').then(m => ({ default: m.DesignerDashboard })));
+const BossDashboard = lazy(() => import('./components/dashboards/BossDashboard').then(m => ({ default: m.BossDashboard })));
+
+function DashboardLoader() {
+  return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        <span className="text-sm text-slate-400">Loading...</span>
+      </div>
+    </div>
+  );
+}
 
 interface EBProps { children: ReactNode }
 interface EBState { hasError: boolean; error: Error | null }
@@ -89,12 +101,14 @@ function AppContent() {
         </div>
       </div>
       <div className="p-4 sm:p-8">
-        {currentUser.role === 'SALES_MANAGER' && <SalesDashboard />}
-        {currentUser.role === 'SEO_MANAGER' && <SEOManagerDashboard />}
-        {currentUser.role === 'SEO_LEAD' && <SEOLeadDashboard />}
-        {currentUser.role === 'OFF_PAGE_SPECIALIST' && <OffPageDashboard />}
-        {currentUser.role === 'BOSS' && <BossDashboard />}
-        {currentUser.role === 'DESIGNER' && <DesignerDashboard />}
+        <Suspense fallback={<DashboardLoader />}>
+          {currentUser.role === 'SALES_MANAGER' && <SalesDashboard />}
+          {currentUser.role === 'SEO_MANAGER' && <SEOManagerDashboard />}
+          {currentUser.role === 'SEO_LEAD' && <SEOLeadDashboard />}
+          {currentUser.role === 'OFF_PAGE_SPECIALIST' && <OffPageDashboard />}
+          {currentUser.role === 'BOSS' && <BossDashboard />}
+          {currentUser.role === 'DESIGNER' && <DesignerDashboard />}
+        </Suspense>
       </div>
     </div>
   );
