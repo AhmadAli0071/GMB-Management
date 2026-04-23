@@ -50,7 +50,7 @@ app.use('/api/lead-work', leadWorkRoutes);
 app.use('/api/chat', chatRoutes);
 
 app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString(), uptime: process.uptime() });
+  res.json({ status: 'ok', uploadsDir, cwd: process.cwd(), timestamp: new Date().toISOString(), uptime: process.uptime() });
 });
 
 const clientDist = path.join(__dirname, '../client/dist');
