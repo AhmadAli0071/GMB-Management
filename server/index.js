@@ -50,7 +50,7 @@ app.use('/api/lead-work', leadWorkRoutes);
 app.use('/api/chat', chatRoutes);
 
 app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', uploadsDir, cwd: process.cwd(), timestamp: new Date().toISOString(), uptime: process.uptime() });
+  res.json({ status: 'ok', timestamp: new Date().toISOString(), uptime: process.uptime() });
 });
 
 const clientDist = path.join(__dirname, '../client/dist');
@@ -115,9 +115,13 @@ process.on('unhandledRejection', (reason) => {
 
 async function start() {
   try {
-    if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-    const chatUploadsDir = path.join(uploadsDir, 'chat');
-    if (!fs.existsSync(chatUploadsDir)) fs.mkdirSync(chatUploadsDir, { recursive: true });
+    try {
+      if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+      const chatUploadsDir = path.join(uploadsDir, 'chat');
+      if (!fs.existsSync(chatUploadsDir)) fs.mkdirSync(chatUploadsDir, { recursive: true });
+    } catch (dirErr) {
+      logger.error('Uploads dir warning', { component: 'server', error: dirErr.message });
+    }
 
     await connectDB();
     const collections = ['users', 'activities', 'projects', 'tasks', 'inforequests', 'leadworks'];
