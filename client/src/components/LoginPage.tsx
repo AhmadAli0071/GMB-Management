@@ -71,9 +71,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         className="w-full max-w-md relative z-10"
       >
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-blue-300">
-            <span className="text-white font-bold text-3xl">C</span>
-          </div>
+          <img src="/logo.PNG" alt="CrossDigi" className="w-16 h-16 rounded-2xl mx-auto mb-4 shadow-xl shadow-blue-300 object-contain" />
           <h1 className="text-3xl font-bold text-slate-800 tracking-tight">CrossDigi</h1>
           <p className="text-blue-500 mt-2 font-medium">SEO Project Management System</p>
         </div>

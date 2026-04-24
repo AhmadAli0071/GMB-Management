@@ -83,9 +83,7 @@ function AppContent() {
     <div className="min-h-screen bg-slate-50">
       <div className="flex items-center justify-between px-4 sm:px-8 py-4 bg-white border-b border-slate-200 shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200">
-            <span className="text-white font-bold text-lg">C</span>
-          </div>
+          <img src="/logo.PNG" alt="CrossDigi" className="w-9 h-9 rounded-xl shadow-lg shadow-blue-200 object-contain" />
           <span className="font-bold text-lg sm:text-xl tracking-tight text-slate-900">CrossDigi</span>
         </div>
         <div className="flex items-center gap-3 sm:gap-4">
