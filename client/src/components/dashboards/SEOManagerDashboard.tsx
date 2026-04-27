@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import {
   ArrowRight, MapPin, Star, Globe, Search, Building2, X, ExternalLink, Calendar,
   Shield, Send, Clock, Folder, ChevronDown, ChevronUp,
-  CheckCircle2, RotateCcw, Download, FileText, Bell, Users, MessageCircle, Loader2, FolderPlus, Code2
+  CheckCircle2, RotateCcw, Download, FileText, Bell, Users, MessageCircle, Loader2, FolderPlus, Code2, Paperclip
 } from 'lucide-react';
 import { Card, Button, Badge, Textarea } from '../ui/Common';
 import { useApp } from '../../AppContext';
@@ -67,7 +67,9 @@ export function SEOManagerDashboard() {
   const [showDevProjectModal, setShowDevProjectModal] = useState(false);
   const [devProjectName, setDevProjectName] = useState('');
   const [devProjectDesc, setDevProjectDesc] = useState('');
+  const [devProjectFiles, setDevProjectFiles] = useState<FileList | null>(null);
   const [devProjectCreating, setDevProjectCreating] = useState(false);
+  const devFileRef = useRef<HTMLInputElement>(null);
 
   const salesManager = (Object.values(users) as any[]).find(u => u.role === 'SALES_MANAGER');
   const salesManagerName = salesManager?.name || 'Sales Manager';
@@ -142,14 +144,26 @@ export function SEOManagerDashboard() {
     try {
       await createProject({
         name: devProjectName,
-        businessCategory: 'Development',
-        businessEmail: currentUser.email,
+        businessCategory: 'DEVELOPMENT',
         specialInstructions: devProjectDesc,
         stage: 'READY_FOR_ASSIGNMENT',
       });
+      const allProjects = await (await fetch('/api/projects', { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })).json();
+      const newProject = allProjects.find((p: any) => p.name === devProjectName && p.businessCategory === 'DEVELOPMENT');
+      if (newProject) {
+        const formData = new FormData();
+        formData.append('projectId', newProject.id);
+        formData.append('toId', developerId);
+        formData.append('text', devProjectDesc || 'Development project assigned by SEO Manager');
+        if (devProjectFiles) {
+          for (let i = 0; i < devProjectFiles.length; i++) formData.append('images', devProjectFiles[i]);
+        }
+        await createAssignment(formData);
+      }
       setShowDevProjectModal(false);
       setDevProjectName('');
       setDevProjectDesc('');
+      setDevProjectFiles(null);
     } catch (err: any) {
       alert('Failed to create project: ' + (err.message || 'Unknown error'));
     } finally {
@@ -680,11 +694,11 @@ export function SEOManagerDashboard() {
 
       {showDevProjectModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => { setShowDevProjectModal(false); setDevProjectName(''); setDevProjectDesc(''); }} />
+          <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => { setShowDevProjectModal(false); setDevProjectName(''); setDevProjectDesc(''); setDevProjectFiles(null); }} />
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden z-10">
             <div className="px-4 sm:px-6 py-4 border-b border-slate-200">
               <h3 className="text-lg font-bold text-slate-900">Create Dev Project</h3>
-              <p className="text-sm text-slate-500">Create a new development project for {developerName}</p>
+              <p className="text-sm text-slate-500">Create and assign to {developerName}</p>
             </div>
             <div className="px-4 sm:px-6 py-4 space-y-4">
               <div>
@@ -695,11 +709,20 @@ export function SEOManagerDashboard() {
                 <label className="block text-sm font-medium text-slate-700 mb-1">Description / Requirements</label>
                 <textarea className="block w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]" placeholder="Describe what needs to be developed..." value={devProjectDesc} onChange={e => setDevProjectDesc(e.target.value)} />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Attach Files (Images / Docs)</label>
+                <div className="flex items-center gap-3">
+                  <Button variant="outline" size="sm" className="gap-1" onClick={() => devFileRef.current?.click()}><Paperclip size={14} /> Select Files</Button>
+                  <span className="text-xs text-slate-500">{devProjectFiles ? `${devProjectFiles.length} file(s) selected` : 'No files'}</span>
+                  <input ref={devFileRef} type="file" multiple className="hidden" onChange={e => setDevProjectFiles(e.target.files)} />
+                </div>
+                {devProjectFiles && <div className="flex flex-wrap gap-2 mt-2">{Array.from(devProjectFiles).map((f: File, i: number) => (<span key={i} className="text-xs bg-slate-100 px-2 py-1 rounded">{f.name}</span>))}</div>}
+              </div>
             </div>
             <div className="px-4 sm:px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
-              <Button variant="outline" onClick={() => { setShowDevProjectModal(false); setDevProjectName(''); setDevProjectDesc(''); }}>Cancel</Button>
+              <Button variant="outline" onClick={() => { setShowDevProjectModal(false); setDevProjectName(''); setDevProjectDesc(''); setDevProjectFiles(null); }}>Cancel</Button>
               <Button className="gap-1" onClick={handleCreateDevProject} disabled={devProjectCreating}>
-                {devProjectCreating ? <><Loader2 size={14} className="animate-spin" /> Creating...</> : <><FolderPlus size={14} /> Create Project</>}
+                {devProjectCreating ? <><Loader2 size={14} className="animate-spin" /> Creating...</> : <><FolderPlus size={14} /> Create & Assign</>}
               </Button>
             </div>
           </div>
