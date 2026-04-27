@@ -70,7 +70,15 @@ export function SEOManagerDashboard() {
   const seoLeadName = seoLead?.name || 'SEO Lead';
 
   const myProjectUpdates = projectUpdates.filter((u: any) => u.toId === currentUser.id);
-  const pendingUpdatesCount = myProjectUpdates.filter((u: any) => u.status === 'PENDING_REVIEW').length;
+  const isUpdatePending = (u: any) => {
+    if (u.reportType === 'STRUCTURED') {
+      const hasOnPage = !!(u.onPageText || (u.onPageFiles && u.onPageFiles.length > 0));
+      const hasOffPage = !!(u.offPageWorkIds && u.offPageWorkIds.length > 0);
+      return (hasOnPage && u.onPageStatus === 'PENDING') || (hasOffPage && u.offPageStatus === 'PENDING');
+    }
+    return u.status === 'PENDING_REVIEW';
+  };
+  const pendingUpdatesCount = myProjectUpdates.filter(isUpdatePending).length;
 
   const newProjects = projects.filter(p => ['CLIENT_COMMUNICATION', 'VERIFICATION', 'READY_FOR_ASSIGNMENT'].includes(p.stage));
   const activeProjects = projects.filter(p => ['ASSIGNED_TO_LEAD', 'ON_PAGE_IN_PROGRESS', 'OFF_PAGE_IN_PROGRESS', 'REVIEW'].includes(p.stage));
@@ -211,7 +219,7 @@ export function SEOManagerDashboard() {
           const isActive = !isNew;
           const isExpanded = expandedProject === project.id;
           const projectUpdates = myProjectUpdates.filter((u: any) => u.projectId === project.id);
-          const pendingForProject = projectUpdates.filter((u: any) => u.status === 'PENDING_REVIEW').length;
+          const pendingForProject = projectUpdates.filter(isUpdatePending).length;
           const badge = getProjectBadge(project.stage);
           const projectUnreadMap = unreadCounts[project.id] || {};
           const projectUnread = (Object.values(projectUnreadMap) as number[]).reduce((sum, val) => sum + val, 0);
@@ -369,8 +377,8 @@ export function SEOManagerDashboard() {
                             <div key={update.id} className="p-3 sm:p-4 bg-white border border-slate-200 rounded-xl">
                               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 gap-2">
                                 <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                                  <Badge variant={getStatusColor(update.status)} className="text-[10px]">
-                                    {update.status === 'APPROVED' ? 'Approved' : update.status === 'CHANGES_REQUESTED' ? 'Changes Requested' : 'Pending Review'}
+                                  <Badge variant={getStatusColor(isStructured && !isUpdatePending(update) && update.status === 'PENDING_REVIEW' ? 'APPROVED' : update.status)} className="text-[10px]">
+                                    {isStructured ? (isUpdatePending(update) ? 'Pending Review' : 'Approved') : (update.status === 'APPROVED' ? 'Approved' : update.status === 'CHANGES_REQUESTED' ? 'Changes Requested' : 'Pending Review')}
                                   </Badge>
                                   {isStructured && <Badge variant="purple" className="text-[10px]">Structured Report</Badge>}
                                   <span className="text-[11px] text-slate-500">{fromUser?.name} — {new Date(update.createdAt).toLocaleString()}</span>

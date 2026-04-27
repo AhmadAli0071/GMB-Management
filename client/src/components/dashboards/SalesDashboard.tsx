@@ -82,7 +82,16 @@ export function SalesDashboard() {
     acc[u.projectId].push(u);
     return acc;
   }, {});
-  const pendingUpdatesCount = myProjectUpdates.filter((u: any) => u.status === 'PENDING_REVIEW').length;
+  const isUpdatePending = (u: any) => {
+    if (u.reportType === 'STRUCTURED') {
+      const hasOnPage = !!(u.onPageText || (u.onPageFiles && u.onPageFiles.length > 0));
+      const hasOffPage = !!(u.offPageWorkIds && u.offPageWorkIds.length > 0);
+      return (hasOnPage && u.onPageStatus === 'PENDING') || (hasOffPage && u.offPageStatus === 'PENDING');
+    }
+    return u.status === 'PENDING_REVIEW';
+  };
+
+  const pendingUpdatesCount = myProjectUpdates.filter(isUpdatePending).length;
 
   const getStatusColor = (status: string) => {
     if (status === 'APPROVED') return 'green';
@@ -297,7 +306,7 @@ export function SalesDashboard() {
             const isActive = !isNew && project.stage !== 'COMPLETED';
             const isCompleted = project.stage === 'COMPLETED';
             const projectUpdates = myProjectUpdates.filter((u: any) => u.projectId === project.id);
-            const pendingForProject = projectUpdates.filter((u: any) => u.status === 'PENDING_REVIEW').length;
+            const pendingForProject = projectUpdates.filter(isUpdatePending).length;
             const projectUnreadMap = unreadCounts[project.id] || {};
             const projectUnread = (Object.values(projectUnreadMap) as number[]).reduce((sum, val) => sum + val, 0);
 
@@ -501,8 +510,8 @@ export function SalesDashboard() {
                                     <div key={update.id} className="p-4 bg-white border border-slate-200 rounded-xl">
                                       <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                                         <div className="flex flex-wrap items-center gap-2">
-                                          <Badge variant={getStatusColor(update.status)} className="text-[10px]">
-                                            {update.status === 'APPROVED' ? 'Approved' : update.status === 'CHANGES_REQUESTED' ? 'Changes Requested' : 'Pending Review'}
+                                          <Badge variant={getStatusColor(isStructured && !isUpdatePending(update) && update.status === 'PENDING_REVIEW' ? 'APPROVED' : update.status)} className="text-[10px]">
+                                            {isStructured ? (isUpdatePending(update) ? 'Pending Review' : 'Approved') : (update.status === 'APPROVED' ? 'Approved' : update.status === 'CHANGES_REQUESTED' ? 'Changes Requested' : 'Pending Review')}
                                           </Badge>
                                           {isStructured && <Badge variant="purple" className="text-[10px]">Structured Report</Badge>}
                                           <span className="text-[11px] text-slate-500">{fromUser?.name} — {new Date(update.createdAt).toLocaleString()}</span>
