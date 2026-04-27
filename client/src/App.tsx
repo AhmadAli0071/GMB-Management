@@ -10,6 +10,7 @@ const SEOManagerDashboard = lazy(() => import('./components/dashboards/SEOManage
 const SEOLeadDashboard = lazy(() => import('./components/dashboards/SEOLeadDashboard').then(m => ({ default: m.SEOLeadDashboard })));
 const OffPageDashboard = lazy(() => import('./components/dashboards/OffPageDashboard').then(m => ({ default: m.OffPageDashboard })));
 const DesignerDashboard = lazy(() => import('./components/dashboards/DesignerDashboard').then(m => ({ default: m.DesignerDashboard })));
+const DeveloperDashboard = lazy(() => import('./components/dashboards/DeveloperDashboard').then(m => ({ default: m.DeveloperDashboard })));
 const BossDashboard = lazy(() => import('./components/dashboards/BossDashboard').then(m => ({ default: m.BossDashboard })));
 
 function DashboardLoader() {
@@ -106,6 +107,7 @@ function AppContent() {
           {currentUser.role === 'OFF_PAGE_SPECIALIST' && <OffPageDashboard />}
           {currentUser.role === 'BOSS' && <BossDashboard />}
           {currentUser.role === 'DESIGNER' && <DesignerDashboard />}
+          {currentUser.role === 'DEVELOPER' && <DeveloperDashboard />}
         </Suspense>
       </div>
     </div>

@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import {
   ArrowRight, MapPin, Star, Globe, Search, Building2, X, ExternalLink, Calendar,
   Shield, Send, Clock, Folder, ChevronDown, ChevronUp,
-  CheckCircle2, RotateCcw, Download, FileText, Bell, Users, MessageCircle, Loader2
+  CheckCircle2, RotateCcw, Download, FileText, Bell, Users, MessageCircle, Loader2, Code2
 } from 'lucide-react';
 import { Card, Button, Badge, Textarea } from '../ui/Common';
 import { useApp } from '../../AppContext';
@@ -13,7 +13,7 @@ import { STAGE_LABELS, STAGE_COLORS } from '../../types';
 import { ChatBox } from '../chat/ChatBox';
 
 export function SEOManagerDashboard() {
-  const { projects, users, currentUser, assignToLead, projectUpdates, reviewProjectUpdate, reviewSection, workSubmissions } = useApp();
+  const { projects, users, currentUser, assignToLead, projectUpdates, reviewProjectUpdate, reviewSection, workSubmissions, createAssignment } = useApp();
   const { unreadCounts } = useChatNotify();
   const { onActivityNotification, offActivityNotification } = useSocket();
 
@@ -61,6 +61,9 @@ export function SEOManagerDashboard() {
   const [assigning, setAssigning] = useState(false);
   const [sectionReviewing, setSectionReviewing] = useState(false);
   const [updateReviewing, setUpdateReviewing] = useState(false);
+  const [showDevAssignPopup, setShowDevAssignPopup] = useState<string | null>(null);
+  const [devAssignText, setDevAssignText] = useState('');
+  const [devAssigning, setDevAssigning] = useState(false);
 
   const salesManager = (Object.values(users) as any[]).find(u => u.role === 'SALES_MANAGER');
   const salesManagerName = salesManager?.name || 'Sales Manager';
@@ -68,6 +71,10 @@ export function SEOManagerDashboard() {
   const seoLead = (Object.values(users) as any[]).find(u => u.role === 'SEO_LEAD');
   const seoLeadId = seoLead?.id || '';
   const seoLeadName = seoLead?.name || 'SEO Lead';
+
+  const developer = (Object.values(users) as any[]).find(u => u.role === 'DEVELOPER');
+  const developerId = developer?.id || '';
+  const developerName = developer?.name || 'Developer';
 
   const myProjectUpdates = projectUpdates.filter((u: any) => u.toId === currentUser.id);
   const isUpdatePending = (u: any) => {
@@ -99,6 +106,28 @@ export function SEOManagerDashboard() {
       alert('Assignment failed: ' + (err.message || 'Unknown error'));
     } finally {
       setAssigning(false);
+    }
+  };
+
+  const handleDevAssign = async () => {
+    if (!showDevAssignPopup) return;
+    if (!developerId) {
+      alert('Developer not found. Please ensure a developer user exists.');
+      return;
+    }
+    setDevAssigning(true);
+    try {
+      const formData = new FormData();
+      formData.append('projectId', showDevAssignPopup);
+      formData.append('toId', developerId);
+      formData.append('text', devAssignText || 'Development task assigned by SEO Manager');
+      await createAssignment(formData);
+      setShowDevAssignPopup(null);
+      setDevAssignText('');
+    } catch (err: any) {
+      alert('Assignment failed: ' + (err.message || 'Unknown error'));
+    } finally {
+      setDevAssigning(false);
     }
   };
 
@@ -297,6 +326,11 @@ export function SEOManagerDashboard() {
                         {isNew && (
                           <Button size="sm" className="gap-1" onClick={() => setShowAssignPopup(project.id)}>
                             Assign to {seoLeadName} <ArrowRight size={14} />
+                          </Button>
+                        )}
+                        {developerId && (
+                          <Button variant="outline" size="sm" className="gap-1" onClick={() => { setShowDevAssignPopup(project.id); setDevAssignText(''); }}>
+                            <Code2 size={14} /> Assign to {developerName}
                           </Button>
                         )}
                       </div>
@@ -577,6 +611,36 @@ export function SEOManagerDashboard() {
               <Button variant="outline" onClick={() => setShowAssignPopup(null)}>Cancel</Button>
               <Button className="gap-1" onClick={handleAssign} disabled={assigning}>
                 {assigning ? <><Loader2 size={14} className="animate-spin" /> Assigning...</> : <>Send to {seoLeadName} <ArrowRight size={14} /></>}
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {showDevAssignPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} onClick={() => { setShowDevAssignPopup(null); setDevAssignText(''); }} className="absolute inset-0 bg-black/20 backdrop-blur-sm" />
+          <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden z-10">
+            <div className="px-4 sm:px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-900">Assign to {developerName}</h3>
+              <button onClick={() => { setShowDevAssignPopup(null); setDevAssignText(''); }} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"><X size={18} /></button>
+            </div>
+            <div className="px-4 sm:px-6 py-5 space-y-4">
+              <div className="p-3 bg-cyan-50 border border-cyan-200 rounded-lg text-sm">
+                <p className="font-semibold text-cyan-600">{projects.find(p => p.id === showDevAssignPopup)?.name}</p>
+                <p className="text-xs text-cyan-600 mt-0.5">{projects.find(p => p.id === showDevAssignPopup)?.businessCategory || 'GMB Project'}</p>
+              </div>
+              <Textarea
+                label="Task Description"
+                placeholder="Describe the development task..."
+                value={devAssignText}
+                onChange={e => setDevAssignText(e.target.value)}
+              />
+            </div>
+            <div className="px-4 sm:px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
+              <Button variant="outline" onClick={() => { setShowDevAssignPopup(null); setDevAssignText(''); }}>Cancel</Button>
+              <Button className="gap-1" onClick={handleDevAssign} disabled={devAssigning}>
+                {devAssigning ? <><Loader2 size={14} className="animate-spin" /> Assigning...</> : <><Send size={14} /> Assign to {developerName}</>}
               </Button>
             </div>
           </motion.div>

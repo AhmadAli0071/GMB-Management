@@ -1,4 +1,4 @@
-export type UserRole = 'SALES_MANAGER' | 'SEO_MANAGER' | 'SEO_LEAD' | 'OFF_PAGE_SPECIALIST' | 'DESIGNER' | 'BOSS';
+export type UserRole = 'SALES_MANAGER' | 'SEO_MANAGER' | 'SEO_LEAD' | 'OFF_PAGE_SPECIALIST' | 'DESIGNER' | 'DEVELOPER' | 'BOSS';
 
 export type ProjectStage =
   | 'CLIENT_COMMUNICATION'
@@ -97,6 +97,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   SEO_LEAD: 'SEO Lead',
   OFF_PAGE_SPECIALIST: 'Off-Page Specialist',
   DESIGNER: 'Designer',
+  DEVELOPER: 'Developer',
   BOSS: 'Boss',
 };
 
