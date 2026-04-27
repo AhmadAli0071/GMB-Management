@@ -98,7 +98,6 @@ export function DeveloperDashboard() {
 
   const renderProjectDetail = (project: any) => {
     const projectTasks = tasks.filter((t: any) => t.projectId === project.id);
-    const currentStageIndex = ALL_STAGES.indexOf(project.stage);
 
     return (
       <div className="border-t border-slate-200 bg-white">
@@ -111,55 +110,23 @@ export function DeveloperDashboard() {
         <div className="p-6 space-y-6">
           <div className="flex items-center gap-4">
             <h2 className="text-2xl font-bold text-slate-900">{project.name}</h2>
-            <Badge variant={STAGE_COLORS[project.stage]}>{STAGE_LABELS[project.stage]}</Badge>
-            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${project.verificationStatus === 'VERIFIED' ? 'bg-green-50 text-green-600 border-green-200' : 'bg-red-50 text-red-500 border-red-200'}`}>
-              <Shield size={11} /> {project.verificationStatus === 'VERIFIED' ? 'Verified' : 'Unverified'}
-            </span>
+            <Badge variant="blue">{STAGE_LABELS[project.stage]}</Badge>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            <div className="lg:col-span-3 space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-4">
               <Card className="p-5">
-                <h3 className="font-bold text-lg mb-3 text-slate-800">Project Details</h3>
+                <h3 className="font-bold text-lg mb-3 text-slate-800">Project Info</h3>
                 <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div><span className="text-slate-500">Category:</span> <span className="text-slate-600">{project.businessCategory || 'N/A'}</span></div>
-                  <div><span className="text-slate-500">Email:</span> <span className="text-blue-600">{project.businessEmail}</span></div>
-                  <div><span className="text-slate-500">Phone:</span> <span className="text-slate-600">{project.businessPhone}</span></div>
-                  <div><span className="text-slate-500">Location:</span> <span className="text-slate-600">{project.businessCity}{project.businessState ? `, ${project.businessState}` : ''}</span></div>
-                  <div><span className="text-slate-500">Website:</span> <span className="text-blue-600">{project.businessWebsite || 'N/A'}</span></div>
                   <div><span className="text-slate-500">Created:</span> <span className="text-slate-600">{new Date(project.createdAt).toLocaleDateString()}</span></div>
+                  <div><span className="text-slate-500">Status:</span> <span className="font-medium text-blue-600">{STAGE_LABELS[project.stage]}</span></div>
                 </div>
                 {project.specialInstructions && (
                   <div className="mt-4 pt-4 border-t border-slate-200">
-                    <h4 className="text-sm font-bold text-slate-400 mb-2">Special Instructions</h4>
-                    <p className="text-sm text-slate-600">{project.specialInstructions}</p>
+                    <h4 className="text-sm font-bold text-slate-400 mb-2">Description / Requirements</h4>
+                    <p className="text-sm text-slate-600 whitespace-pre-wrap">{project.specialInstructions}</p>
                   </div>
                 )}
-              </Card>
-
-              <Card className="p-5">
-                <h3 className="font-bold text-lg mb-3 text-slate-800">Project Progress</h3>
-                <div className="flex items-center justify-between relative">
-                  <div className="absolute top-4 left-0 w-full h-0.5 bg-slate-200 z-0" />
-                  {ALL_STAGES.map((stage, i) => {
-                    const isCompleted = i < currentStageIndex;
-                    const isCurrent = i === currentStageIndex;
-                    return (
-                      <div key={stage} className="relative z-10 flex flex-col items-center gap-2 bg-white px-2">
-                        <div className={`w-8 h-8 rounded-full border-3 flex items-center justify-center transition-all ${
-                          isCompleted ? 'bg-blue-600 border-blue-500 text-white' :
-                          isCurrent ? 'bg-slate-200 border-blue-500 text-blue-600' :
-                          'bg-slate-100 border-slate-300 text-slate-400'
-                        }`}>
-                          {isCompleted ? <FileText size={14} /> : <span className="text-xs font-bold">{i + 1}</span>}
-                        </div>
-                        <span className={`text-[9px] font-bold uppercase text-center max-w-[60px] ${
-                          isCurrent ? 'text-blue-600' : isCompleted ? 'text-slate-600' : 'text-slate-500'
-                        }`}>{STAGE_LABELS[stage].split(' ')[0]}</span>
-                      </div>
-                    );
-                  })}
-                </div>
               </Card>
             </div>
 
