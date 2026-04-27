@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import {
   ArrowRight, MapPin, Star, Globe, Search, Building2, X, ExternalLink, Calendar,
   Shield, Send, Clock, Folder, ChevronDown, ChevronUp,
-  CheckCircle2, RotateCcw, Download, FileText, Bell, Users, MessageCircle, Loader2, Code2
+  CheckCircle2, RotateCcw, Download, FileText, Bell, Users, MessageCircle, Loader2, FolderPlus, Code2
 } from 'lucide-react';
 import { Card, Button, Badge, Textarea } from '../ui/Common';
 import { useApp } from '../../AppContext';
@@ -13,7 +13,7 @@ import { STAGE_LABELS, STAGE_COLORS } from '../../types';
 import { ChatBox } from '../chat/ChatBox';
 
 export function SEOManagerDashboard() {
-  const { projects, users, currentUser, assignToLead, projectUpdates, reviewProjectUpdate, reviewSection, workSubmissions, createAssignment } = useApp();
+  const { projects, users, currentUser, assignToLead, projectUpdates, reviewProjectUpdate, reviewSection, workSubmissions, createAssignment, createProject } = useApp();
   const { unreadCounts } = useChatNotify();
   const { onActivityNotification, offActivityNotification } = useSocket();
 
@@ -64,6 +64,10 @@ export function SEOManagerDashboard() {
   const [showDevAssignPopup, setShowDevAssignPopup] = useState<string | null>(null);
   const [devAssignText, setDevAssignText] = useState('');
   const [devAssigning, setDevAssigning] = useState(false);
+  const [showDevProjectModal, setShowDevProjectModal] = useState(false);
+  const [devProjectName, setDevProjectName] = useState('');
+  const [devProjectDesc, setDevProjectDesc] = useState('');
+  const [devProjectCreating, setDevProjectCreating] = useState(false);
 
   const salesManager = (Object.values(users) as any[]).find(u => u.role === 'SALES_MANAGER');
   const salesManagerName = salesManager?.name || 'Sales Manager';
@@ -131,6 +135,28 @@ export function SEOManagerDashboard() {
     }
   };
 
+  const handleCreateDevProject = async () => {
+    if (!devProjectName.trim()) { alert('Project name is required'); return; }
+    if (!developerId) { alert('Developer not found'); return; }
+    setDevProjectCreating(true);
+    try {
+      await createProject({
+        name: devProjectName,
+        businessCategory: 'Development',
+        businessEmail: currentUser.email,
+        specialInstructions: devProjectDesc,
+        stage: 'READY_FOR_ASSIGNMENT',
+      });
+      setShowDevProjectModal(false);
+      setDevProjectName('');
+      setDevProjectDesc('');
+    } catch (err: any) {
+      alert('Failed to create project: ' + (err.message || 'Unknown error'));
+    } finally {
+      setDevProjectCreating(false);
+    }
+  };
+
   const handleUpdateReview = async () => {
     if (!showUpdateReviewModal) return;
     setUpdateReviewing(true);
@@ -175,6 +201,11 @@ export function SEOManagerDashboard() {
           <p className="text-slate-500 mt-1 text-sm sm:text-base">Manage GMB projects</p>
         </div>
         <div className="flex items-center gap-3">
+          {developerId && (
+            <Button className="gap-2" onClick={() => setShowDevProjectModal(true)}>
+              <FolderPlus size={18} /> Create Dev Project
+            </Button>
+          )}
           <div className="relative" ref={notifRef}>
             <button
               onClick={() => setShowNotifDropdown(!showNotifDropdown)}
@@ -644,6 +675,34 @@ export function SEOManagerDashboard() {
               </Button>
             </div>
           </motion.div>
+        </div>
+      )}
+
+      {showDevProjectModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => { setShowDevProjectModal(false); setDevProjectName(''); setDevProjectDesc(''); }} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden z-10">
+            <div className="px-4 sm:px-6 py-4 border-b border-slate-200">
+              <h3 className="text-lg font-bold text-slate-900">Create Dev Project</h3>
+              <p className="text-sm text-slate-500">Create a new development project for {developerName}</p>
+            </div>
+            <div className="px-4 sm:px-6 py-4 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Project Name</label>
+                <input type="text" className="block w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. Client Website Development" value={devProjectName} onChange={e => setDevProjectName(e.target.value)} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Description / Requirements</label>
+                <textarea className="block w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]" placeholder="Describe what needs to be developed..." value={devProjectDesc} onChange={e => setDevProjectDesc(e.target.value)} />
+              </div>
+            </div>
+            <div className="px-4 sm:px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
+              <Button variant="outline" onClick={() => { setShowDevProjectModal(false); setDevProjectName(''); setDevProjectDesc(''); }}>Cancel</Button>
+              <Button className="gap-1" onClick={handleCreateDevProject} disabled={devProjectCreating}>
+                {devProjectCreating ? <><Loader2 size={14} className="animate-spin" /> Creating...</> : <><FolderPlus size={14} /> Create Project</>}
+              </Button>
+            </div>
+          </div>
         </div>
       )}
 
