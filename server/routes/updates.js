@@ -153,8 +153,31 @@ router.put('/:id/review-section', async (req, res) => {
     const updateData = { [statusField]: status };
     if (comment) updateData[commentField] = comment;
 
-    const update = await ProjectUpdate.findByIdAndUpdate(id, updateData, { returnDocument: 'after' });
+    let update = await ProjectUpdate.findByIdAndUpdate(id, updateData, { returnDocument: 'after' });
     if (!update) return res.status(404).json({ error: 'Not found' });
+
+    const hasOnPage = !!(update.onPageText || (update.onPageFiles && update.onPageFiles.length > 0));
+    const hasOffPage = !!(update.offPageWorkIds && update.offPageWorkIds.length > 0);
+
+    let allResolved = true;
+    let allApproved = true;
+
+    if (hasOnPage) {
+      if (update.onPageStatus === 'PENDING') allResolved = false;
+      if (update.onPageStatus !== 'APPROVED') allApproved = false;
+    }
+    if (hasOffPage) {
+      if (update.offPageStatus === 'PENDING') allResolved = false;
+      if (update.offPageStatus !== 'APPROVED') allApproved = false;
+    }
+
+    if (allResolved && (hasOnPage || hasOffPage)) {
+      update = await ProjectUpdate.findByIdAndUpdate(
+        id,
+        { status: allApproved ? 'APPROVED' : 'CHANGES_REQUESTED' },
+        { returnDocument: 'after' }
+      );
+    }
 
     logger.info('Section reviewed', { component: 'updates', updateId: id, section, status });
 
