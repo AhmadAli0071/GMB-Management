@@ -15,10 +15,12 @@ interface SocketContextType {
   offMessageDeleted: (callback: (data: any) => void) => void;
   onChatCleared: (callback: (data: any) => void) => void;
   offChatCleared: (callback: (data: any) => void) => void;
-  joinDM: (conversationId: string) => void;
-  leaveDM: (conversationId: string) => void;
-  onDMMessage: (callback: (data: any) => void) => void;
-  offDMMessage: (callback: (data: any) => void) => void;
+   joinDM: (conversationId: string) => void;
+   leaveDM: (conversationId: string) => void;
+   joinDMGlobal: (conversationId: string) => void;
+   leaveDMGlobal: (conversationId: string) => void;
+   onDMMessage: (callback: (data: any) => void) => void;
+   offDMMessage: (callback: (data: any) => void) => void;
   onDMMessageEdited: (callback: (data: any) => void) => void;
   offDMMessageEdited: (callback: (data: any) => void) => void;
   onDMMessageDeleted: (callback: (data: any) => void) => void;
@@ -117,6 +119,14 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     socket?.emit('leave-dm', conversationId);
   }, [socket]);
 
+  const joinDMGlobal = useCallback((conversationId: string) => {
+    socket?.emit('join-dm-global', conversationId);
+  }, [socket]);
+
+  const leaveDMGlobal = useCallback((conversationId: string) => {
+    socket?.emit('leave-dm-global', conversationId);
+  }, [socket]);
+
   const onDMMessage = useCallback((callback: (data: any) => void) => {
     socket?.on('dm-new-message', callback);
   }, [socket]);
@@ -181,8 +191,8 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       onMessageEdited, offMessageEdited,
       onMessageDeleted, offMessageDeleted,
       onChatCleared, offChatCleared,
-      joinDM, leaveDM,
-      onDMMessage, offDMMessage,
+   joinDM, leaveDM, joinDMGlobal, leaveDMGlobal,
+   onDMMessage, offDMMessage,
       onDMMessageEdited, offDMMessageEdited,
       onDMMessageDeleted, offDMMessageDeleted,
       onDMChatCleared, offDMChatCleared,
