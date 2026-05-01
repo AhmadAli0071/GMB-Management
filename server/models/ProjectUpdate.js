@@ -5,6 +5,7 @@ const projectUpdateSchema = new mongoose.Schema({
   projectId: { type: String, required: true },
   fromId: { type: String, required: true },
   toId: { type: String, required: true },
+  title: { type: String, default: '' },
   text: { type: String, default: '' },
   files: [{ filename: String, originalName: String }],
   status: { type: String, enum: ['PENDING_REVIEW', 'APPROVED', 'CHANGES_REQUESTED'], default: 'PENDING_REVIEW' },

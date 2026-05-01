@@ -90,6 +90,17 @@ export const api = {
       return res.json();
     });
   },
+  submitReportToManagers: (formData) => {
+    const token = getToken();
+    return fetch(`${API_BASE}/updates/submit-to-managers`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    }).then(res => {
+      if (!res.ok) return res.json().then(e => { throw new Error(e.error || 'Failed'); });
+      return res.json();
+    });
+  },
   reviewProjectUpdate: (id, status, reviewComment) => request('PUT', `/updates/${id}/review`, { status, reviewComment }),
   reviewSection: (id, section, status, comment) => request('PUT', `/updates/${id}/review-section`, { section, status, comment }),
   updateWork: (id, formData) => {

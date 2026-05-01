@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import ProjectUpdate from '../models/ProjectUpdate.js';
+import User from '../models/User.js';
 import { authMiddleware } from '../middleware/auth.js';
 import logger from '../utils/logger.js';
 
@@ -29,6 +30,7 @@ function formatUpdate(doc) {
     projectId: obj.projectId,
     fromId: obj.fromId,
     toId: obj.toId,
+    title: obj.title || '',
     text: obj.text,
     files: obj.files,
     status: obj.status,
@@ -58,7 +60,7 @@ router.get('/', async (_req, res) => {
 
 router.post('/', upload.array('files', 10), async (req, res) => {
   try {
-    const { projectId, toId, text, reportType, onPageText, offPageWorkIds, workDate } = req.body;
+    const { projectId, toId, text, title, reportType, onPageText, offPageWorkIds, workDate } = req.body;
     const userId = req.user.id;
     const files = req.files?.map(f => ({ filename: f.filename, originalName: f.originalname })) || [];
 
@@ -70,6 +72,7 @@ router.post('/', upload.array('files', 10), async (req, res) => {
       projectId,
       fromId: userId,
       toId,
+      title: title || '',
       text: text || '',
       files,
       reportType: isStructured ? 'STRUCTURED' : 'SIMPLE',
@@ -189,6 +192,64 @@ router.put('/:id/review-section', async (req, res) => {
 
     res.json(formatUpdate(update));
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Submit report to both SEO Manager (Ali) and Sales Manager (Kevin)
+router.post('/submit-to-managers', upload.array('files', 10), async (req, res) => {
+  try {
+    const { projectId, title, text, workDate } = req.body;
+    const fromId = req.user.id;
+    const files = req.files?.map(f => ({ filename: f.filename, originalName: f.originalname })) || [];
+
+    // Find SEO Manager (Ali) and Sales Manager (Kevin)
+    const [seoManager, salesManager] = await Promise.all([
+      User.findOne({ role: 'SEO_MANAGER' }),
+      User.findOne({ role: 'SALES_MANAGER' })
+    ]);
+
+    if (!seoManager || !salesManager) {
+      return res.status(400).json({ error: 'Required managers (SEO, Sales) not found in system' });
+    }
+
+    const managers = [seoManager._id, salesManager._id];
+    const reports = [];
+
+    for (const toId of managers) {
+      const updateId = crypto.randomBytes(8).toString('hex');
+      const updateData = {
+        _id: updateId,
+        projectId,
+        fromId,
+        toId,
+        title: title || '',
+        text: text || '',
+        files,
+        status: 'PENDING_REVIEW',
+        reportType: 'SIMPLE',
+        workDate: workDate || new Date().toISOString().split('T')[0],
+      };
+
+      const update = await ProjectUpdate.create(updateData);
+      reports.push(update);
+
+      const io = req.app.get('io');
+      if (io) {
+        io.to(`user:${toId}`).emit('activity-notification', {
+          type: 'REPORT_SUBMITTED',
+          message: `New report submitted: ${title || 'Report'}`,
+          projectId,
+          fromUserId: fromId
+        });
+      }
+    }
+
+    logger.info('Reports submitted to managers', { component: 'updates', fromId, projectId, reportCount: reports.length });
+
+    res.status(201).json({ reports: reports.map(formatUpdate) });
+  } catch (err) {
+    logger.error('Submit to managers error', { component: 'updates', error: err.message });
     res.status(500).json({ error: err.message });
   }
 });

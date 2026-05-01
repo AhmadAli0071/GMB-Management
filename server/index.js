@@ -1,7 +1,8 @@
+// Load environment variables BEFORE any other imports
+import 'dotenv/config';
 import mongoose from 'mongoose';
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -20,8 +21,6 @@ import leadWorkRoutes from './routes/lead-work.js';
 import chatRoutes from './routes/chat.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import logger from './utils/logger.js';
-
-dotenv.config({ path: '../.env' });
 
 const JWT_SECRET = process.env.JWT_SECRET || 'crossdigi-secret-2024';
 

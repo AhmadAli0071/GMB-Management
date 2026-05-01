@@ -53,15 +53,24 @@ export function SEOLeadDashboard() {
   const [assignDesignerForm, setAssignDesignerForm] = useState({ projectId: '', text: '' });
   const [assignDesignerImages, setAssignDesignerImages] = useState<FileList | null>(null);
   const [assignDesignerDocs, setAssignDesignerDocs] = useState<FileList | null>(null);
-  const [expandedWorkDates, setExpandedWorkDates] = useState<Record<string, boolean>>({});
-  const toggleWorkDate = (key: string) => setExpandedWorkDates(prev => ({ ...prev, [key]: !prev[key] }));
+   const [expandedWorkDates, setExpandedWorkDates] = useState<Record<string, boolean>>({});
+   const toggleWorkDate = (key: string) => setExpandedWorkDates(prev => ({ ...prev, [key]: !prev[key] }));
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const docInputRef = useRef<HTMLInputElement>(null);
-  const onPageFileRef = useRef<HTMLInputElement>(null);
-  const editOnPageFileRef = useRef<HTMLInputElement>(null);
-  const assignDesignerImgRef = useRef<HTMLInputElement>(null);
-  const assignDesignerDocRef = useRef<HTMLInputElement>(null);
+   // Simple Report state
+   const [showSimpleReportModal, setShowSimpleReportModal] = useState(false);
+   const [simpleReportForm, setSimpleReportForm] = useState({ projectId: '', toId: '' });
+   const [simpleReportTitle, setSimpleReportTitle] = useState('');
+   const [simpleReportNotes, setSimpleReportNotes] = useState('');
+   const [simpleReportFiles, setSimpleReportFiles] = useState<FileList | null>(null);
+   const [submittingSimple, setSubmittingSimple] = useState(false);
+
+   const fileInputRef = useRef<HTMLInputElement>(null);
+   const docInputRef = useRef<HTMLInputElement>(null);
+   const onPageFileRef = useRef<HTMLInputElement>(null);
+   const editOnPageFileRef = useRef<HTMLInputElement>(null);
+   const assignDesignerImgRef = useRef<HTMLInputElement>(null);
+   const assignDesignerDocRef = useRef<HTMLInputElement>(null);
+   const simpleFileInputRef = useRef<HTMLInputElement>(null);
 
   const seoManager = (Object.values(users) as any[]).find(u => u.role === 'SEO_MANAGER');
   const seoManagerName = seoManager?.name || 'SEO Manager';
@@ -247,18 +256,54 @@ export function SEOLeadDashboard() {
     }
   };
 
-  const openSubmitReportModal = (projectId: string, toId: string) => {
-    const existing = projectUpdates.find((u: any) => u.projectId === projectId && u.toId === toId && u.fromId === currentUser.id && u.reportType === 'STRUCTURED' && (u.onPageStatus === 'PENDING' || u.offPageStatus === 'PENDING'));
-    if (existing) {
-      const toUser = users[toId];
-      setShowAlreadySentPopup(`Report already sent to ${toUser?.name} and is pending review. Submit a new report only after changes are made.`);
-      return;
-    }
-    setReportForm({ projectId, toId });
-    setShowSubmitReportModal(true);
-  };
+   const openSubmitReportModal = (projectId: string, toId: string) => {
+     const existing = projectUpdates.find((u: any) => u.projectId === projectId && u.toId === toId && u.fromId === currentUser.id && u.reportType === 'STRUCTURED' && (u.onPageStatus === 'PENDING' || u.offPageStatus === 'PENDING'));
+     if (existing) {
+       const toUser = users[toId];
+       setShowAlreadySentPopup(`Report already sent to ${toUser?.name} and is pending review. Submit a new report only after changes are made.`);
+       return;
+     }
+     setReportForm({ projectId, toId });
+     setShowSubmitReportModal(true);
+   };
 
-  const handleUpdateReview = async () => {
+   // Simple Report handlers
+   const openSimpleReportModal = (projectId: string, toId: string) => {
+     setSimpleReportForm({ projectId, toId });
+     setSimpleReportTitle('');
+     setSimpleReportNotes('');
+     setSimpleReportFiles(null);
+     setShowSimpleReportModal(true);
+   };
+
+   const handleSimpleReportSubmit = async () => {
+     if (!simpleReportTitle.trim() || !simpleReportForm.projectId) return;
+     setSubmittingSimple(true);
+     try {
+       const formData = new FormData();
+       formData.append('projectId', simpleReportForm.projectId);
+       formData.append('toId', simpleReportForm.toId);
+       formData.append('title', simpleReportTitle.trim());
+       formData.append('text', simpleReportNotes.trim());
+       if (simpleReportFiles) {
+         Array.from(simpleReportFiles).forEach(file => formData.append('files', file));
+       }
+       formData.append('workDate', new Date().toISOString().split('T')[0]);
+
+       await submitProjectUpdate(formData);
+       setShowSimpleReportModal(false);
+       setSimpleReportForm({ projectId: '', toId: '' });
+       setSimpleReportTitle('');
+       setSimpleReportNotes('');
+       setSimpleReportFiles(null);
+     } catch (err) {
+       console.error('Simple report submit error:', err);
+     } finally {
+       setSubmittingSimple(false);
+     }
+   };
+
+   const handleUpdateReview = async () => {
     if (!showUpdateReviewModal) return;
     setUpdateReviewing(true);
     try {
@@ -742,11 +787,28 @@ export function SEOLeadDashboard() {
                         <Send size={16} /> Submit Report to {salesManagerName}
                       </Button>
                     </div>
-                    <p className="text-[10px] text-slate-500 mt-2">
-                      Report will include your On-Page work + {offPageName}'s approved Off-Page work
-                    </p>
-                  </div>
-                  </>)}
+                     <p className="text-[10px] text-slate-500 mt-2">
+                       Report will include your On-Page work + {offPageName}'s approved Off-Page work
+                     </p>
+                   </div>
+
+                   {/* Quick Report Section */}
+                   <div className="p-4 sm:px-5 sm:py-4 bg-slate-50 border-t border-slate-200">
+                     <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Quick Report</h4>
+                     <div className="flex flex-wrap gap-3">
+                       <Button className="gap-2" onClick={() => openSimpleReportModal(project.id, seoManagerId)}>
+                         <Send size={16} /> Simple Report to {seoManagerName}
+                       </Button>
+                       <Button variant="secondary" className="gap-2" onClick={() => openSimpleReportModal(project.id, salesManagerId)}>
+                         <Send size={16} /> Simple Report to {salesManagerName}
+                       </Button>
+                     </div>
+                     <p className="text-[10px] text-slate-500 mt-2">
+                       Title, notes and file attachments. Independent of work items.
+                     </p>
+                   </div>
+
+                   </>)}
 
                   {activeTab === 'chat' && (
                   <div className="h-[70vh]">
@@ -1065,9 +1127,73 @@ export function SEOLeadDashboard() {
             </div>
           </div>
         );
-      })()}
+       })()}
 
-      {showUpdateReviewModal && (
+       {/* Simple Report Modal */}
+       {showSimpleReportModal && (() => {
+         const project = projects.find(p => p.id === simpleReportForm.projectId);
+         if (!project) return null;
+         const toName = simpleReportForm.toId === seoManagerId ? seoManagerName : salesManagerName;
+
+         return (
+           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+             <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => setShowSimpleReportModal(false)} />
+             <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden z-10">
+               <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                 <div>
+                   <h3 className="text-lg font-bold text-slate-900">Submit Quick Report</h3>
+                   <p className="text-xs text-slate-500">To {toName} — {project.name}</p>
+                 </div>
+                 <button onClick={() => setShowSimpleReportModal(false)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"><X size={18} /></button>
+               </div>
+
+               <div className="px-6 py-5 space-y-4">
+                 <div>
+                   <label className="block text-sm font-medium text-slate-600 mb-1">Title</label>
+                   <input
+                     type="text"
+                     className="block w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                     placeholder="e.g., Monthly Report, Bi-Weekly Report"
+                     value={simpleReportTitle}
+                     onChange={e => setSimpleReportTitle(e.target.value)}
+                   />
+                 </div>
+                 <div>
+                   <label className="block text-sm font-medium text-slate-600 mb-1">Notes / Description</label>
+                   <textarea
+                     className="block w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]"
+                     placeholder="Add any additional details..."
+                     value={simpleReportNotes}
+                     onChange={e => setSimpleReportNotes(e.target.value)}
+                   />
+                 </div>
+                 <div>
+                   <label className="block text-sm font-medium text-slate-600 mb-1">Attachments (optional)</label>
+                   <input
+                     type="file"
+                     multiple
+                     ref={simpleFileInputRef}
+                     className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:border-0 file:rounded-lg file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                     onChange={e => setSimpleReportFiles(e.target.files)}
+                   />
+                   {simpleReportFiles && simpleReportFiles.length > 0 && (
+                     <p className="text-xs text-slate-500 mt-1">{simpleReportFiles.length} file(s) selected</p>
+                   )}
+                 </div>
+               </div>
+
+               <div className="px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
+                 <Button variant="outline" onClick={() => setShowSimpleReportModal(false)}>Cancel</Button>
+                 <Button className="gap-2" onClick={handleSimpleReportSubmit} disabled={submittingSimple || !simpleReportTitle.trim()}>
+                   {submittingSimple ? <><Loader2 size={16} className="animate-spin" /> Submitting...</> : <><Send size={16} /> Submit Report to {toName}</>}
+                 </Button>
+               </div>
+             </div>
+           </div>
+         );
+       })()}
+
+       {showUpdateReviewModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => setShowUpdateReviewModal(null)} />
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden z-10">
