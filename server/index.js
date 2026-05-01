@@ -99,14 +99,6 @@ io.on('connection', (socket) => {
     socket.leave(`dm:${conversationId}`);
   });
 
-  socket.on('join-dm-global', (conversationId) => {
-    socket.join(`dm-global:${conversationId}`);
-  });
-
-  socket.on('leave-dm-global', (conversationId) => {
-    socket.leave(`dm-global:${conversationId}`);
-  });
-
   socket.on('disconnect', () => {
     logger.info('Socket disconnected', { component: 'socket', socketId: socket.id, userId });
   });

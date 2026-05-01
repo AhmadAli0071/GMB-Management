@@ -9,7 +9,6 @@ import { useApp } from '../../AppContext';
 import { useChatNotify } from '../../ChatNotifyContext';
 import { STAGE_LABELS, STAGE_COLORS } from '../../types';
 import { ChatBox } from '../chat/ChatBox';
-import { GlobalChat } from '../GlobalChat';
 
 export function SEOLeadDashboard() {
   const {
@@ -361,17 +360,12 @@ export function SEOLeadDashboard() {
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-4">
                     <div className="relative shrink-0">
-                      <div className="w-14 h-14 bg-blue-500/10 rounded-2xl flex items-center justify-center text-blue-600 relative">
-                        <Folder size={28} />
-                        {(pendingCount > 0 || rejectedCount > 0) && !isExpanded && (
-                          <span className="absolute -top-1 -right-1 min-w-[20px] h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 animate-pulse">{pendingCount + rejectedCount}</span>
-                   )}
-                   {activeTab === 'globalchat' && (
-                     <div className="h-[70vh]">
-                       <GlobalChat onBack={() => setActiveTab('details')} />
-                     </div>
-                   )}
-                   </div>
+                       <div className="w-14 h-14 bg-blue-500/10 rounded-2xl flex items-center justify-center text-blue-600 relative">
+                         <Folder size={28} />
+                         {(pendingCount > 0 || rejectedCount > 0) && !isExpanded && (
+                           <span className="absolute -top-1 -right-1 min-w-[20px] h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 animate-pulse">{pendingCount + rejectedCount}</span>
+                        )}
+                      </div>
                       {projectUnread > 0 && (
                         <span className="absolute -bottom-1 -left-1 bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1 animate-bounce shadow-lg shadow-red-500/50 z-10 flex items-center gap-0.5">
                           <MessageCircle size={9} />{projectUnread > 99 ? '99+' : projectUnread}
@@ -413,7 +407,6 @@ export function SEOLeadDashboard() {
                      <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab === 'offpage' ? 'bg-orange-50 text-orange-600 border-b-2 border-orange-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveTab('offpage')}>Off-Page</button>
                      <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab === 'report' ? 'bg-green-50 text-green-600 border-b-2 border-green-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveTab('report')}>Submit Report</button>
                      <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab === 'chat' ? 'bg-purple-50 text-purple-600 border-b-2 border-purple-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveTab('chat')}>Chat{projectUnread > 0 && <span className="ml-1.5 min-w-[16px] h-4 bg-red-500 text-white text-[8px] font-bold rounded-full inline-flex items-center justify-center px-0.5">{projectUnread > 99 ? '99+' : projectUnread}</span>}</button>
-                     <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab === 'globalchat' ? 'bg-indigo-50 text-indigo-600 border-b-2 border-indigo-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveTab('globalchat')}>All Users</button>
                   </div>
                   {activeTab === 'details' && (<>
                   <div className="p-4 sm:px-5 sm:py-4 border-b border-slate-200">

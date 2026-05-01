@@ -184,26 +184,4 @@ export const api = {
   deleteDM: (projectId, targetUserId, messageId) => request('DELETE', `/chat/dm/${projectId}/${targetUserId}/message/${messageId}`),
   hideDM: (projectId, targetUserId, messageId) => request('POST', `/chat/dm/${projectId}/${targetUserId}/message/${messageId}/hide`),
   clearDM: (projectId, targetUserId) => request('DELETE', `/chat/dm/clear/${projectId}/${targetUserId}`),
-
-  // Global DM
-  getGlobalDMMessages: (targetUserId, before) => {
-    const params = before ? `?before=${before}` : '';
-    return request('GET', `/chat/dm-global/${targetUserId}${params}`);
-  },
-  sendGlobalDM: (targetUserId, data) => request('POST', `/chat/dm-global/${targetUserId}`, data),
-  uploadGlobalDMFile: (targetUserId, formData) => {
-    const token = getToken();
-    return fetch(`${API_BASE}/chat/dm-global/${targetUserId}/upload`, {
-      method: 'POST',
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-      body: formData,
-    }).then(res => {
-      if (!res.ok) return res.json().then(e => { throw new Error(e.error || 'Failed'); });
-      return res.json();
-    });
-  },
-  editGlobalDM: (targetUserId, messageId, text) => request('PUT', `/chat/dm-global/${targetUserId}/message/${messageId}`, { text }),
-  deleteGlobalDM: (targetUserId, messageId) => request('DELETE', `/chat/dm-global/${targetUserId}/message/${messageId}`),
-  hideGlobalDM: (targetUserId, messageId) => request('POST', `/chat/dm-global/${targetUserId}/message/${messageId}/hide`),
-  clearGlobalDM: (targetUserId) => request('DELETE', `/chat/dm-global/clear/${targetUserId}`),
 };

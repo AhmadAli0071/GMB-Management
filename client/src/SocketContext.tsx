@@ -17,8 +17,6 @@ interface SocketContextType {
   offChatCleared: (callback: (data: any) => void) => void;
    joinDM: (conversationId: string) => void;
    leaveDM: (conversationId: string) => void;
-   joinDMGlobal: (conversationId: string) => void;
-   leaveDMGlobal: (conversationId: string) => void;
    onDMMessage: (callback: (data: any) => void) => void;
    offDMMessage: (callback: (data: any) => void) => void;
   onDMMessageEdited: (callback: (data: any) => void) => void;
@@ -119,14 +117,6 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     socket?.emit('leave-dm', conversationId);
   }, [socket]);
 
-  const joinDMGlobal = useCallback((conversationId: string) => {
-    socket?.emit('join-dm-global', conversationId);
-  }, [socket]);
-
-  const leaveDMGlobal = useCallback((conversationId: string) => {
-    socket?.emit('leave-dm-global', conversationId);
-  }, [socket]);
-
   const onDMMessage = useCallback((callback: (data: any) => void) => {
     socket?.on('dm-new-message', callback);
   }, [socket]);
@@ -191,8 +181,8 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       onMessageEdited, offMessageEdited,
       onMessageDeleted, offMessageDeleted,
       onChatCleared, offChatCleared,
-   joinDM, leaveDM, joinDMGlobal, leaveDMGlobal,
-   onDMMessage, offDMMessage,
+       joinDM, leaveDM,
+       onDMMessage, offDMMessage,
       onDMMessageEdited, offDMMessageEdited,
       onDMMessageDeleted, offDMMessageDeleted,
       onDMChatCleared, offDMChatCleared,
