@@ -95,8 +95,20 @@ io.on('connection', (socket) => {
     socket.join(`dm:${conversationId}`);
   });
 
+  socket.on('join-dm', (conversationId) => {
+    socket.join(`dm:${conversationId}`);
+  });
+
   socket.on('leave-dm', (conversationId) => {
     socket.leave(`dm:${conversationId}`);
+  });
+
+  socket.on('join-dm-global', (conversationId) => {
+    socket.join(`dm-global:${conversationId}`);
+  });
+
+  socket.on('leave-dm-global', (conversationId) => {
+    socket.leave(`dm-global:${conversationId}`);
   });
 
   socket.on('disconnect', () => {
