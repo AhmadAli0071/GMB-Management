@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Send, Paperclip, Mic, Download, MoreVertical, Edit3, Trash2, EyeOff, Square, ChevronLeft, Search } from 'lucide-react';
-import { useSocket } from '../../SocketContext';
-import { useApp } from '../../AppContext';
-import { useChatNotify } from '../../ChatNotifyContext';
-import { api } from '../../api';
-import { ROLE_LABELS, UserRole } from '../../types';
+import { useSocket } from '../SocketContext';
+import { useApp } from '../AppContext';
+import { useChatNotify } from '../ChatNotifyContext';
+import { api } from '../api';
+import { ROLE_LABELS, UserRole } from '../types';
 
 interface GlobalChatProps {
   onBack: () => void;
