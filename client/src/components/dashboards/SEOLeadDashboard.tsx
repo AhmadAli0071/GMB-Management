@@ -64,7 +64,7 @@ export function SEOLeadDashboard() {
      const [simpleReportFiles, setSimpleReportFiles] = useState<FileList | null>(null);
      const [submittingSimple, setSubmittingSimple] = useState(false);
 
-     // Monthly Report submission state (to Sales Manager)
+     // Monthly Report submission to Sales Manager
      const [showQuickMonthlyReportModal, setShowQuickMonthlyReportModal] = useState<string | null>(null);
      const [quickMonthlyTitle, setQuickMonthlyTitle] = useState('');
      const [quickMonthlyNotes, setQuickMonthlyNotes] = useState('');
