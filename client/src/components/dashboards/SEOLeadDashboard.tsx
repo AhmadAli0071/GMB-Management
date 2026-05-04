@@ -56,45 +56,30 @@ export function SEOLeadDashboard() {
    const [expandedWorkDates, setExpandedWorkDates] = useState<Record<string, boolean>>({});
    const toggleWorkDate = (key: string) => setExpandedWorkDates(prev => ({ ...prev, [key]: !prev[key] }));
 
-    // Simple Report state
-    const [showSimpleReportModal, setShowSimpleReportModal] = useState(false);
-    const [simpleReportForm, setSimpleReportForm] = useState({ projectId: '', toId: '' });
-    const [simpleReportTitle, setSimpleReportTitle] = useState('');
-    const [simpleReportNotes, setSimpleReportNotes] = useState('');
-    const [simpleReportFiles, setSimpleReportFiles] = useState<FileList | null>(null);
-    const [submittingSimple, setSubmittingSimple] = useState(false);
+     // Simple Report state
+     const [showSimpleReportModal, setShowSimpleReportModal] = useState(false);
+     const [simpleReportForm, setSimpleReportForm] = useState({ projectId: '', toId: '' });
+     const [simpleReportTitle, setSimpleReportTitle] = useState('');
+     const [simpleReportNotes, setSimpleReportNotes] = useState('');
+     const [simpleReportFiles, setSimpleReportFiles] = useState<FileList | null>(null);
+     const [submittingSimple, setSubmittingSimple] = useState(false);
 
-    // Monthly Report submission state (to Sales Manager)
-    const [showQuickMonthlyReportModal, setShowQuickMonthlyReportModal] = useState<string | null>(null);
-    const [quickMonthlyTitle, setQuickMonthlyTitle] = useState('');
-    const [quickMonthlyNotes, setQuickMonthlyNotes] = useState('');
-    const [quickMonthlyFiles, setQuickMonthlyFiles] = useState<FileList | null>(null);
-    const [quickMonthlyWorkDate, setQuickMonthlyWorkDate] = useState(new Date().toISOString().split('T')[0]);
-    const [submittingQuickMonthly, setSubmittingQuickMonthly] = useState(false);
+     // Monthly Report submission state (to Sales Manager)
+     const [showQuickMonthlyReportModal, setShowQuickMonthlyReportModal] = useState<string | null>(null);
+     const [quickMonthlyTitle, setQuickMonthlyTitle] = useState('');
+     const [quickMonthlyNotes, setQuickMonthlyNotes] = useState('');
+     const [quickMonthlyFiles, setQuickMonthlyFiles] = useState<FileList | null>(null);
+     const [quickMonthlyWorkDate, setQuickMonthlyWorkDate] = useState(new Date().toISOString().split('T')[0]);
+     const [submittingQuickMonthly, setSubmittingQuickMonthly] = useState(false);
 
-    const [showStructuredMonthlyReportModal, setShowStructuredMonthlyReportModal] = useState<string | null>(null);
-    const [structuredMonthlyOnPageText, setStructuredMonthlyOnPageText] = useState('');
-    const [structuredMonthlyOnPageFiles, setStructuredMonthlyOnPageFiles] = useState<FileList | null>(null);
-    const [selectedMonthlyOffPageWork, setSelectedMonthlyOffPageWork] = useState<string[]>([]);
-    const [structuredMonthlyWorkDate, setStructuredMonthlyWorkDate] = useState(new Date().toISOString().split('T')[0]);
-    const [submittingStructuredMonthly, setSubmittingStructuredMonthly] = useState(false);
+     const [showStructuredMonthlyReportModal, setShowStructuredMonthlyReportModal] = useState<string | null>(null);
+     const [structuredMonthlyOnPageText, setStructuredMonthlyOnPageText] = useState('');
+     const [structuredMonthlyOnPageFiles, setStructuredMonthlyOnPageFiles] = useState<FileList | null>(null);
+     const [selectedMonthlyOffPageWork, setSelectedMonthlyOffPageWork] = useState<string[]>([]);
+     const [structuredMonthlyWorkDate, setStructuredMonthlyWorkDate] = useState(new Date().toISOString().split('T')[0]);
+     const [submittingStructuredMonthly, setSubmittingStructuredMonthly] = useState(false);
 
-    // Monthly Report submission state (to Sales Manager)
-    const [showQuickMonthlyReportModal, setShowQuickMonthlyReportModal] = useState<string | null>(null);
-    const [quickMonthlyTitle, setQuickMonthlyTitle] = useState('');
-    const [quickMonthlyNotes, setQuickMonthlyNotes] = useState('');
-    const [quickMonthlyFiles, setQuickMonthlyFiles] = useState<FileList | null>(null);
-    const [quickMonthlyWorkDate, setQuickMonthlyWorkDate] = useState(new Date().toISOString().split('T')[0]);
-    const [submittingQuickMonthly, setSubmittingQuickMonthly] = useState(false);
-
-    const [showStructuredMonthlyReportModal, setShowStructuredMonthlyReportModal] = useState<string | null>(null);
-    const [structuredMonthlyOnPageText, setStructuredMonthlyOnPageText] = useState('');
-    const [structuredMonthlyOnPageFiles, setStructuredMonthlyOnPageFiles] = useState<FileList | null>(null);
-    const [selectedMonthlyOffPageWork, setSelectedMonthlyOffPageWork] = useState<string[]>([]);
-    const [structuredMonthlyWorkDate, setStructuredMonthlyWorkDate] = useState(new Date().toISOString().split('T')[0]);
-    const [submittingStructuredMonthly, setSubmittingStructuredMonthly] = useState(false);
-
-   const fileInputRef = useRef<HTMLInputElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
    const docInputRef = useRef<HTMLInputElement>(null);
    const onPageFileRef = useRef<HTMLInputElement>(null);
    const editOnPageFileRef = useRef<HTMLInputElement>(null);
