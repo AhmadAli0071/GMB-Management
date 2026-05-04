@@ -46,7 +46,7 @@ const BUSINESS_CATEGORIES = [
 ];
 
 export function SalesDashboard() {
-  const { projects, users, currentUser, createProject, updateProject, updateProjectStage, projectUpdates, reviewProjectUpdate, reviewSection, workSubmissions, createAssignment, assignToLead } = useApp();
+  const { projects, users, currentUser, createProject, updateProject, updateProjectStage, projectUpdates, reviewProjectUpdate, reviewSection, workSubmissions, createAssignment, assignToLead, submitReportToManagers } = useApp();
   const { unreadCounts, notificationPermission, requestNotificationPermission } = useChatNotify();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -65,14 +65,29 @@ export function SalesDashboard() {
   const [assigning, setAssigning] = useState(false);
   const [sectionReviewing, setSectionReviewing] = useState(false);
   const [updateReviewing, setUpdateReviewing] = useState(false);
-  const [form, setForm] = useState(emptyForm);
-  const [formStep, setFormStep] = useState(1);
-  const [editForm, setEditForm] = useState(emptyForm);
-  const [editStep, setEditStep] = useState(1);
-  const [creating, setCreating] = useState(false);
-  const [saving, setSaving] = useState(false);
+   const [form, setForm] = useState(emptyForm);
+   const [formStep, setFormStep] = useState(1);
+   const [editForm, setEditForm] = useState(emptyForm);
+   const [editStep, setEditStep] = useState(1);
+   const [creating, setCreating] = useState(false);
+   const [saving, setSaving] = useState(false);
 
-  const myProjects = projects.filter(p => p.createdBy === currentUser.id);
+   // Report modals
+   const [showQuickReportModal, setShowQuickReportModal] = useState<string | null>(null);
+   const [quickReportTitle, setQuickReportTitle] = useState('');
+   const [quickReportNotes, setQuickReportNotes] = useState('');
+   const [quickReportFiles, setQuickReportFiles] = useState<FileList | null>(null);
+   const [quickReportWorkDate, setQuickReportWorkDate] = useState(new Date().toISOString().split('T')[0]);
+   const [submittingQuick, setSubmittingQuick] = useState(false);
+
+   const [showStructuredReportModal, setShowStructuredReportModal] = useState<string | null>(null);
+   const [structuredOnPageText, setStructuredOnPageText] = useState('');
+   const [structuredOnPageFiles, setStructuredOnPageFiles] = useState<FileList | null>(null);
+   const [selectedOffPageWork, setSelectedOffPageWork] = useState<string[]>([]);
+   const [structuredWorkDate, setStructuredWorkDate] = useState(new Date().toISOString().split('T')[0]);
+   const [submittingStructured, setSubmittingStructured] = useState(false);
+
+   const myProjects = projects.filter(p => p.createdBy === currentUser.id);
   const myProjectUpdates = projectUpdates.filter((u: any) => u.toId === currentUser.id);
   const updatesByProject = myProjectUpdates.reduce((acc: any, u: any) => {
     if (!acc[u.projectId]) acc[u.projectId] = [];
@@ -191,20 +206,76 @@ export function SalesDashboard() {
 
   const updateEdit = (field: string, value: any) => setEditForm(prev => ({ ...prev, [field]: value }));
 
-   const handleEditSave = async (e: React.FormEvent) => {
+    const handleEditSave = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!editingProject) return;
+      setSaving(true);
+      try {
+        await updateProject(editingProject, editForm);
+        setEditingProject(null);
+        setEditStep(1);
+      } finally {
+        setSaving(false);
+      }
+    };
+
+   const handleQuickReportSubmit = async (e: React.FormEvent) => {
      e.preventDefault();
-     if (!editingProject) return;
-     setSaving(true);
+     if (!showQuickReportModal) return;
+     setSubmittingQuick(true);
      try {
-       await updateProject(editingProject, editForm);
-       setEditingProject(null);
-       setEditStep(1);
+       const formData = new FormData();
+       formData.append('projectId', showQuickReportModal);
+       formData.append('title', quickReportTitle.trim());
+       formData.append('text', quickReportNotes.trim());
+       if (quickReportFiles) {
+         Array.from(quickReportFiles).forEach(file => formData.append('files', file));
+       }
+       formData.append('workDate', quickReportWorkDate);
+       await submitReportToManagers(formData);
+       setShowQuickReportModal(null);
+       setQuickReportTitle('');
+       setQuickReportNotes('');
+       setQuickReportFiles(null);
      } finally {
-       setSaving(false);
+       setSubmittingQuick(false);
      }
    };
 
-  const getStatusColor = (status: string) => {
+   const handleStructuredReportSubmit = async (e: React.FormEvent) => {
+     e.preventDefault();
+     if (!showStructuredReportModal) return;
+     setSubmittingStructured(true);
+     try {
+       const formData = new FormData();
+       formData.append('projectId', showStructuredReportModal);
+       formData.append('reportType', 'STRUCTURED');
+       formData.append('onPageText', structuredOnPageText);
+       
+       const onPageFiles: { filename: string; originalName: string }[] = [];
+       if (structuredOnPageFiles) {
+         Array.from(structuredOnPageFiles).forEach(file => {
+           onPageFiles.push({ filename: file.name, originalName: file.name });
+         });
+       }
+       formData.append('onPageFilesJson', JSON.stringify(onPageFiles));
+       
+       if (selectedOffPageWork.length > 0) {
+         formData.append('offPageWorkIds', JSON.stringify(selectedOffPageWork));
+       }
+       
+       formData.append('workDate', structuredWorkDate);
+       await submitReportToManagers(formData);
+       setShowStructuredReportModal(null);
+       setStructuredOnPageText('');
+       setStructuredOnPageFiles(null);
+       setSelectedOffPageWork([]);
+     } finally {
+       setSubmittingStructured(false);
+     }
+   };
+
+   const getStatusColor = (status: string) => {
     if (status === 'APPROVED') return 'green';
     if (status === 'CHANGES_REQUESTED') return 'red';
     return 'yellow';
@@ -495,16 +566,16 @@ export function SalesDashboard() {
                           <Card className="p-4">
                             <h5 className="font-semibold text-sm mb-2">Quick Report</h5>
                             <p className="text-xs text-slate-500 mb-3">Simple report with title, notes and attachments</p>
-                            <Button className="w-full gap-2" onClick={() => {/* open quick report modal */}}>
-                              <Send size={16} /> Send to Ali & Kevin
-                            </Button>
+                             <Button className="w-full gap-2" onClick={() => setShowQuickReportModal(project.id)}>
+                               <Send size={16} /> Send to Ali & Kevin
+                             </Button>
                           </Card>
                           <Card className="p-4">
                             <h5 className="font-semibold text-sm mb-2">Structured Report</h5>
                             <p className="text-xs text-slate-500 mb-3">On-page work + off-page work selection</p>
-                            <Button variant="outline" className="w-full gap-2" onClick={() => {/* open structured modal */}}>
-                              <FileText size={16} /> Create Structured
-                            </Button>
+                             <Button variant="outline" className="w-full gap-2" onClick={() => setShowStructuredReportModal(project.id)}>
+                               <FileText size={16} /> Create Structured
+                             </Button>
                           </Card>
                         </div>
                       </div>
@@ -570,20 +641,114 @@ export function SalesDashboard() {
         </Modal>
       )}
 
-      {showSectionReviewModal && (
-        <Modal isOpen={true} onClose={() => setShowSectionReviewModal(null)} title={showSectionReviewModal.status === 'APPROVED' ? 'Approve Section' : 'Request Changes'} size="sm">
-          <div className="space-y-3">
-            {showSectionReviewModal.status === 'CHANGES_REQUESTED' && <div className="p-2 bg-red-50 text-red-600 text-xs rounded">Please describe what needs to be changed.</div>}
-            <Textarea label={showSectionReviewModal.status === 'CHANGES_REQUESTED' ? 'Reason / What needs to be fixed' : 'Comment (optional)'} value={sectionReviewComment} onChange={e => setSectionReviewComment(e.target.value)} placeholder={showSectionReviewModal.status === 'CHANGES_REQUESTED' ? 'e.g. Please add more details...' : 'Any additional notes...'} />
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowSectionReviewModal(null)}>Cancel</Button>
-              <Button variant={showSectionReviewModal.status === 'APPROVED' ? 'primary' : 'danger'} className="gap-1" onClick={handleSectionReview} disabled={sectionReviewing || (showSectionReviewModal.status === 'CHANGES_REQUESTED' && !sectionReviewComment.trim())}>
-                {sectionReviewing ? <><Loader2 size={14} className="animate-spin" /> Processing...</> : showSectionReviewModal.status === 'APPROVED' ? <><CheckCircle2 size={14} /> Approve</> : <><RotateCcw size={14} /> Send Back</>}
-              </Button>
-            </div>
-          </div>
-        </Modal>
-      )}
-    </div>
-  );
-}
+       {showSectionReviewModal && (
+         <Modal isOpen={true} onClose={() => setShowSectionReviewModal(null)} title={showSectionReviewModal.status === 'APPROVED' ? 'Approve Section' : 'Request Changes'} size="sm">
+           <div className="space-y-3">
+             {showSectionReviewModal.status === 'CHANGES_REQUESTED' && <div className="p-2 bg-red-50 text-red-600 text-xs rounded">Please describe what needs to be changed.</div>}
+             <Textarea label={showSectionReviewModal.status === 'CHANGES_REQUESTED' ? 'Reason / What needs to be fixed' : 'Comment (optional)'} value={sectionReviewComment} onChange={e => setSectionReviewComment(e.target.value)} placeholder={showSectionReviewModal.status === 'CHANGES_REQUESTED' ? 'e.g. Please add more details...' : 'Any additional notes...'} />
+             <div className="flex justify-end gap-2">
+               <Button variant="outline" onClick={() => setShowSectionReviewModal(null)}>Cancel</Button>
+               <Button variant={showSectionReviewModal.status === 'APPROVED' ? 'primary' : 'danger'} className="gap-1" onClick={handleSectionReview} disabled={sectionReviewing || (showSectionReviewModal.status === 'CHANGES_REQUESTED' && !sectionReviewComment.trim())}>
+                 {sectionReviewing ? <><Loader2 size={14} className="animate-spin" /> Processing...</> : showSectionReviewModal.status === 'APPROVED' ? <><CheckCircle2 size={14} /> Approve</> : <><RotateCcw size={14} /> Send Back</>}
+               </Button>
+             </div>
+           </div>
+         </Modal>
+       )}
+
+       {/* Quick Report Modal */}
+       {showQuickReportModal && (
+         <Modal isOpen={true} onClose={() => setShowQuickReportModal(null)} title="Quick Report to Managers" size="md">
+           <form onSubmit={handleQuickReportSubmit}>
+             <div className="space-y-4">
+               <div>
+                 <label className="block text-xs font-semibold text-slate-600 mb-1">Title</label>
+                 <Input value={quickReportTitle} onChange={e => setQuickReportTitle(e.target.value)} placeholder="Report title" required />
+               </div>
+               <div>
+                 <label className="block text-xs font-semibold text-slate-600 mb-1">Notes</label>
+                 <Textarea value={quickReportNotes} onChange={e => setQuickReportNotes(e.target.value)} placeholder="Describe what was done..." rows={4} />
+               </div>
+               <div>
+                 <label className="block text-xs font-semibold text-slate-600 mb-1">Work Date</label>
+                 <Input type="date" value={quickReportWorkDate} onChange={e => setQuickReportWorkDate(e.target.value)} />
+               </div>
+               <div>
+                 <label className="block text-xs font-semibold text-slate-600 mb-1">Attachments (optional)</label>
+                 <Input type="file" multiple onChange={e => setQuickReportFiles(e.target.files)} />
+               </div>
+               <div className="flex justify-end gap-2 pt-2">
+                 <Button type="button" variant="outline" onClick={() => setShowQuickReportModal(null)}>Cancel</Button>
+                 <Button type="submit" className="gap-2" disabled={submittingQuick}>
+                   {submittingQuick ? <><Loader2 size={14} className="animate-spin" /> Sending...</> : <><Send size={14} /> Send to Ali & Kevin</>}
+                 </Button>
+               </div>
+             </div>
+           </form>
+         </Modal>
+       )}
+
+       {/* Structured Report Modal */}
+       {showStructuredReportModal && (
+         <Modal isOpen={true} onClose={() => setShowStructuredReportModal(null)} title="Structured Report to Managers" size="lg">
+           <form onSubmit={handleStructuredReportSubmit}>
+             <div className="space-y-4">
+               <div>
+                 <label className="block text-xs font-semibold text-slate-600 mb-1">On-Page Work Summary</label>
+                 <Textarea value={structuredOnPageText} onChange={e => setStructuredOnPageText(e.target.value)} placeholder="Describe all on-page work completed..." rows={4} required />
+               </div>
+               <div>
+                 <label className="block text-xs font-semibold text-slate-600 mb-1">On-Page Files (optional)</label>
+                 <Input type="file" multiple onChange={e => setStructuredOnPageFiles(e.target.files)} />
+               </div>
+               <div>
+                 <label className="block text-xs font-semibold text-slate-600 mb-1">Off-Page Work to Include</label>
+                 <div className="space-y-2 max-h-40 overflow-y-auto border border-slate-200 rounded p-2">
+                   {/* Get approved off-page work for this project from parent scope */}
+                   {(() => {
+                     const projectId = showStructuredReportModal;
+                     const project = myProjects.find(p => p.id === projectId);
+                     if (!project) return <p className="text-sm text-slate-500">No project found.</p>;
+                     const projectWork = workSubmissions.filter((w: any) => w.projectId === projectId && w.status === 'APPROVED');
+                     if (projectWork.length === 0) return <p className="text-sm text-slate-500">No approved off-page work yet.</p>;
+                     return projectWork.map(work => (
+                       <label key={work.id} className="flex items-start gap-2 p-2 hover:bg-slate-50 rounded">
+                         <input
+                           type="checkbox"
+                           checked={selectedOffPageWork.includes(work.id)}
+                           onChange={e => {
+                             if (e.target.checked) {
+                               setSelectedOffPageWork(prev => [...prev, work.id]);
+                             } else {
+                               setSelectedOffPageWork(prev => prev.filter(id => id !== work.id));
+                             }
+                           }}
+                           className="mt-1"
+                         />
+                         <div className="text-sm">
+                           <p className="text-slate-800">{work.text?.substring(0, 100)}...</p>
+                           <p className="text-xs text-slate-500">{new Date(work.createdAt).toLocaleDateString()}</p>
+                         </div>
+                       </label>
+                     ));
+                   })()}
+                 </div>
+               </div>
+               <div>
+                 <label className="block text-xs font-semibold text-slate-600 mb-1">Work Date</label>
+                 <Input type="date" value={structuredWorkDate} onChange={e => setStructuredWorkDate(e.target.value)} />
+               </div>
+               <div className="flex justify-end gap-2 pt-2">
+                 <Button type="button" variant="outline" onClick={() => setShowStructuredReportModal(null)}>Cancel</Button>
+                 <Button type="submit" className="gap-2" disabled={submittingStructured}>
+                   {submittingStructured ? <><Loader2 size={14} className="animate-spin" /> Sending...</> : <><FileText size={14} /> Submit to Ali & Kevin</>}
+                 </Button>
+               </div>
+             </div>
+           </form>
+         </Modal>
+       )}
+
+     </div>
+   );
+ }

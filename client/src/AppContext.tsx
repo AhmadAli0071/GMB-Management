@@ -41,12 +41,13 @@ interface AppContextType {
   submitProjectUpdate: (formData: FormData) => Promise<void>;
   reviewProjectUpdate: (id: string, status: string, reviewComment?: string) => Promise<void>;
   reviewSection: (id: string, section: string, status: string, comment?: string) => Promise<void>;
-  leadWork: any[];
-  createLeadWork: (formData: FormData) => Promise<void>;
-  updateLeadWork: (id: string, formData: FormData) => Promise<void>;
-  deleteLeadWorkFile: (id: string, filename: string) => Promise<void>;
-  deleteLeadWork: (id: string) => Promise<void>;
-  onLogout: () => void;
+   leadWork: any[];
+   createLeadWork: (formData: FormData) => Promise<void>;
+   updateLeadWork: (id: string, formData: FormData) => Promise<void>;
+   deleteLeadWorkFile: (id: string, filename: string) => Promise<void>;
+   deleteLeadWork: (id: string) => Promise<void>;
+   submitReportToManagers: (formData: FormData) => Promise<{ reports: any[] }>;
+   onLogout: () => void;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -228,12 +229,17 @@ export function AppProvider({ currentUser, onLogout, children }: { currentUser: 
     await refreshData();
   }, [refreshData]);
 
-  const deleteLeadWork = useCallback(async (id: string) => {
-    await api.deleteLeadWork(id);
-    await refreshData();
-  }, [refreshData]);
+   const deleteLeadWork = useCallback(async (id: string) => {
+     await api.deleteLeadWork(id);
+     await refreshData();
+   }, [refreshData]);
 
-  if (loading) {
+   const submitReportToManagers = useCallback(async (formData: FormData) => {
+     await api.submitReportToManagers(formData);
+     await refreshData();
+   }, [refreshData]);
+
+   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -280,8 +286,9 @@ export function AppProvider({ currentUser, onLogout, children }: { currentUser: 
       createLeadWork,
       updateLeadWork,
       deleteLeadWorkFile,
-      deleteLeadWork,
-      onLogout,
+       deleteLeadWork,
+       submitReportToManagers,
+       onLogout,
     }}>
       {children}
     </AppContext.Provider>
