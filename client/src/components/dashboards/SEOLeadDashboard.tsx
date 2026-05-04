@@ -318,133 +318,70 @@ export function SEOLeadDashboard() {
      }
    };
 
-    // Monthly Report handlers (to Sales Manager)
-    const handleQuickMonthlyReportSubmit = async () => {
-      if (!quickMonthlyTitle.trim() || !showQuickMonthlyReportModal) return;
-      setSubmittingQuickMonthly(true);
-      try {
-        const formData = new FormData();
-        formData.append('projectId', showQuickMonthlyReportModal);
-        formData.append('toId', salesManagerId); // Send to Sales Manager (Kevin)
-        formData.append('title', quickMonthlyTitle.trim());
-        formData.append('text', quickMonthlyNotes.trim());
-        if (quickMonthlyFiles) {
-          Array.from(quickMonthlyFiles).forEach(file => formData.append('files', file));
-        }
-        formData.append('workDate', quickMonthlyWorkDate);
+     // Monthly Report handlers (to Sales Manager)
+     const handleQuickMonthlyReportSubmit = async () => {
+       if (!quickMonthlyTitle.trim() || !showQuickMonthlyReportModal) return;
+       setSubmittingQuickMonthly(true);
+       try {
+         const formData = new FormData();
+         formData.append('projectId', showQuickMonthlyReportModal);
+         formData.append('toId', salesManagerId); // Send to Sales Manager (Kevin)
+         formData.append('title', quickMonthlyTitle.trim());
+         formData.append('text', quickMonthlyNotes.trim());
+         if (quickMonthlyFiles) {
+           Array.from(quickMonthlyFiles).forEach(file => formData.append('files', file));
+         }
+         formData.append('workDate', quickMonthlyWorkDate);
 
-        await submitProjectUpdate(formData);
-        setShowQuickMonthlyReportModal(null);
-        setQuickMonthlyTitle('');
-        setQuickMonthlyNotes('');
-        setQuickMonthlyFiles(null);
-      } catch (err) {
-        console.error('Quick monthly report submit error:', err);
-      } finally {
-        setSubmittingQuickMonthly(false);
-      }
-    };
+         await submitProjectUpdate(formData);
+         setShowQuickMonthlyReportModal(null);
+         setQuickMonthlyTitle('');
+         setQuickMonthlyNotes('');
+         setQuickMonthlyFiles(null);
+       } catch (err) {
+         console.error('Quick monthly report submit error:', err);
+       } finally {
+         setSubmittingQuickMonthly(false);
+       }
+     };
 
-    const handleStructuredMonthlyReportSubmit = async () => {
-      if (!showStructuredMonthlyReportModal) return;
-      setSubmittingStructuredMonthly(true);
-      try {
-        const formData = new FormData();
-        formData.append('projectId', showStructuredMonthlyReportModal);
-        formData.append('toId', salesManagerId); // Send to Sales Manager (Kevin)
-        formData.append('reportType', 'STRUCTURED');
-        formData.append('onPageText', structuredMonthlyOnPageText);
+     const handleStructuredMonthlyReportSubmit = async () => {
+       if (!showStructuredMonthlyReportModal) return;
+       setSubmittingStructuredMonthly(true);
+       try {
+         const formData = new FormData();
+         formData.append('projectId', showStructuredMonthlyReportModal);
+         formData.append('toId', salesManagerId); // Send to Sales Manager (Kevin)
+         formData.append('reportType', 'STRUCTURED');
+         formData.append('onPageText', structuredMonthlyOnPageText);
 
-        const onPageFiles: { filename: string; originalName: string }[] = [];
-        if (structuredMonthlyOnPageFiles) {
-          Array.from(structuredMonthlyOnPageFiles).forEach(file => {
-            onPageFiles.push({ filename: file.name, originalName: file.name });
-          });
-        }
-        formData.append('onPageFilesJson', JSON.stringify(onPageFiles));
+         const onPageFiles: { filename: string; originalName: string }[] = [];
+         if (structuredMonthlyOnPageFiles) {
+           Array.from(structuredMonthlyOnPageFiles).forEach(file => {
+             onPageFiles.push({ filename: file.name, originalName: file.name });
+           });
+         }
+         formData.append('onPageFilesJson', JSON.stringify(onPageFiles));
 
-        if (selectedMonthlyOffPageWork.length > 0) {
-          formData.append('offPageWorkIds', JSON.stringify(selectedMonthlyOffPageWork));
-        }
+         if (selectedMonthlyOffPageWork.length > 0) {
+           formData.append('offPageWorkIds', JSON.stringify(selectedMonthlyOffPageWork));
+         }
 
-        formData.append('workDate', structuredMonthlyWorkDate);
+         formData.append('workDate', structuredMonthlyWorkDate);
 
-        await submitProjectUpdate(formData);
-        setShowStructuredMonthlyReportModal(null);
-        setStructuredMonthlyOnPageText('');
-        setStructuredMonthlyOnPageFiles(null);
-        setSelectedMonthlyOffPageWork([]);
-      } catch (err) {
-        console.error('Structured monthly report submit error:', err);
-      } finally {
-        setSubmittingStructuredMonthly(false);
-      }
-    };
+         await submitProjectUpdate(formData);
+         setShowStructuredMonthlyReportModal(null);
+         setStructuredMonthlyOnPageText('');
+         setStructuredMonthlyOnPageFiles(null);
+         setSelectedMonthlyOffPageWork([]);
+       } catch (err) {
+         console.error('Structured monthly report submit error:', err);
+       } finally {
+         setSubmittingStructuredMonthly(false);
+       }
+     };
 
-    // Monthly Report handlers (to Sales Manager)
-    const handleQuickMonthlyReportSubmit = async () => {
-      if (!quickMonthlyTitle.trim() || !showQuickMonthlyReportModal) return;
-      setSubmittingQuickMonthly(true);
-      try {
-        const formData = new FormData();
-        formData.append('projectId', showQuickMonthlyReportModal);
-        formData.append('toId', salesManagerId); // Send to Sales Manager (Kevin)
-        formData.append('title', quickMonthlyTitle.trim());
-        formData.append('text', quickMonthlyNotes.trim());
-        if (quickMonthlyFiles) {
-          Array.from(quickMonthlyFiles).forEach(file => formData.append('files', file));
-        }
-        formData.append('workDate', quickMonthlyWorkDate);
-
-        await submitProjectUpdate(formData);
-        setShowQuickMonthlyReportModal(null);
-        setQuickMonthlyTitle('');
-        setQuickMonthlyNotes('');
-        setQuickMonthlyFiles(null);
-      } catch (err) {
-        console.error('Quick monthly report submit error:', err);
-      } finally {
-        setSubmittingQuickMonthly(false);
-      }
-    };
-
-    const handleStructuredMonthlyReportSubmit = async () => {
-      if (!showStructuredMonthlyReportModal) return;
-      setSubmittingStructuredMonthly(true);
-      try {
-        const formData = new FormData();
-        formData.append('projectId', showStructuredMonthlyReportModal);
-        formData.append('toId', salesManagerId); // Send to Sales Manager (Kevin)
-        formData.append('reportType', 'STRUCTURED');
-        formData.append('onPageText', structuredMonthlyOnPageText);
-
-        const onPageFiles: { filename: string; originalName: string }[] = [];
-        if (structuredMonthlyOnPageFiles) {
-          Array.from(structuredMonthlyOnPageFiles).forEach(file => {
-            onPageFiles.push({ filename: file.name, originalName: file.name });
-          });
-        }
-        formData.append('onPageFilesJson', JSON.stringify(onPageFiles));
-
-        if (selectedMonthlyOffPageWork.length > 0) {
-          formData.append('offPageWorkIds', JSON.stringify(selectedMonthlyOffPageWork));
-        }
-
-        formData.append('workDate', structuredMonthlyWorkDate);
-
-        await submitProjectUpdate(formData);
-        setShowStructuredMonthlyReportModal(null);
-        setStructuredMonthlyOnPageText('');
-        setStructuredMonthlyOnPageFiles(null);
-        setSelectedMonthlyOffPageWork([]);
-      } catch (err) {
-        console.error('Structured monthly report submit error:', err);
-      } finally {
-        setSubmittingStructuredMonthly(false);
-      }
-    };
-
-    const handleUpdateReview = async () => {
+     const handleUpdateReview = async () => {
     if (!showUpdateReviewModal) return;
     setUpdateReviewing(true);
     try {
@@ -834,67 +771,7 @@ export function SEOLeadDashboard() {
 
      </div>
    );
- }
-                                      const work = item.data;
-                                      const fromUser = users[work.fromId];
-                                      return (
-                                        <div key={`w-${work.id}`} className="p-3 bg-white border border-slate-200 rounded-lg">
-                                          <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                                            <div className="flex items-center gap-2">
-                                              <Badge variant={getStatusColor(work.status) as any} className="text-[10px]">
-                                                {work.status === 'APPROVED' ? 'Approved' : work.status === 'CHANGES_REQUESTED' ? 'Changes Requested' : 'Pending Review'}
-                                              </Badge>
-                                              <span className="text-[10px] text-slate-500">{fromUser?.name}</span>
-                                            </div>
-                                            {work.status === 'PENDING_REVIEW' && (
-                                              <div className="flex gap-1">
-                                                <Button size="sm" variant="primary" className="gap-1 text-[11px] px-2 py-1" onClick={() => { setReviewStatus('APPROVED'); setReviewCommentText(''); setShowReviewModal(work.id); }}>
-                                                  <CheckCircle2 size={12} /> Approve
-                                                </Button>
-                                                <Button size="sm" variant="danger" className="gap-1 text-[11px] px-2 py-1" onClick={() => { setReviewStatus('CHANGES_REQUESTED'); setReviewCommentText(''); setShowReviewModal(work.id); }}>
-                                                  <RotateCcw size={12} /> Reject
-                                                </Button>
-                                              </div>
-                                            )}
-                                          </div>
-                                          {work.text && <p className="text-sm text-slate-600 mb-2">{work.text}</p>}
-                                          {work.files.length > 0 && (
-                                            <div className="flex flex-wrap gap-2">
-                                              {work.files.map((f: any, i: number) => {
-                                                const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(f.filename);
-                                                return (
-                                                  <a key={i} href={`/uploads/${f.filename}`} target="_blank" download>
-                                                    {isImg ? (
-                                                      <img src={`/uploads/${f.filename}`} className="w-16 h-16 rounded-lg object-cover border border-slate-200 hover:shadow-md" />
-                                                    ) : (
-                                                      <span className="flex items-center gap-1 px-2 py-1 bg-blue-50 border border-blue-200 rounded text-xs text-blue-600 hover:bg-blue-100"><Download size={12} /> {f.originalName}</span>
-                                                    )}
-                                                  </a>
-                                                );
-                                              })}
-                                            </div>
-                                          )}
-                                          {work.reviewComment && (
-                                            <div className={`p-2 rounded-lg text-xs mt-2 ${work.status === 'APPROVED' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'}`}>
-                                              <span className="font-bold">Review:</span> {work.reviewComment}
-                                            </div>
-                                          )}
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          });
-                        })()}
-                      </div>
-                    )}
-                  </div>
-                  </>)}
-
-
-                   {activeTab === 'report' && (<>
+  }
                    {/* Monthly Report Submission Section - Muaz submits reports to Sales Manager */}
                    <div className="p-4 sm:px-5 sm:py-4 border-t border-slate-200">
                      <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 mb-4">
