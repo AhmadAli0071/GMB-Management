@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import {
   MapPin, Star, Globe, Building2, Shield,
   Clock, ChevronDown, ChevronUp, FileText, Send, Upload, X, Paperclip,
-  Download, Edit3, Folder, AlertCircle, MessageCircle, Trash2, Loader2
+  Download, Edit3, Folder, AlertCircle, MessageCircle, Trash2, Loader2, Bell
 } from 'lucide-react';
 import { Card, Button, Badge } from '../ui/Common';
 import { useApp } from '../../AppContext';
@@ -12,7 +12,7 @@ import { ChatBox } from '../chat/ChatBox';
 
 export function OffPageDashboard() {
   const { currentUser, projects, users, assignments, workSubmissions, updateAssignmentStatus, submitWork, updateWork, deleteWorkFile, deleteWork } = useApp();
-  const { unreadCounts } = useChatNotify();
+   const { unreadCounts, notificationPermission, requestNotificationPermission } = useChatNotify();
   const [expandedProject, setExpandedProject] = useState<string | null>(null);
   const [showSubmitModal, setShowSubmitModal] = useState<string | null>(null);
   const [showEditModal, setShowEditModal] = useState<string | null>(null);
@@ -96,12 +96,19 @@ export function OffPageDashboard() {
     return 'yellow';
   };
 
-  return (
-    <div className="space-y-4 sm:space-y-6 max-w-6xl mx-auto px-2 sm:px-0">
-      <div>
-        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">My Projects</h1>
-        <p className="text-slate-500 mt-1 text-sm">Work assigned by {seoLeadName}</p>
-      </div>
+   return (
+     <div className="space-y-4 sm:space-y-6 max-w-6xl mx-auto px-2 sm:px-0">
+       <div className="flex items-center justify-between">
+         <div>
+           <h1 className="text-xl sm:text-2xl font-bold tracking-tight">My Projects</h1>
+           <p className="text-slate-500 mt-1 text-sm">Work assigned by {seoLeadName}</p>
+         </div>
+         {notificationPermission !== 'granted' && (
+           <Button size="sm" variant="outline" className="gap-1.5" onClick={() => requestNotificationPermission()}>
+             <Bell size={14} /> Enable Notifications
+           </Button>
+         )}
+       </div>
 
       {myProjects.length === 0 && (
         <Card className="p-8 sm:p-12 text-center">

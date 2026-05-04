@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { CheckCircle2, Circle, Clock, FileText, Loader2, Send } from 'lucide-react';
+import { CheckCircle2, Circle, Clock, FileText, Loader2, Send, Bell } from 'lucide-react';
 import { Card, Button, Badge, StatCard } from '../ui/Common';
 import { useApp } from '../../AppContext';
+import { useChatNotify } from '../../ChatNotifyContext';
 
 export function InternDashboard() {
   const { currentUser, tasks, projects, users, updateTaskStatus } = useApp();
+  const { unreadCounts, notificationPermission, requestNotificationPermission } = useChatNotify();
   const [loadingTask, setLoadingTask] = useState<string | null>(null);
 
   const myTasks = tasks.filter(t => t.assignedTo === currentUser.id);
@@ -20,6 +22,11 @@ export function InternDashboard() {
           <p className="text-slate-400 mt-1">You have {todoTasks.length + inProgressTasks.length} tasks to focus on today.</p>
         </div>
         <div className="flex items-center gap-3">
+          {notificationPermission !== 'granted' && (
+            <Button size="sm" variant="outline" className="gap-1.5" onClick={() => requestNotificationPermission()}>
+              <Bell size={14} /> Enable Notifications
+            </Button>
+          )}
           <div className="text-right">
             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Completed</p>
             <p className="text-lg font-bold text-green-400">{completedTasks.length}</p>

@@ -4,7 +4,7 @@ import {
   Plus, Send, FolderKanban, Clock, TrendingUp, Calendar,
   ChevronRight, ChevronDown, ChevronUp, X, MapPin, Globe, Star, Phone, Mail, ExternalLink,
   Search, Building2, ArrowUpRight, Loader2, FileText, Pencil, RotateCcw, ShieldCheck,
-  Folder, CheckCircle2, Download, MessageCircle, FileUp, Palette
+  Folder, CheckCircle2, Download, MessageCircle, FileUp, Palette, Bell
 } from 'lucide-react';
 import { Card, Button, Badge, Modal, Input, Textarea } from '../ui/Common';
 import { useApp } from '../../AppContext';
@@ -47,7 +47,7 @@ const BUSINESS_CATEGORIES = [
 
 export function SalesDashboard() {
   const { projects, users, currentUser, createProject, updateProject, updateProjectStage, projectUpdates, reviewProjectUpdate, reviewSection, workSubmissions, createAssignment, assignToLead } = useApp();
-  const { unreadCounts } = useChatNotify();
+  const { unreadCounts, notificationPermission, requestNotificationPermission } = useChatNotify();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingProject, setEditingProject] = useState<string | null>(null);
@@ -214,16 +214,23 @@ export function SalesDashboard() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900">Dashboard</h2>
-          <p className="text-sm text-slate-500 mt-0.5">Manage your GMB projects</p>
-        </div>
-        <Button className="gap-2" onClick={() => { setForm(emptyForm); setFormStep(1); setShowCreateModal(true); }}>
-          <Plus size={18} />
-          New GMB Project
-        </Button>
-      </div>
+       <div className="flex items-center justify-between mb-6">
+         <div>
+           <h2 className="text-xl font-bold text-slate-900">Dashboard</h2>
+           <p className="text-sm text-slate-500 mt-0.5">Manage your GMB projects</p>
+         </div>
+         <div className="flex items-center gap-3">
+           {notificationPermission !== 'granted' && (
+             <Button size="sm" variant="outline" className="gap-1.5" onClick={() => requestNotificationPermission()}>
+               <Bell size={14} /> Enable Notifications
+             </Button>
+           )}
+           <Button className="gap-2" onClick={() => { setForm(emptyForm); setFormStep(1); setShowCreateModal(true); }}>
+             <Plus size={18} />
+             New GMB Project
+           </Button>
+         </div>
+       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">

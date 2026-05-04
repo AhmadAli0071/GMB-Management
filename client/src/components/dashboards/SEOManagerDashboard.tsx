@@ -14,7 +14,7 @@ import { ChatBox } from '../chat/ChatBox';
 
 export function SEOManagerDashboard() {
   const { projects, users, currentUser, assignToLead, projectUpdates, reviewProjectUpdate, reviewSection, workSubmissions, createAssignment, createProject } = useApp();
-  const { unreadCounts } = useChatNotify();
+  const { unreadCounts, notificationPermission, requestNotificationPermission } = useChatNotify();
   const { onActivityNotification, offActivityNotification } = useSocket();
 
   const [notifications, setNotifications] = useState<{ id: string; type: string; message: string; projectId: string; fromUserId: string; createdAt: number }[]>([]);
@@ -218,6 +218,18 @@ export function SEOManagerDashboard() {
           {developerId && (
             <Button className="gap-2" onClick={() => setShowDevProjectModal(true)}>
               <FolderPlus size={18} /> Create Dev Project
+            </Button>
+          )}
+          {notificationPermission !== 'granted' && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5"
+              onClick={() => requestNotificationPermission()}
+              title="Enable desktop notifications"
+            >
+              <Bell size={14} />
+              Enable Notifications
             </Button>
           )}
           <div className="relative" ref={notifRef}>

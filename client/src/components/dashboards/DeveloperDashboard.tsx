@@ -3,7 +3,7 @@ import {
   MapPin, Star, Globe, Shield, ExternalLink,
   Clock, ChevronDown, ChevronUp, FileText, Send, Upload, X, Paperclip,
   Download, Edit3, Folder, AlertCircle, MessageCircle, Code2, ArrowLeft,
-  Loader2
+  Loader2, Bell
 } from 'lucide-react';
 import { Card, Button, Badge } from '../ui/Common';
 import { useApp } from '../../AppContext';
@@ -13,7 +13,7 @@ import { ChatBox } from '../chat/ChatBox';
 
 export function DeveloperDashboard() {
   const { currentUser, projects, users, assignments, workSubmissions, updateAssignmentStatus, submitWork, updateWork, deleteWorkFile, tasks } = useApp();
-  const { unreadCounts } = useChatNotify();
+   const { unreadCounts, notificationPermission, requestNotificationPermission } = useChatNotify();
   const [expandedProject, setExpandedProject] = useState<string | null>(null);
   const [showSubmitModal, setShowSubmitModal] = useState<string | null>(null);
   const [showEditModal, setShowEditModal] = useState<string | null>(null);
@@ -164,12 +164,19 @@ export function DeveloperDashboard() {
     );
   };
 
-  return (
-    <div className="space-y-8 max-w-6xl mx-auto">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">My Dev Tasks</h1>
-        <p className="text-slate-500 mt-1">Tasks assigned by {seoManagerName}</p>
-      </div>
+   return (
+     <div className="space-y-8 max-w-6xl mx-auto">
+       <div className="flex items-center justify-between">
+         <div>
+           <h1 className="text-2xl font-bold tracking-tight">My Dev Tasks</h1>
+           <p className="text-slate-500 mt-1">Tasks assigned by {seoManagerName}</p>
+         </div>
+         {notificationPermission !== 'granted' && (
+           <Button size="sm" variant="outline" className="gap-1.5" onClick={() => requestNotificationPermission()}>
+             <Bell size={14} /> Enable Notifications
+           </Button>
+         )}
+       </div>
 
       {myProjects.length === 0 && (
         <Card className="p-12 text-center">

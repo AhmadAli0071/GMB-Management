@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import {
   Globe, X, ShieldCheck, ExternalLink, Calendar,
   Folder, ChevronDown, ChevronUp, Download, FileText, Clock, Trash2,
-  Palette, Image, Paperclip, Send, CheckCircle2, Loader2
+  Palette, Image, Paperclip, Send, CheckCircle2, Loader2, Bell
 } from 'lucide-react';
 import { Card, Badge, Button } from '../ui/Common';
 import { useApp } from '../../AppContext';
@@ -12,7 +12,7 @@ import { ChatBox } from '../chat/ChatBox';
 
 export function BossDashboard() {
   const { projects, users, projectUpdates, workSubmissions, deleteProject, createAssignment, reviewWork, assignments } = useApp();
-  const { unreadCounts } = useChatNotify();
+   const { unreadCounts, notificationPermission, requestNotificationPermission } = useChatNotify();
   const [expandedProject, setExpandedProject] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [expandedDates, setExpandedDates] = useState<Record<string, boolean>>({});
@@ -95,12 +95,21 @@ export function BossDashboard() {
     }
   };
 
-  return (
-    <div>
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <h2 className="text-xl font-bold text-slate-900 mb-1">Boss Dashboard</h2>
-        <p className="text-sm text-slate-500 mb-6">Overview of all projects and reports</p>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-8">
+   return (
+     <div>
+       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+         <div className="flex items-center justify-between mb-6">
+           <div>
+             <h2 className="text-xl font-bold text-slate-900 mb-1">Boss Dashboard</h2>
+             <p className="text-sm text-slate-500">Overview of all projects and reports</p>
+           </div>
+           {notificationPermission !== 'granted' && (
+             <Button size="sm" variant="outline" className="gap-1.5" onClick={() => requestNotificationPermission()}>
+               <Bell size={14} /> Enable Notifications
+             </Button>
+           )}
+         </div>
+         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-8">
           <Card className="p-4 sm:p-5">
             <div className="flex items-center justify-between">
               <div className="w-9 h-9 sm:w-10 sm:h-10 bg-blue-500/10 rounded-xl flex items-center justify-center"><Folder size={16} className="text-blue-600" /></div>

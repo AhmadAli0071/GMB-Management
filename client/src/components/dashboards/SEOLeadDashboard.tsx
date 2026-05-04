@@ -17,7 +17,7 @@ export function SEOLeadDashboard() {
     submitProjectUpdate, reviewProjectUpdate, leadWork,
     createLeadWork, updateLeadWork, deleteLeadWorkFile, deleteLeadWork
   } = useApp();
-  const { unreadCounts } = useChatNotify();
+   const { unreadCounts, notificationPermission, requestNotificationPermission } = useChatNotify();
 
   const [expandedProject, setExpandedProject] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>('details');
@@ -322,12 +322,19 @@ export function SEOLeadDashboard() {
     return 'yellow';
   };
 
-  return (
-    <div className="space-y-8 max-w-6xl mx-auto p-4 sm:p-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">My Projects</h1>
-        <p className="text-slate-500 mt-1">GMB projects assigned by {seoManagerName}</p>
-      </div>
+   return (
+     <div className="space-y-8 max-w-6xl mx-auto p-4 sm:p-6">
+       <div className="flex items-center justify-between">
+         <div>
+           <h1 className="text-2xl font-bold tracking-tight">My Projects</h1>
+           <p className="text-slate-500 mt-1">GMB projects assigned by {seoManagerName}</p>
+         </div>
+         {notificationPermission !== 'granted' && (
+           <Button size="sm" variant="outline" className="gap-1.5" onClick={() => requestNotificationPermission()}>
+             <Bell size={14} /> Enable Notifications
+           </Button>
+         )}
+       </div>
 
       {myProjects.length === 0 && (
         <Card className="p-12 text-center">
