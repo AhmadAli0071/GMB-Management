@@ -4,7 +4,7 @@ import {
   Plus, Send, FolderKanban, Clock, TrendingUp, Calendar,
   ChevronRight, ChevronDown, ChevronUp, X, MapPin, Globe, Star, Phone, Mail, ExternalLink,
   Search, Building2, ArrowUpRight, Loader2, FileText, Pencil, RotateCcw, ShieldCheck,
-  Folder, CheckCircle2, Download, MessageCircle, FileUp, Palette, Bell
+  Folder, CheckCircle2, Download, MessageCircle, FileUp, Palette, Bell, Image
 } from 'lucide-react';
 import { Card, Button, Badge, Modal, Input, Textarea } from '../ui/Common';
 import { useApp } from '../../AppContext';
@@ -72,20 +72,8 @@ export function SalesDashboard() {
    const [creating, setCreating] = useState(false);
    const [saving, setSaving] = useState(false);
 
-   // Report modals
-   const [showQuickReportModal, setShowQuickReportModal] = useState<string | null>(null);
-   const [quickReportTitle, setQuickReportTitle] = useState('');
-   const [quickReportNotes, setQuickReportNotes] = useState('');
-   const [quickReportFiles, setQuickReportFiles] = useState<FileList | null>(null);
-   const [quickReportWorkDate, setQuickReportWorkDate] = useState(new Date().toISOString().split('T')[0]);
-   const [submittingQuick, setSubmittingQuick] = useState(false);
-
-   const [showStructuredReportModal, setShowStructuredReportModal] = useState<string | null>(null);
-   const [structuredOnPageText, setStructuredOnPageText] = useState('');
-   const [structuredOnPageFiles, setStructuredOnPageFiles] = useState<FileList | null>(null);
-   const [selectedOffPageWork, setSelectedOffPageWork] = useState<string[]>([]);
-   const [structuredWorkDate, setStructuredWorkDate] = useState(new Date().toISOString().split('T')[0]);
-   const [submittingStructured, setSubmittingStructured] = useState(false);
+   // Report review state (Kevin reviews reports from Muaz)
+   // Note: showUpdateReviewModal, updateReviewStatus, updateReviewComment, updateReviewing already defined above
 
    const myProjects = projects.filter(p => p.createdBy === currentUser.id);
   const myProjectUpdates = projectUpdates.filter((u: any) => u.toId === currentUser.id);
@@ -206,76 +194,20 @@ export function SalesDashboard() {
 
   const updateEdit = (field: string, value: any) => setEditForm(prev => ({ ...prev, [field]: value }));
 
-    const handleEditSave = async (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!editingProject) return;
-      setSaving(true);
-      try {
-        await updateProject(editingProject, editForm);
-        setEditingProject(null);
-        setEditStep(1);
-      } finally {
-        setSaving(false);
-      }
+   const handleEditSave = async (e: React.FormEvent) => {
+     e.preventDefault();
+     if (!editingProject) return;
+     setSaving(true);
+     try {
+       await updateProject(editingProject, editForm);
+       setEditingProject(null);
+       setEditStep(1);
+     } finally {
+       setSaving(false);
+     }
     };
 
-   const handleQuickReportSubmit = async (e: React.FormEvent) => {
-     e.preventDefault();
-     if (!showQuickReportModal) return;
-     setSubmittingQuick(true);
-     try {
-       const formData = new FormData();
-       formData.append('projectId', showQuickReportModal);
-       formData.append('title', quickReportTitle.trim());
-       formData.append('text', quickReportNotes.trim());
-       if (quickReportFiles) {
-         Array.from(quickReportFiles).forEach(file => formData.append('files', file));
-       }
-       formData.append('workDate', quickReportWorkDate);
-       await submitReportToManagers(formData);
-       setShowQuickReportModal(null);
-       setQuickReportTitle('');
-       setQuickReportNotes('');
-       setQuickReportFiles(null);
-     } finally {
-       setSubmittingQuick(false);
-     }
-   };
-
-   const handleStructuredReportSubmit = async (e: React.FormEvent) => {
-     e.preventDefault();
-     if (!showStructuredReportModal) return;
-     setSubmittingStructured(true);
-     try {
-       const formData = new FormData();
-       formData.append('projectId', showStructuredReportModal);
-       formData.append('reportType', 'STRUCTURED');
-       formData.append('onPageText', structuredOnPageText);
-       
-       const onPageFiles: { filename: string; originalName: string }[] = [];
-       if (structuredOnPageFiles) {
-         Array.from(structuredOnPageFiles).forEach(file => {
-           onPageFiles.push({ filename: file.name, originalName: file.name });
-         });
-       }
-       formData.append('onPageFilesJson', JSON.stringify(onPageFiles));
-       
-       if (selectedOffPageWork.length > 0) {
-         formData.append('offPageWorkIds', JSON.stringify(selectedOffPageWork));
-       }
-       
-       formData.append('workDate', structuredWorkDate);
-       await submitReportToManagers(formData);
-       setShowStructuredReportModal(null);
-       setStructuredOnPageText('');
-       setStructuredOnPageFiles(null);
-       setSelectedOffPageWork([]);
-     } finally {
-       setSubmittingStructured(false);
-     }
-   };
-
-   const getStatusColor = (status: string) => {
+    const getStatusColor = (status: string) => {
     if (status === 'APPROVED') return 'green';
     if (status === 'CHANGES_REQUESTED') return 'red';
     return 'yellow';
@@ -555,38 +487,121 @@ export function SalesDashboard() {
                       </div>
                     )}
 
-                     {/* Monthly Report Tab */}
-                     {activeTab === 'report' && (
-                       <div className="p-4 sm:px-5 sm:py-4">
-                         <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 mb-4">
-                           <div className="w-1 h-4 bg-green-500 rounded-full" />
-                           Monthly Report
-                         </h4>
-                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                           <Card className="p-4">
-                             <h5 className="font-semibold text-sm mb-2">Quick Monthly Report</h5>
-                             <p className="text-xs text-slate-500 mb-3">Simple monthly summary with title, notes and attachments</p>
-                              <Button className="w-full gap-2" onClick={() => setShowQuickReportModal(project.id)}>
-                                <Send size={16} /> Send to Ali & Kevin
-                              </Button>
-                           </Card>
-                           <Card className="p-4">
-                             <h5 className="font-semibold text-sm mb-2">Structured Monthly Report</h5>
-                             <p className="text-xs text-slate-500 mb-3">Detailed on-page + off-page work selection for the month</p>
-                              <Button variant="outline" className="w-full gap-2" onClick={() => setShowStructuredReportModal(project.id)}>
-                                <FileText size={16} /> Create Structured
-                              </Button>
-                           </Card>
-                           <Card className="p-4">
-                             <h5 className="font-semibold text-sm mb-2">Structured Monthly Report</h5>
-                             <p className="text-xs text-slate-500 mb-3">On-page work + off-page work selection</p>
-                              <Button variant="outline" className="w-full gap-2" onClick={() => setShowStructuredReportModal(project.id)}>
-                                <FileText size={16} /> Create Structured
-                              </Button>
-                           </Card>
-                         </div>
-                       </div>
-                     )}
+                      {/* Monthly Report Tab - Kevin reviews reports submitted by Muaz */}
+                      {activeTab === 'report' && (
+                        <div className="p-4 sm:px-5 sm:py-4">
+                          <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 mb-4">
+                            <div className="w-1 h-4 bg-green-500 rounded-full" />
+                            Monthly Reports from SEO Lead
+                          </h4>
+                          <div className="space-y-3">
+                            {/* Filter reports for this project addressed to Kevin (Sales Manager) */}
+                            {(() => {
+                              const kevinId = currentUser.id;
+                              const projectReports = projectUpdates.filter((u: any) => 
+                                u.projectId === project.id && u.toId === kevinId
+                              ).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+                              if (projectReports.length === 0) {
+                                return (
+                                  <div className="p-8 bg-slate-50 rounded-lg text-center">
+                                    <FileText size={32} className="mx-auto text-slate-400 mb-2" />
+                                    <p className="text-sm text-slate-500">No monthly reports submitted yet.</p>
+                                    <p className="text-xs text-slate-400 mt-1">Reports from SEO Lead will appear here for your review.</p>
+                                  </div>
+                                );
+                              }
+
+                              return projectReports.map(report => (
+                                <Card key={report.id} className="p-4 border-l-4 border-l-purple-500">
+                                  <div className="flex items-start justify-between mb-3">
+                                    <div>
+                                      <h5 className="font-semibold text-sm text-slate-900">{report.title || 'Monthly Report'}</h5>
+                                      <p className="text-xs text-slate-500 mt-0.5">
+                                        {new Date(report.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                                        {report.workDate && ` · Work Month: ${report.workDate}`}
+                                      </p>
+                                    </div>
+                                    <Badge variant={
+                                      report.status === 'APPROVED' ? 'green' :
+                                      report.status === 'CHANGES_REQUESTED' ? 'red' : 'yellow'
+                                    }>
+                                      {report.status === 'APPROVED' ? 'Approved' :
+                                       report.status === 'CHANGES_REQUESTED' ? 'Changes Requested' : 'Pending Review'}
+                                    </Badge>
+                                  </div>
+
+                                  {report.text && (
+                                    <div className="mb-3">
+                                      <p className="text-xs font-semibold text-slate-600 mb-1">Summary</p>
+                                      <p className="text-sm text-slate-700 bg-slate-50 p-3 rounded">{report.text}</p>
+                                    </div>
+                                  )}
+
+                                  {report.files && report.files.length > 0 && (
+                                    <div className="mb-3">
+                                      <p className="text-xs font-semibold text-slate-600 mb-2">Attachments</p>
+                                      <div className="flex flex-wrap gap-2">
+                                        {report.files.map((f: any, i: number) => {
+                                          const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(f.filename);
+                                          return (
+                                            <a key={i} href={`/uploads/${f.filename}`} target="_blank" className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 border border-blue-200 rounded text-xs text-blue-600 hover:bg-blue-100">
+                                              {isImg ? <Image size={12} /> : <Download size={12} />}
+                                              {f.originalName}
+                                            </a>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Structured report fields */}
+                                  {report.reportType === 'STRUCTURED' && (
+                                    <div className="mb-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+                                      {report.onPageText && (
+                                        <div className="bg-purple-50 p-3 rounded">
+                                          <p className="text-xs font-semibold text-purple-700 mb-1">On-Page Work</p>
+                                          <p className="text-sm text-slate-700">{report.onPageText}</p>
+                                        </div>
+                                      )}
+                                      {report.onPageFiles && report.onPageFiles.length > 0 && (
+                                        <div className="bg-blue-50 p-3 rounded">
+                                          <p className="text-xs font-semibold text-blue-700 mb-2">On-Page Files</p>
+                                          <div className="flex flex-wrap gap-2">
+                                            {report.onPageFiles.map((f: any, i: number) => (
+                                              <a key={i} href={`/uploads/${f.filename}`} target="_blank" className="text-xs text-blue-600 hover:underline">
+                                                {f.originalName}
+                                              </a>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+
+                                  {/* Review Actions - only if pending */}
+                                  {report.status === 'PENDING_REVIEW' && (
+                                     <div className="flex items-center gap-2 pt-3 border-t border-slate-100">
+                                       <Button size="sm" variant="primary" className="gap-1" onClick={() => {
+                                         setShowUpdateReviewModal(report.id);
+                                         setReviewUpdateStatus('APPROVED');
+                                       }}>
+                                         <CheckCircle2 size={14} /> Approve
+                                       </Button>
+                                       <Button size="sm" variant="danger" className="gap-1" onClick={() => {
+                                         setShowUpdateReviewModal(report.id);
+                                         setReviewUpdateStatus('CHANGES_REQUESTED');
+                                       }}>
+                                         <RotateCcw size={14} /> Request Changes
+                                       </Button>
+                                     </div>
+                                  )}
+                                </Card>
+                              ));
+                            })()}
+                          </div>
+                        </div>
+                      )}
 
                     {/* Chat Tab */}
                     {activeTab === 'chat' && (
@@ -663,97 +678,9 @@ export function SalesDashboard() {
          </Modal>
        )}
 
-        {/* Quick Monthly Report Modal */}
-        {showQuickReportModal && (
-          <Modal isOpen={true} onClose={() => setShowQuickReportModal(null)} title="Quick Monthly Report" size="md">
-            <form onSubmit={handleQuickReportSubmit}>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Report Title</label>
-                  <Input value={quickReportTitle} onChange={e => setQuickReportTitle(e.target.value)} placeholder="e.g., March 2025 GMB Progress" required />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Monthly Notes / Summary</label>
-                  <Textarea value={quickReportNotes} onChange={e => setQuickReportNotes(e.target.value)} placeholder="Describe work done this month..." rows={4} />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Report Month</label>
-                  <Input type="month" value={quickReportWorkDate} onChange={e => setQuickReportWorkDate(e.target.value)} />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Attachments (optional)</label>
-                  <Input type="file" multiple onChange={e => setQuickReportFiles(e.target.files)} />
-                </div>
-                <div className="flex justify-end gap-2 pt-2">
-                  <Button type="button" variant="outline" onClick={() => setShowQuickReportModal(null)}>Cancel</Button>
-                  <Button type="submit" className="gap-2" disabled={submittingQuick}>
-                    {submittingQuick ? <><Loader2 size={14} className="animate-spin" /> Sending...</> : <><Send size={14} /> Submit Monthly Report</>}
-                  </Button>
-                </div>
-              </div>
-            </form>
-          </Modal>
-        )}
 
-        {/* Structured Monthly Report Modal */}
-        {showStructuredReportModal && (
-          <Modal isOpen={true} onClose={() => setShowStructuredReportModal(null)} title="Structured Monthly Report" size="lg">
-            <form onSubmit={handleStructuredReportSubmit}>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">On-Page Work Summary for This Month</label>
-                  <Textarea value={structuredOnPageText} onChange={e => setStructuredOnPageText(e.target.value)} placeholder="Describe all on-page SEO work completed during this month..." rows={4} required />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">On-Page Supporting Files (optional)</label>
-                  <Input type="file" multiple onChange={e => setStructuredOnPageFiles(e.target.files)} />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Off-Page Work Completed This Month (select all that apply)</label>
-                  <div className="space-y-2 max-h-40 overflow-y-auto border border-slate-200 rounded p-2">
-                    {(() => {
-                      const projectId = showStructuredReportModal;
-                      const project = myProjects.find(p => p.id === projectId);
-                      if (!project) return <p className="text-sm text-slate-500">No project found.</p>;
-                      const projectWork = workSubmissions.filter((w: any) => w.projectId === projectId && w.status === 'APPROVED');
-                      if (projectWork.length === 0) return <p className="text-sm text-slate-500">No approved off-page work yet.</p>;
-                      return projectWork.map(work => (
-                        <label key={work.id} className="flex items-start gap-2 p-2 hover:bg-slate-50 rounded">
-                          <input
-                            type="checkbox"
-                            checked={selectedOffPageWork.includes(work.id)}
-                            onChange={e => {
-                              if (e.target.checked) {
-                                setSelectedOffPageWork(prev => [...prev, work.id]);
-                              } else {
-                                setSelectedOffPageWork(prev => prev.filter(id => id !== work.id));
-                              }
-                            }}
-                            className="mt-1"
-                          />
-                          <div className="text-sm">
-                            <p className="text-slate-800">{work.text?.substring(0, 100)}...</p>
-                            <p className="text-xs text-slate-500">{new Date(work.createdAt).toLocaleDateString()}</p>
-                          </div>
-                        </label>
-                      ));
-                    })()}
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Report Month</label>
-                  <Input type="month" value={structuredWorkDate} onChange={e => setStructuredWorkDate(e.target.value)} />
-                </div>
-                <div className="flex justify-end gap-2 pt-2">
-                  <Button type="button" variant="outline" onClick={() => setShowStructuredReportModal(null)}>Cancel</Button>
-                  <Button type="submit" className="gap-2" disabled={submittingStructured}>
-                    {submittingStructured ? <><Loader2 size={14} className="animate-spin" /> Sending...</> : <><FileText size={14} /> Submit Monthly Report</>}
-                  </Button>
-                </div>
-              </div>
-            </form>
-          </Modal>
-        )}
+
+
 
      </div>
    );
