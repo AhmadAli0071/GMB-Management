@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Plus, Send, FolderKanban, Clock, TrendingUp, Calendar,
-  ChevronRight, X, MapPin, Globe, Star, Phone, Mail, ExternalLink,
+  ChevronRight, ChevronDown, ChevronUp, X, MapPin, Globe, Star, Phone, Mail, ExternalLink,
   Search, Building2, ArrowUpRight, Loader2, FileText, Pencil, RotateCcw, ShieldCheck,
-  Folder, CheckCircle2, Download, Bell, MessageCircle, Palette, Home, FileUp, Paperclip, PlusCircle
+  Folder, CheckCircle2, Download, MessageCircle, FileUp, Palette
 } from 'lucide-react';
 import { Card, Button, Badge, Modal, Input, Textarea } from '../ui/Common';
 import { useApp } from '../../AppContext';
 import { useChatNotify } from '../../ChatNotifyContext';
-import { STAGE_LABELS, STAGE_COLORS } from '../types';
+import { STAGE_LABELS, STAGE_COLORS } from '../../types';
 import { ChatBox } from '../chat/ChatBox';
 
 const emptyForm = {
@@ -46,7 +46,7 @@ const BUSINESS_CATEGORIES = [
 ];
 
 export function SalesDashboard() {
-  const { projects, users, currentUser, createProject, updateProject, updateProjectStage, projectUpdates, reviewProjectUpdate, reviewSection, workSubmissions, createAssignment } = useApp();
+  const { projects, users, currentUser, createProject, updateProject, updateProjectStage, projectUpdates, reviewProjectUpdate, reviewSection, workSubmissions, createAssignment, assignToLead } = useApp();
   const { unreadCounts } = useChatNotify();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -81,11 +81,11 @@ export function SalesDashboard() {
   }, {});
 
   const isUpdatePending = (u: any) => {
-    if (u.reportType === 'STRUCTURED') {
-      const hasOnPage = !!(u.onPageText || (u.onPageFiles && u.onPageFiles.length > 0));
-      const hasOffPage = !!(u.offPageWorkIds && u.offPageWorkIds.length > 0));
-      return (hasOnPage && u.onPageStatus === 'PENDING') || (hasOffPage && u.offPageStatus === 'PENDING');
-    }
+      if (u.reportType === 'STRUCTURED') {
+        const hasOnPage = !!(u.onPageText || (u.onPageFiles && u.onPageFiles.length > 0));
+        const hasOffPage = !!(u.offPageWorkIds && u.offPageWorkIds.length > 0);
+        return (hasOnPage && u.onPageStatus === 'PENDING') || (hasOffPage && u.offPageStatus === 'PENDING');
+      }
     return u.status === 'PENDING_REVIEW';
   };
 
@@ -191,19 +191,18 @@ export function SalesDashboard() {
 
   const updateEdit = (field: string, value: any) => setEditForm(prev => ({ ...prev, [field]: value }));
 
-  const handleEditSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingProject) return;
-    setSaving(true);
-    try {
-      await updateProject(editingProject, editForm);
-      await updateProjectStage(editingProject, 'CLIENT_COMMUNICATION');
-      setEditingProject(null);
-      setEditStep(1);
-    } finally {
-      setSaving(false);
-    }
-  };
+   const handleEditSave = async (e: React.FormEvent) => {
+     e.preventDefault();
+     if (!editingProject) return;
+     setSaving(true);
+     try {
+       await updateProject(editingProject, editForm);
+       setEditingProject(null);
+       setEditStep(1);
+     } finally {
+       setSaving(false);
+     }
+   };
 
   const getStatusColor = (status: string) => {
     if (status === 'APPROVED') return 'green';
@@ -274,7 +273,7 @@ export function SalesDashboard() {
             const pendingCount = projectUpdates.filter(isUpdatePending).length;
             const projectUnreadMap = unreadCounts[project.id] || {};
             const projectUnread = (Object.values(projectUnreadMap) as number[]).reduce((sum, val) => sum + val, 0);
-            const projectOnPageWork = workSubmissions.filter((w: any) => w.projectId === project.id && w.fromId === currentUser.id);
+            const projectOnPageWork = workSubmissions.filter((w: any) => w.projectId === project.id);
             const approvedOffPage = workSubmissions.filter((w: any) => w.projectId === project.id && w.status === 'APPROVED' && w.fromId !== currentUser.id);
             const rejectedCount = projectUpdates.filter((u: any) => u.status === 'CHANGES_REQUESTED').length;
 
@@ -442,12 +441,12 @@ export function SalesDashboard() {
                             Off-Page Work
                           </h4>
                           <Button size="sm" variant="secondary" className="gap-1" onClick={() => setShowAssignPopup(project.id)}>
-                            <Palette size={14} /> Assign to Designer
+                            <Palette size={14} /> Assign to SEO Lead
                           </Button>
                         </div>
                         <div className="space-y-2">
                           {/* Off-page work list */}
-                          {approvedOffPage.length === 0 && (
+                          {approvedOffPage.length === 0 ? (
                             <div className="p-6 bg-slate-50 rounded-lg text-center">
                               <p className="text-sm text-slate-500">No off-page work yet.</p>
                             </div>

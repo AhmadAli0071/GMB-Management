@@ -1,4 +1,4 @@
-export type UserRole = 'SALES_MANAGER' | 'SEO_MANAGER' | 'SEO_LEAD' | 'OFF_PAGE_SPECIALIST' | 'DESIGNER' | 'DEVELOPER' | 'BOSS';
+export type UserRole = 'SALES_MANAGER' | 'SEO_MANAGER' | 'SEO_LEAD' | 'OFF_PAGE_SPECIALIST' | 'DESIGNER' | 'DEVELOPER' | 'BOSS' | 'INTERN';
 
 export type ProjectStage =
   | 'CLIENT_COMMUNICATION'
@@ -99,6 +99,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   DESIGNER: 'Designer',
   DEVELOPER: 'Developer',
   BOSS: 'Boss',
+  INTERN: 'Intern',
 };
 
 export const STAGE_LABELS: Record<ProjectStage, string> = {
