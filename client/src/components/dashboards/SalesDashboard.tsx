@@ -416,7 +416,7 @@ export function SalesDashboard() {
                       <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab === 'details' ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveTab('details')}>Details</button>
                       <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab === 'onpage' ? 'bg-purple-50 text-purple-600 border-b-2 border-purple-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveTab('onpage')}>On-Page</button>
                       <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab === 'offpage' ? 'bg-orange-50 text-orange-600 border-b-2 border-orange-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveTab('offpage')}>Off-Page</button>
-                      <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab === 'report' ? 'bg-green-50 text-green-600 border-b-2 border-green-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveTab('report')}>Submit Report</button>
+                       <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab === 'report' ? 'bg-green-50 text-green-600 border-b-2 border-green-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveTab('report')}>Monthly Report</button>
                       <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab === 'chat' ? 'bg-purple-50 text-purple-600 border-b-2 border-purple-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveTab('chat')}>Chat{projectUnread > 0 && <span className="ml-1.5 min-w-[16px] h-4 bg-red-500 text-white text-[8px] font-bold rounded-full inline-flex items-center justify-center px-0.5">{projectUnread > 99 ? '99+' : projectUnread}</span>}</button>
                     </div>
 
@@ -555,31 +555,38 @@ export function SalesDashboard() {
                       </div>
                     )}
 
-                    {/* Submit Report Tab */}
-                    {activeTab === 'report' && (
-                      <div className="p-4 sm:px-5 sm:py-4">
-                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 mb-4">
-                          <div className="w-1 h-4 bg-green-500 rounded-full" />
-                          Submit Report
-                        </h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <Card className="p-4">
-                            <h5 className="font-semibold text-sm mb-2">Quick Report</h5>
-                            <p className="text-xs text-slate-500 mb-3">Simple report with title, notes and attachments</p>
-                             <Button className="w-full gap-2" onClick={() => setShowQuickReportModal(project.id)}>
-                               <Send size={16} /> Send to Ali & Kevin
-                             </Button>
-                          </Card>
-                          <Card className="p-4">
-                            <h5 className="font-semibold text-sm mb-2">Structured Report</h5>
-                            <p className="text-xs text-slate-500 mb-3">On-page work + off-page work selection</p>
-                             <Button variant="outline" className="w-full gap-2" onClick={() => setShowStructuredReportModal(project.id)}>
-                               <FileText size={16} /> Create Structured
-                             </Button>
-                          </Card>
-                        </div>
-                      </div>
-                    )}
+                     {/* Monthly Report Tab */}
+                     {activeTab === 'report' && (
+                       <div className="p-4 sm:px-5 sm:py-4">
+                         <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 mb-4">
+                           <div className="w-1 h-4 bg-green-500 rounded-full" />
+                           Monthly Report
+                         </h4>
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                           <Card className="p-4">
+                             <h5 className="font-semibold text-sm mb-2">Quick Monthly Report</h5>
+                             <p className="text-xs text-slate-500 mb-3">Simple monthly summary with title, notes and attachments</p>
+                              <Button className="w-full gap-2" onClick={() => setShowQuickReportModal(project.id)}>
+                                <Send size={16} /> Send to Ali & Kevin
+                              </Button>
+                           </Card>
+                           <Card className="p-4">
+                             <h5 className="font-semibold text-sm mb-2">Structured Monthly Report</h5>
+                             <p className="text-xs text-slate-500 mb-3">Detailed on-page + off-page work selection for the month</p>
+                              <Button variant="outline" className="w-full gap-2" onClick={() => setShowStructuredReportModal(project.id)}>
+                                <FileText size={16} /> Create Structured
+                              </Button>
+                           </Card>
+                           <Card className="p-4">
+                             <h5 className="font-semibold text-sm mb-2">Structured Monthly Report</h5>
+                             <p className="text-xs text-slate-500 mb-3">On-page work + off-page work selection</p>
+                              <Button variant="outline" className="w-full gap-2" onClick={() => setShowStructuredReportModal(project.id)}>
+                                <FileText size={16} /> Create Structured
+                              </Button>
+                           </Card>
+                         </div>
+                       </div>
+                     )}
 
                     {/* Chat Tab */}
                     {activeTab === 'chat' && (
@@ -656,98 +663,97 @@ export function SalesDashboard() {
          </Modal>
        )}
 
-       {/* Quick Report Modal */}
-       {showQuickReportModal && (
-         <Modal isOpen={true} onClose={() => setShowQuickReportModal(null)} title="Quick Report to Managers" size="md">
-           <form onSubmit={handleQuickReportSubmit}>
-             <div className="space-y-4">
-               <div>
-                 <label className="block text-xs font-semibold text-slate-600 mb-1">Title</label>
-                 <Input value={quickReportTitle} onChange={e => setQuickReportTitle(e.target.value)} placeholder="Report title" required />
-               </div>
-               <div>
-                 <label className="block text-xs font-semibold text-slate-600 mb-1">Notes</label>
-                 <Textarea value={quickReportNotes} onChange={e => setQuickReportNotes(e.target.value)} placeholder="Describe what was done..." rows={4} />
-               </div>
-               <div>
-                 <label className="block text-xs font-semibold text-slate-600 mb-1">Work Date</label>
-                 <Input type="date" value={quickReportWorkDate} onChange={e => setQuickReportWorkDate(e.target.value)} />
-               </div>
-               <div>
-                 <label className="block text-xs font-semibold text-slate-600 mb-1">Attachments (optional)</label>
-                 <Input type="file" multiple onChange={e => setQuickReportFiles(e.target.files)} />
-               </div>
-               <div className="flex justify-end gap-2 pt-2">
-                 <Button type="button" variant="outline" onClick={() => setShowQuickReportModal(null)}>Cancel</Button>
-                 <Button type="submit" className="gap-2" disabled={submittingQuick}>
-                   {submittingQuick ? <><Loader2 size={14} className="animate-spin" /> Sending...</> : <><Send size={14} /> Send to Ali & Kevin</>}
-                 </Button>
-               </div>
-             </div>
-           </form>
-         </Modal>
-       )}
+        {/* Quick Monthly Report Modal */}
+        {showQuickReportModal && (
+          <Modal isOpen={true} onClose={() => setShowQuickReportModal(null)} title="Quick Monthly Report" size="md">
+            <form onSubmit={handleQuickReportSubmit}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Report Title</label>
+                  <Input value={quickReportTitle} onChange={e => setQuickReportTitle(e.target.value)} placeholder="e.g., March 2025 GMB Progress" required />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Monthly Notes / Summary</label>
+                  <Textarea value={quickReportNotes} onChange={e => setQuickReportNotes(e.target.value)} placeholder="Describe work done this month..." rows={4} />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Report Month</label>
+                  <Input type="month" value={quickReportWorkDate} onChange={e => setQuickReportWorkDate(e.target.value)} />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Attachments (optional)</label>
+                  <Input type="file" multiple onChange={e => setQuickReportFiles(e.target.files)} />
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button type="button" variant="outline" onClick={() => setShowQuickReportModal(null)}>Cancel</Button>
+                  <Button type="submit" className="gap-2" disabled={submittingQuick}>
+                    {submittingQuick ? <><Loader2 size={14} className="animate-spin" /> Sending...</> : <><Send size={14} /> Submit Monthly Report</>}
+                  </Button>
+                </div>
+              </div>
+            </form>
+          </Modal>
+        )}
 
-       {/* Structured Report Modal */}
-       {showStructuredReportModal && (
-         <Modal isOpen={true} onClose={() => setShowStructuredReportModal(null)} title="Structured Report to Managers" size="lg">
-           <form onSubmit={handleStructuredReportSubmit}>
-             <div className="space-y-4">
-               <div>
-                 <label className="block text-xs font-semibold text-slate-600 mb-1">On-Page Work Summary</label>
-                 <Textarea value={structuredOnPageText} onChange={e => setStructuredOnPageText(e.target.value)} placeholder="Describe all on-page work completed..." rows={4} required />
-               </div>
-               <div>
-                 <label className="block text-xs font-semibold text-slate-600 mb-1">On-Page Files (optional)</label>
-                 <Input type="file" multiple onChange={e => setStructuredOnPageFiles(e.target.files)} />
-               </div>
-               <div>
-                 <label className="block text-xs font-semibold text-slate-600 mb-1">Off-Page Work to Include</label>
-                 <div className="space-y-2 max-h-40 overflow-y-auto border border-slate-200 rounded p-2">
-                   {/* Get approved off-page work for this project from parent scope */}
-                   {(() => {
-                     const projectId = showStructuredReportModal;
-                     const project = myProjects.find(p => p.id === projectId);
-                     if (!project) return <p className="text-sm text-slate-500">No project found.</p>;
-                     const projectWork = workSubmissions.filter((w: any) => w.projectId === projectId && w.status === 'APPROVED');
-                     if (projectWork.length === 0) return <p className="text-sm text-slate-500">No approved off-page work yet.</p>;
-                     return projectWork.map(work => (
-                       <label key={work.id} className="flex items-start gap-2 p-2 hover:bg-slate-50 rounded">
-                         <input
-                           type="checkbox"
-                           checked={selectedOffPageWork.includes(work.id)}
-                           onChange={e => {
-                             if (e.target.checked) {
-                               setSelectedOffPageWork(prev => [...prev, work.id]);
-                             } else {
-                               setSelectedOffPageWork(prev => prev.filter(id => id !== work.id));
-                             }
-                           }}
-                           className="mt-1"
-                         />
-                         <div className="text-sm">
-                           <p className="text-slate-800">{work.text?.substring(0, 100)}...</p>
-                           <p className="text-xs text-slate-500">{new Date(work.createdAt).toLocaleDateString()}</p>
-                         </div>
-                       </label>
-                     ));
-                   })()}
-                 </div>
-               </div>
-               <div>
-                 <label className="block text-xs font-semibold text-slate-600 mb-1">Work Date</label>
-                 <Input type="date" value={structuredWorkDate} onChange={e => setStructuredWorkDate(e.target.value)} />
-               </div>
-               <div className="flex justify-end gap-2 pt-2">
-                 <Button type="button" variant="outline" onClick={() => setShowStructuredReportModal(null)}>Cancel</Button>
-                 <Button type="submit" className="gap-2" disabled={submittingStructured}>
-                   {submittingStructured ? <><Loader2 size={14} className="animate-spin" /> Sending...</> : <><FileText size={14} /> Submit to Ali & Kevin</>}
-                 </Button>
-               </div>
-             </div>
-           </form>
-         </Modal>
-       )}
+        {/* Structured Monthly Report Modal */}
+        {showStructuredReportModal && (
+          <Modal isOpen={true} onClose={() => setShowStructuredReportModal(null)} title="Structured Monthly Report" size="lg">
+            <form onSubmit={handleStructuredReportSubmit}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">On-Page Work Summary for This Month</label>
+                  <Textarea value={structuredOnPageText} onChange={e => setStructuredOnPageText(e.target.value)} placeholder="Describe all on-page SEO work completed during this month..." rows={4} required />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">On-Page Supporting Files (optional)</label>
+                  <Input type="file" multiple onChange={e => setStructuredOnPageFiles(e.target.files)} />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Off-Page Work Completed This Month (select all that apply)</label>
+                  <div className="space-y-2 max-h-40 overflow-y-auto border border-slate-200 rounded p-2">
+                    {(() => {
+                      const projectId = showStructuredReportModal;
+                      const project = myProjects.find(p => p.id === projectId);
+                      if (!project) return <p className="text-sm text-slate-500">No project found.</p>;
+                      const projectWork = workSubmissions.filter((w: any) => w.projectId === projectId && w.status === 'APPROVED');
+                      if (projectWork.length === 0) return <p className="text-sm text-slate-500">No approved off-page work yet.</p>;
+                      return projectWork.map(work => (
+                        <label key={work.id} className="flex items-start gap-2 p-2 hover:bg-slate-50 rounded">
+                          <input
+                            type="checkbox"
+                            checked={selectedOffPageWork.includes(work.id)}
+                            onChange={e => {
+                              if (e.target.checked) {
+                                setSelectedOffPageWork(prev => [...prev, work.id]);
+                              } else {
+                                setSelectedOffPageWork(prev => prev.filter(id => id !== work.id));
+                              }
+                            }}
+                            className="mt-1"
+                          />
+                          <div className="text-sm">
+                            <p className="text-slate-800">{work.text?.substring(0, 100)}...</p>
+                            <p className="text-xs text-slate-500">{new Date(work.createdAt).toLocaleDateString()}</p>
+                          </div>
+                        </label>
+                      ));
+                    })()}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Report Month</label>
+                  <Input type="month" value={structuredWorkDate} onChange={e => setStructuredWorkDate(e.target.value)} />
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button type="button" variant="outline" onClick={() => setShowStructuredReportModal(null)}>Cancel</Button>
+                  <Button type="submit" className="gap-2" disabled={submittingStructured}>
+                    {submittingStructured ? <><Loader2 size={14} className="animate-spin" /> Sending...</> : <><FileText size={14} /> Submit Monthly Report</>}
+                  </Button>
+                </div>
+              </div>
+            </form>
+          </Modal>
+        )}
 
      </div>
    );
