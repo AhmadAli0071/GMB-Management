@@ -62,6 +62,11 @@ router.post('/', upload.array('files', 10), async (req, res) => {
   try {
     const { projectId, toId, text, title, reportType, onPageText, offPageWorkIds, workDate } = req.body;
     const userId = req.user.id;
+
+    if (!toId) {
+      return res.status(400).json({ error: 'Recipient (toId) is required' });
+    }
+
     const files = req.files?.map(f => ({ filename: f.filename, originalName: f.originalname })) || [];
 
     const isStructured = reportType === 'STRUCTURED';

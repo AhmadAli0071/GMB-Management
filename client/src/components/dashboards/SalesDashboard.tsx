@@ -46,8 +46,9 @@ const BUSINESS_CATEGORIES = [
 ];
 
 export function SalesDashboard() {
-  const { projects, users, currentUser, createProject, updateProject, updateProjectStage, projectUpdates, reviewProjectUpdate, reviewSection, workSubmissions, createAssignment, assignToLead, submitReportToManagers } = useApp();
-  const { unreadCounts, notificationPermission, requestNotificationPermission } = useChatNotify();
+  const { projects, users, currentUser, createProject, updateProject, updateProjectStage, projectUpdates, reviewProjectUpdate, reviewSection, workSubmissions, createAssignment, assignToLead } = useApp();
+   const { unreadCounts, notificationPermission, requestNotificationPermission } = useChatNotify();
+   const { onActivityNotification, offActivityNotification } = useSocket();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingProject, setEditingProject] = useState<string | null>(null);
@@ -70,9 +71,41 @@ export function SalesDashboard() {
    const [editForm, setEditForm] = useState(emptyForm);
    const [editStep, setEditStep] = useState(1);
    const [creating, setCreating] = useState(false);
-   const [saving, setSaving] = useState(false);
+    const [saving, setSaving] = useState(false);
 
-   // Report review state (Kevin reviews reports from Muaz)
+    // Notification state for in-app alerts
+    const [notifications, setNotifications] = useState<{ id: string; type: string; message: string; projectId: string; fromUserId: string; createdAt: number }[]>([]);
+    const [showNotifDropdown, setShowNotifDropdown] = useState(false);
+    const notifRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+      const handler = (data: any) => {
+        setNotifications(prev => [{
+          id: Date.now().toString() + Math.random(),
+          type: data.type,
+          message: data.message,
+          projectId: data.projectId,
+          fromUserId: data.fromUserId,
+          createdAt: Date.now(),
+        }, ...prev].slice(0, 50));
+      };
+      onActivityNotification(handler);
+      return () => { offActivityNotification(handler); };
+    }, [onActivityNotification, offActivityNotification]);
+
+    useEffect(() => {
+      const handleClick = (e: MouseEvent) => {
+        if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+          setShowNotifDropdown(false);
+        }
+      };
+      document.addEventListener('mousedown', handleClick);
+      return () => document.removeEventListener('mousedown', handleClick);
+    }, []);
+
+    const clearNotifications = () => setNotifications([]);
+
+    // Report review state (Kevin reviews reports from Muaz)
    // Note: showUpdateReviewModal, updateReviewStatus, updateReviewComment, updateReviewing already defined above
 
    const myProjects = projects.filter(p => p.createdBy === currentUser.id);
@@ -512,92 +545,88 @@ export function SalesDashboard() {
                                 );
                               }
 
-                              return projectReports.map(report => (
-                                <Card key={report.id} className="p-4 border-l-4 border-l-purple-500">
-                                  <div className="flex items-start justify-between mb-3">
-                                    <div>
-                                      <h5 className="font-semibold text-sm text-slate-900">{report.title || 'Monthly Report'}</h5>
-                                      <p className="text-xs text-slate-500 mt-0.5">
-                                        {new Date(report.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                                        {report.workDate && ` · Work Month: ${report.workDate}`}
-                                      </p>
-                                    </div>
-                                    <Badge variant={
-                                      report.status === 'APPROVED' ? 'green' :
-                                      report.status === 'CHANGES_REQUESTED' ? 'red' : 'yellow'
-                                    }>
-                                      {report.status === 'APPROVED' ? 'Approved' :
-                                       report.status === 'CHANGES_REQUESTED' ? 'Changes Requested' : 'Pending Review'}
-                                    </Badge>
-                                  </div>
-
-                                  {report.text && (
-                                    <div className="mb-3">
-                                      <p className="text-xs font-semibold text-slate-600 mb-1">Summary</p>
-                                      <p className="text-sm text-slate-700 bg-slate-50 p-3 rounded">{report.text}</p>
-                                    </div>
-                                  )}
-
-                                  {report.files && report.files.length > 0 && (
-                                    <div className="mb-3">
-                                      <p className="text-xs font-semibold text-slate-600 mb-2">Attachments</p>
-                                      <div className="flex flex-wrap gap-2">
-                                        {report.files.map((f: any, i: number) => {
-                                          const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(f.filename);
-                                          return (
-                                            <a key={i} href={`/uploads/${f.filename}`} target="_blank" className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 border border-blue-200 rounded text-xs text-blue-600 hover:bg-blue-100">
-                                              {isImg ? <Image size={12} /> : <Download size={12} />}
-                                              {f.originalName}
-                                            </a>
-                                          );
-                                        })}
-                                      </div>
-                                    </div>
-                                  )}
-
-                                  {/* Structured report fields */}
-                                  {report.reportType === 'STRUCTURED' && (
-                                    <div className="mb-3 grid grid-cols-1 md:grid-cols-2 gap-3">
-                                      {report.onPageText && (
-                                        <div className="bg-purple-50 p-3 rounded">
-                                          <p className="text-xs font-semibold text-purple-700 mb-1">On-Page Work</p>
-                                          <p className="text-sm text-slate-700">{report.onPageText}</p>
-                                        </div>
-                                      )}
-                                      {report.onPageFiles && report.onPageFiles.length > 0 && (
-                                        <div className="bg-blue-50 p-3 rounded">
-                                          <p className="text-xs font-semibold text-blue-700 mb-2">On-Page Files</p>
-                                          <div className="flex flex-wrap gap-2">
-                                            {report.onPageFiles.map((f: any, i: number) => (
-                                              <a key={i} href={`/uploads/${f.filename}`} target="_blank" className="text-xs text-blue-600 hover:underline">
-                                                {f.originalName}
-                                              </a>
-                                            ))}
-                                          </div>
-                                        </div>
-                                      )}
-                                    </div>
-                                  )}
-
-                                  {/* Review Actions - only if pending */}
-                                  {report.status === 'PENDING_REVIEW' && (
-                                     <div className="flex items-center gap-2 pt-3 border-t border-slate-100">
-                                       <Button size="sm" variant="primary" className="gap-1" onClick={() => {
-                                         setShowUpdateReviewModal(report.id);
-                                         setReviewUpdateStatus('APPROVED');
-                                       }}>
-                                         <CheckCircle2 size={14} /> Approve
-                                       </Button>
-                                       <Button size="sm" variant="danger" className="gap-1" onClick={() => {
-                                         setShowUpdateReviewModal(report.id);
-                                         setReviewUpdateStatus('CHANGES_REQUESTED');
-                                       }}>
-                                         <RotateCcw size={14} /> Request Changes
-                                       </Button>
+                               return projectReports.map(report => (
+                                 <Card key={report.id} className="p-4 border-l-4 border-l-purple-500">
+                                   <div className="flex items-start justify-between mb-3">
+                                     <div>
+                                       <h5 className="font-semibold text-sm text-slate-900">{report.title || 'Monthly Report'}</h5>
+                                       <p className="text-xs text-slate-500 mt-0.5">
+                                         {new Date(report.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                                         {report.workDate && ` · Work Month: ${report.workDate}`}
+                                       </p>
                                      </div>
-                                  )}
-                                </Card>
-                              ));
+                                     <Badge variant={
+                                       report.status === 'APPROVED' ? 'green' :
+                                       report.status === 'CHANGES_REQUESTED' ? 'red' : 'yellow'
+                                     }>
+                                       {report.status === 'APPROVED' ? 'Approved' :
+                                        report.status === 'CHANGES_REQUESTED' ? 'Changes Requested' : 'Pending Review'}
+                                     </Badge>
+                                   </div>
+
+                                   {/* Report content in a single flowing layout */}
+                                   <div className="space-y-3">
+                                     {report.text && (
+                                       <p className="text-sm text-slate-700">{report.text}</p>
+                                     )}
+
+                                     {report.files && report.files.length > 0 && (
+                                       <div className="flex flex-wrap gap-2">
+                                         {report.files.map((f: any, i: number) => {
+                                           const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(f.filename);
+                                           return (
+                                             <a key={i} href={`/uploads/${f.filename}`} target="_blank" className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 border border-blue-200 rounded text-xs text-blue-600 hover:bg-blue-100">
+                                               {isImg ? <Image size={12} /> : <Download size={12} />}
+                                               {f.originalName}
+                                             </a>
+                                           );
+                                         })}
+                                       </div>
+                                     )}
+
+                                     {report.reportType === 'STRUCTURED' && (
+                                       <div className="space-y-2">
+                                         {report.onPageText && (
+                                           <div>
+                                             <p className="text-xs font-semibold text-purple-700 mb-1">On-Page Work</p>
+                                             <p className="text-sm text-slate-700">{report.onPageText}</p>
+                                           </div>
+                                         )}
+                                         {report.onPageFiles && report.onPageFiles.length > 0 && (
+                                           <div>
+                                             <p className="text-xs font-semibold text-blue-700 mb-1">On-Page Files</p>
+                                             <div className="flex flex-wrap gap-2">
+                                               {report.onPageFiles.map((f: any, i: number) => (
+                                                 <a key={i} href={`/uploads/${f.filename}`} target="_blank" className="text-xs text-blue-600 hover:underline">
+                                                   {f.originalName}
+                                                 </a>
+                                               ))}
+                                             </div>
+                                           </div>
+                                         )}
+                                       </div>
+                                     )}
+                                   </div>
+
+                                   {/* Review Actions - only if pending */}
+                                   {report.status === 'PENDING_REVIEW' && (
+                                      <div className="flex items-center gap-2 pt-3 mt-3 border-t border-slate-100">
+                                        <Button size="sm" variant="primary" className="gap-1" onClick={() => {
+                                          setShowUpdateReviewModal(report.id);
+                                          setReviewUpdateStatus('APPROVED');
+                                        }}>
+                                          <CheckCircle2 size={14} /> Approve
+                                        </Button>
+                                        <Button size="sm" variant="danger" className="gap-1" onClick={() => {
+                                          setShowUpdateReviewModal(report.id);
+                                          setReviewUpdateStatus('CHANGES_REQUESTED');
+                                        }}>
+                                          <RotateCcw size={14} /> Request Changes
+                                        </Button>
+                                      </div>
+                                   )}
+                                 </Card>
+                               ));
                             })()}
                           </div>
                         </div>

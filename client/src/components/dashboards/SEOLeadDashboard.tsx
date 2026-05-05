@@ -19,6 +19,7 @@ export function SEOLeadDashboard() {
   } = useApp();
    const { unreadCounts, notificationPermission, requestNotificationPermission } = useChatNotify();
 
+
   const [expandedProject, setExpandedProject] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>('details');
   const [showAssignModal, setShowAssignModal] = useState(false);
@@ -54,7 +55,9 @@ export function SEOLeadDashboard() {
   const [assignDesignerImages, setAssignDesignerImages] = useState<FileList | null>(null);
   const [assignDesignerDocs, setAssignDesignerDocs] = useState<FileList | null>(null);
    const [expandedWorkDates, setExpandedWorkDates] = useState<Record<string, boolean>>({});
-   const toggleWorkDate = (key: string) => setExpandedWorkDates(prev => ({ ...prev, [key]: !prev[key] }));
+    const toggleWorkDate = (key: string) => setExpandedWorkDates(prev => ({ ...prev, [key]: !prev[key] }));
+
+
 
      // Simple Report state
      const [showSimpleReportModal, setShowSimpleReportModal] = useState(false);
@@ -64,20 +67,22 @@ export function SEOLeadDashboard() {
      const [simpleReportFiles, setSimpleReportFiles] = useState<FileList | null>(null);
      const [submittingSimple, setSubmittingSimple] = useState(false);
 
-     // Monthly Report submission to Sales Manager
-     const [showQuickMonthlyReportModal, setShowQuickMonthlyReportModal] = useState<string | null>(null);
-     const [quickMonthlyTitle, setQuickMonthlyTitle] = useState('');
-     const [quickMonthlyNotes, setQuickMonthlyNotes] = useState('');
-     const [quickMonthlyFiles, setQuickMonthlyFiles] = useState<FileList | null>(null);
-     const [quickMonthlyWorkDate, setQuickMonthlyWorkDate] = useState(new Date().toISOString().split('T')[0]);
-     const [submittingQuickMonthly, setSubmittingQuickMonthly] = useState(false);
+  // Monthly Report submission to Sales Manager
+  const [showQuickMonthlyReportModal, setShowQuickMonthlyReportModal] = useState<string | null>(null);
+  const [quickMonthlyTitle, setQuickMonthlyTitle] = useState('');
+  const [quickMonthlyNotes, setQuickMonthlyNotes] = useState('');
+  const [quickMonthlyFiles, setQuickMonthlyFiles] = useState<FileList | null>(null);
+  const [quickMonthlyWorkDate, setQuickMonthlyWorkDate] = useState(new Date().toISOString().slice(0, 7));
+  const [submittingQuickMonthly, setSubmittingQuickMonthly] = useState(false);
+  const [quickMonthlyError, setQuickMonthlyError] = useState<string | null>(null);
 
-     const [showStructuredMonthlyReportModal, setShowStructuredMonthlyReportModal] = useState<string | null>(null);
-     const [structuredMonthlyOnPageText, setStructuredMonthlyOnPageText] = useState('');
-     const [structuredMonthlyOnPageFiles, setStructuredMonthlyOnPageFiles] = useState<FileList | null>(null);
-     const [selectedMonthlyOffPageWork, setSelectedMonthlyOffPageWork] = useState<string[]>([]);
-     const [structuredMonthlyWorkDate, setStructuredMonthlyWorkDate] = useState(new Date().toISOString().split('T')[0]);
-     const [submittingStructuredMonthly, setSubmittingStructuredMonthly] = useState(false);
+  const [showStructuredMonthlyReportModal, setShowStructuredMonthlyReportModal] = useState<string | null>(null);
+  const [structuredMonthlyOnPageText, setStructuredMonthlyOnPageText] = useState('');
+  const [structuredMonthlyOnPageFiles, setStructuredMonthlyOnPageFiles] = useState<FileList | null>(null);
+  const [selectedMonthlyOffPageWork, setSelectedMonthlyOffPageWork] = useState<string[]>([]);
+  const [structuredMonthlyWorkDate, setStructuredMonthlyWorkDate] = useState(new Date().toISOString().slice(0, 7));
+  const [submittingStructuredMonthly, setSubmittingStructuredMonthly] = useState(false);
+  const [structuredMonthlyError, setStructuredMonthlyError] = useState<string | null>(null);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
    const docInputRef = useRef<HTMLInputElement>(null);
@@ -89,19 +94,19 @@ export function SEOLeadDashboard() {
 
   const seoManager = (Object.values(users) as any[]).find(u => u.role === 'SEO_MANAGER');
   const seoManagerName = seoManager?.name || 'SEO Manager';
-  const seoManagerId = seoManager?.id || '';
+  const seoManagerId = seoManager?.id || null;
 
   const salesManager = (Object.values(users) as any[]).find(u => u.role === 'SALES_MANAGER');
   const salesManagerName = salesManager?.name || 'Sales Manager';
-  const salesManagerId = salesManager?.id || '';
+  const salesManagerId = salesManager?.id || null;
 
   const offPageSpecialist = (Object.values(users) as any[]).find(u => u.role === 'OFF_PAGE_SPECIALIST');
   const offPageName = offPageSpecialist?.name || 'Off-Page Specialist';
-  const offPageId = offPageSpecialist?.id || '';
+  const offPageId = offPageSpecialist?.id || null;
 
   const designerUser = (Object.values(users) as any[]).find(u => u.role === 'DESIGNER');
   const designerName = designerUser?.name || 'Designer';
-  const designerId = designerUser?.id || '';
+  const designerId = designerUser?.id || null;
 
   const myProjects = projects.filter(p => p.assignedTo.includes(currentUser.id));
   const mySentAssignments = assignments.filter(a => a.fromId === currentUser.id);
@@ -239,6 +244,11 @@ export function SEOLeadDashboard() {
   };
 
   const handleSubmitReport = async () => {
+    if (!reportForm.toId) {
+      alert('Recipient not found. Please try again or contact admin.');
+      return;
+    }
+
     setSubmittingReport(true);
     try {
       const projectLeadWork = myLeadWork.filter((w: any) => w.projectId === reportForm.projectId);
@@ -271,115 +281,158 @@ export function SEOLeadDashboard() {
     }
   };
 
-   const openSubmitReportModal = (projectId: string, toId: string) => {
-     const existing = projectUpdates.find((u: any) => u.projectId === projectId && u.toId === toId && u.fromId === currentUser.id && u.reportType === 'STRUCTURED' && (u.onPageStatus === 'PENDING' || u.offPageStatus === 'PENDING'));
-     if (existing) {
-       const toUser = users[toId];
-       setShowAlreadySentPopup(`Report already sent to ${toUser?.name} and is pending review. Submit a new report only after changes are made.`);
-       return;
-     }
-     setReportForm({ projectId, toId });
-     setShowSubmitReportModal(true);
-   };
+    const openSubmitReportModal = (projectId: string, toId: string | null) => {
+      if (!toId) {
+        alert('Recipient not found. Please contact admin.');
+        return;
+      }
+      const existing = projectUpdates.find((u: any) => u.projectId === projectId && u.toId === toId && u.fromId === currentUser.id && u.reportType === 'STRUCTURED' && (u.onPageStatus === 'PENDING' || u.offPageStatus === 'PENDING'));
+      if (existing) {
+        const toUser = users[toId];
+        setShowAlreadySentPopup(`Report already sent to ${toUser?.name} and is pending review. Submit a new report only after changes are made.`);
+        return;
+      }
+      setReportForm({ projectId, toId });
+      setShowSubmitReportModal(true);
+    };
 
-   // Simple Report handlers
-   const openSimpleReportModal = (projectId: string, toId: string) => {
-     setSimpleReportForm({ projectId, toId });
-     setSimpleReportTitle('');
-     setSimpleReportNotes('');
-     setSimpleReportFiles(null);
-     setShowSimpleReportModal(true);
-   };
+    // Simple Report handlers
+    const openSimpleReportModal = (projectId: string, toId: string | null) => {
+      if (!toId) {
+        alert('Recipient not found. Please contact admin.');
+        return;
+      }
+      setSimpleReportForm({ projectId, toId });
+      setSimpleReportTitle('');
+      setSimpleReportNotes('');
+      setSimpleReportFiles(null);
+      setShowSimpleReportModal(true);
+    };
 
-   const handleSimpleReportSubmit = async () => {
-     if (!simpleReportTitle.trim() || !simpleReportForm.projectId) return;
-     setSubmittingSimple(true);
-     try {
-       const formData = new FormData();
-       formData.append('projectId', simpleReportForm.projectId);
-       formData.append('toId', simpleReportForm.toId);
-       formData.append('title', simpleReportTitle.trim());
-       formData.append('text', simpleReportNotes.trim());
-       if (simpleReportFiles) {
-         Array.from(simpleReportFiles).forEach(file => formData.append('files', file));
-       }
-       formData.append('workDate', new Date().toISOString().split('T')[0]);
+    // Simple Report handlers
+    const openSimpleReportModal = (projectId: string, toId: string) => {
+      if (!toId) {
+        alert('Recipient not found. Please contact admin.');
+        return;
+      }
+      setSimpleReportForm({ projectId, toId });
+      setSimpleReportTitle('');
+      setSimpleReportNotes('');
+      setSimpleReportFiles(null);
+      setShowSimpleReportModal(true);
+    };
 
-       await submitProjectUpdate(formData);
-       setShowSimpleReportModal(false);
-       setSimpleReportForm({ projectId: '', toId: '' });
-       setSimpleReportTitle('');
-       setSimpleReportNotes('');
-       setSimpleReportFiles(null);
-     } catch (err) {
-       console.error('Simple report submit error:', err);
-     } finally {
-       setSubmittingSimple(false);
-     }
-   };
+    const handleSimpleReportSubmit = async () => {
+      if (!simpleReportTitle.trim() || !simpleReportForm.projectId) return;
+      if (!simpleReportForm.toId) {
+        alert('Recipient not found. Please try again or contact admin.');
+        return;
+      }
+      setSubmittingSimple(true);
+      try {
+        const formData = new FormData();
+        formData.append('projectId', simpleReportForm.projectId);
+        formData.append('toId', simpleReportForm.toId);
+        formData.append('title', simpleReportTitle.trim());
+        formData.append('text', simpleReportNotes.trim());
+        if (simpleReportFiles) {
+          Array.from(simpleReportFiles).forEach(file => formData.append('files', file));
+        }
+        formData.append('workDate', new Date().toISOString().split('T')[0]);
 
-     // Monthly Report handlers (to Sales Manager)
-     const handleQuickMonthlyReportSubmit = async () => {
-       if (!quickMonthlyTitle.trim() || !showQuickMonthlyReportModal) return;
-       setSubmittingQuickMonthly(true);
-       try {
-         const formData = new FormData();
-         formData.append('projectId', showQuickMonthlyReportModal);
-         formData.append('toId', salesManagerId); // Send to Sales Manager (Kevin)
-         formData.append('title', quickMonthlyTitle.trim());
-         formData.append('text', quickMonthlyNotes.trim());
-         if (quickMonthlyFiles) {
-           Array.from(quickMonthlyFiles).forEach(file => formData.append('files', file));
-         }
-         formData.append('workDate', quickMonthlyWorkDate);
+        await submitProjectUpdate(formData);
+        setShowSimpleReportModal(false);
+        setSimpleReportForm({ projectId: '', toId: '' });
+        setSimpleReportTitle('');
+        setSimpleReportNotes('');
+        setSimpleReportFiles(null);
+      } catch (err) {
+        console.error('Simple report submit error:', err);
+      } finally {
+        setSubmittingSimple(false);
+      }
+    };
 
-         await submitProjectUpdate(formData);
-         setShowQuickMonthlyReportModal(null);
-         setQuickMonthlyTitle('');
-         setQuickMonthlyNotes('');
-         setQuickMonthlyFiles(null);
-       } catch (err) {
-         console.error('Quick monthly report submit error:', err);
-       } finally {
-         setSubmittingQuickMonthly(false);
-       }
-     };
+  // Monthly Report handlers (to Sales Manager)
+  const handleQuickMonthlyReportSubmit = async () => {
+    if (!quickMonthlyTitle.trim() || !showQuickMonthlyReportModal) return;
 
-     const handleStructuredMonthlyReportSubmit = async () => {
-       if (!showStructuredMonthlyReportModal) return;
-       setSubmittingStructuredMonthly(true);
-       try {
-         const formData = new FormData();
-         formData.append('projectId', showStructuredMonthlyReportModal);
-         formData.append('toId', salesManagerId); // Send to Sales Manager (Kevin)
-         formData.append('reportType', 'STRUCTURED');
-         formData.append('onPageText', structuredMonthlyOnPageText);
+    if (!salesManagerId) {
+      setQuickMonthlyError('Sales Manager (Kevin) not found. Please contact admin.');
+      return;
+    }
 
-         const onPageFiles: { filename: string; originalName: string }[] = [];
-         if (structuredMonthlyOnPageFiles) {
-           Array.from(structuredMonthlyOnPageFiles).forEach(file => {
-             onPageFiles.push({ filename: file.name, originalName: file.name });
-           });
-         }
-         formData.append('onPageFilesJson', JSON.stringify(onPageFiles));
+    setSubmittingQuickMonthly(true);
+    setQuickMonthlyError(null);
+    try {
+      const formData = new FormData();
+      formData.append('projectId', showQuickMonthlyReportModal);
+      formData.append('toId', salesManagerId); // Send to Sales Manager (Kevin)
+      formData.append('title', quickMonthlyTitle.trim());
+      formData.append('text', quickMonthlyNotes.trim());
+      if (quickMonthlyFiles) {
+        Array.from(quickMonthlyFiles).forEach(file => formData.append('files', file));
+      }
+      formData.append('workDate', quickMonthlyWorkDate);
 
-         if (selectedMonthlyOffPageWork.length > 0) {
-           formData.append('offPageWorkIds', JSON.stringify(selectedMonthlyOffPageWork));
-         }
+      await submitProjectUpdate(formData);
+      setShowQuickMonthlyReportModal(null);
+      setQuickMonthlyTitle('');
+      setQuickMonthlyNotes('');
+      setQuickMonthlyFiles(null);
+      setQuickMonthlyError(null);
+    } catch (err) {
+      console.error('Quick monthly report submit error:', err);
+      setQuickMonthlyError('Failed to send report. Please try again.');
+    } finally {
+      setSubmittingQuickMonthly(false);
+    }
+  };
 
-         formData.append('workDate', structuredMonthlyWorkDate);
+  const handleStructuredMonthlyReportSubmit = async () => {
+    if (!showStructuredMonthlyReportModal) return;
 
-         await submitProjectUpdate(formData);
-         setShowStructuredMonthlyReportModal(null);
-         setStructuredMonthlyOnPageText('');
-         setStructuredMonthlyOnPageFiles(null);
-         setSelectedMonthlyOffPageWork([]);
-       } catch (err) {
-         console.error('Structured monthly report submit error:', err);
-       } finally {
-         setSubmittingStructuredMonthly(false);
-       }
-     };
+    if (!salesManagerId) {
+      setStructuredMonthlyError('Sales Manager (Kevin) not found. Please contact admin.');
+      return;
+    }
+
+    setSubmittingStructuredMonthly(true);
+    setStructuredMonthlyError(null);
+    try {
+      const formData = new FormData();
+      formData.append('projectId', showStructuredMonthlyReportModal);
+      formData.append('toId', salesManagerId); // Send to Sales Manager (Kevin)
+      formData.append('reportType', 'STRUCTURED');
+      formData.append('onPageText', structuredMonthlyOnPageText);
+
+      const onPageFiles: { filename: string; originalName: string }[] = [];
+      if (structuredMonthlyOnPageFiles) {
+        Array.from(structuredMonthlyOnPageFiles).forEach(file => {
+          onPageFiles.push({ filename: file.name, originalName: file.name });
+        });
+      }
+      formData.append('onPageFilesJson', JSON.stringify(onPageFiles));
+
+      if (selectedMonthlyOffPageWork.length > 0) {
+        formData.append('offPageWorkIds', JSON.stringify(selectedMonthlyOffPageWork));
+      }
+
+      formData.append('workDate', structuredMonthlyWorkDate);
+
+      await submitProjectUpdate(formData);
+      setShowStructuredMonthlyReportModal(null);
+      setStructuredMonthlyOnPageText('');
+      setStructuredMonthlyOnPageFiles(null);
+      setSelectedMonthlyOffPageWork([]);
+      setStructuredMonthlyError(null);
+    } catch (err) {
+      console.error('Structured monthly report submit error:', err);
+      setStructuredMonthlyError('Failed to send report. Please try again.');
+    } finally {
+      setSubmittingStructuredMonthly(false);
+    }
+  };
 
      const handleUpdateReview = async () => {
     if (!showUpdateReviewModal) return;
@@ -402,17 +455,18 @@ export function SEOLeadDashboard() {
 
    return (
      <div className="space-y-8 max-w-6xl mx-auto p-4 sm:p-6">
-       <div className="flex items-center justify-between">
-         <div>
-           <h1 className="text-2xl font-bold tracking-tight">My Projects</h1>
-           <p className="text-slate-500 mt-1">GMB projects assigned by {seoManagerName}</p>
-         </div>
-         {notificationPermission !== 'granted' && (
-           <Button size="sm" variant="outline" className="gap-1.5" onClick={() => requestNotificationPermission()}>
-             <Bell size={14} /> Enable Notifications
-           </Button>
-         )}
-       </div>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">My Projects</h1>
+            <p className="text-slate-500 mt-1">GMB projects assigned by {seoManagerName}</p>
+          </div>
+          {notificationPermission !== 'granted' && (
+            <Button size="sm" variant="outline" className="gap-1.5" onClick={() => requestNotificationPermission()}>
+              <Bell size={14} /> Enable Notifications
+            </Button>
+          )}
+        </div>
+
 
       {myProjects.length === 0 && (
         <Card className="p-12 text-center">
@@ -490,7 +544,7 @@ export function SEOLeadDashboard() {
                      <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab === 'details' ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveTab('details')}>Details</button>
                      <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab === 'onpage' ? 'bg-purple-50 text-purple-600 border-b-2 border-purple-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveTab('onpage')}>On-Page</button>
                      <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab === 'offpage' ? 'bg-orange-50 text-orange-600 border-b-2 border-orange-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveTab('offpage')}>Off-Page</button>
-                     <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab === 'report' ? 'bg-green-50 text-green-600 border-b-2 border-green-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveTab('report')}>Submit Report</button>
+                     <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab === 'report' ? 'bg-green-50 text-green-600 border-b-2 border-green-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveTab('report')}>Submit Monthly Report</button>
                      <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab === 'chat' ? 'bg-purple-50 text-purple-600 border-b-2 border-purple-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveTab('chat')}>Chat{projectUnread > 0 && <span className="ml-1.5 min-w-[16px] h-4 bg-red-500 text-white text-[8px] font-bold rounded-full inline-flex items-center justify-center px-0.5">{projectUnread > 99 ? '99+' : projectUnread}</span>}</button>
                   </div>
                   {activeTab === 'details' && (<>
@@ -634,21 +688,27 @@ export function SEOLeadDashboard() {
                <h3 className="text-lg font-bold text-slate-900">Quick Monthly Report</h3>
                <button onClick={() => setShowQuickMonthlyReportModal(null)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"><X size={18} /></button>
              </div>
-             <form onSubmit={(e) => { e.preventDefault(); handleQuickMonthlyReportSubmit(); }}>
-               <div className="px-6 py-5 space-y-4">
-                 <div>
-                   <label className="block text-sm font-medium text-slate-600 mb-1">Report Title</label>
-                   <input
-                     type="text"
-                     className="block w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                     placeholder="e.g., March 2025 GMB Progress"
-                     value={quickMonthlyTitle}
-                     onChange={e => setQuickMonthlyTitle(e.target.value)}
-                     required
-                   />
-                 </div>
-                 <div>
-                   <label className="block text-sm font-medium text-slate-600 mb-1">Monthly Summary</label>
+              <form onSubmit={(e) => { e.preventDefault(); handleQuickMonthlyReportSubmit(); }}>
+                <div className="px-6 py-5 space-y-4">
+                  {quickMonthlyError && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 flex items-start gap-2">
+                      <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
+                      {quickMonthlyError}
+                    </div>
+                  )}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-600 mb-1">Report Title</label>
+                    <input
+                      type="text"
+                      className="block w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="e.g., March 2025 GMB Progress"
+                      value={quickMonthlyTitle}
+                      onChange={e => setQuickMonthlyTitle(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-600 mb-1">Monthly Summary</label>
                    <textarea
                      className="block w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[120px]"
                      placeholder="Describe work done this month..."
@@ -686,117 +746,9 @@ export function SEOLeadDashboard() {
          </div>
        )}
 
-       {/* Structured Monthly Report Modal */}
-       {showStructuredMonthlyReportModal && (
-         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-           <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => setShowStructuredMonthlyReportModal(null)} />
-           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden z-10">
-             <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-               <h3 className="text-lg font-bold text-slate-900">Structured Monthly Report</h3>
-               <button onClick={() => setShowStructuredMonthlyReportModal(null)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"><X size={18} /></button>
-             </div>
-             <form onSubmit={(e) => { e.preventDefault(); handleStructuredMonthlyReportSubmit(); }}>
-               <div className="px-6 py-5 space-y-4">
-                 <div>
-                   <label className="block text-sm font-medium text-slate-600 mb-1">On-Page Work Summary for This Month</label>
-                   <textarea
-                     className="block w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[120px]"
-                     placeholder="Describe all on-page SEO work completed during this month..."
-                     value={structuredMonthlyOnPageText}
-                     onChange={e => setStructuredMonthlyOnPageText(e.target.value)}
-                     required
-                   />
-                 </div>
-                 <div>
-                   <label className="block text-sm font-medium text-slate-600 mb-1">On-Page Supporting Files (optional)</label>
-                   <input
-                     type="file"
-                     multiple
-                     className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
-                     onChange={e => setStructuredMonthlyOnPageFiles(e.target.files)}
-                   />
-                 </div>
-                 <div>
-                   <label className="block text-sm font-medium text-slate-600 mb-1">Off-Page Work Completed This Month</label>
-                   <div className="space-y-2 max-h-40 overflow-y-auto border border-slate-200 rounded p-3">
-                     {(() => {
-                       const projectId = showStructuredMonthlyReportModal;
-                       const project = myProjects.find(p => p.id === projectId);
-                       if (!project) return <p className="text-sm text-slate-500">No project found.</p>;
-                       const projectWork = workSubmissions.filter((w: any) => w.projectId === projectId && w.status === 'APPROVED');
-                       if (projectWork.length === 0) return <p className="text-sm text-slate-500">No approved off-page work yet.</p>;
-                       return projectWork.map(work => (
-                         <label key={work.id} className="flex items-start gap-2 p-2 hover:bg-slate-50 rounded">
-                           <input
-                             type="checkbox"
-                             checked={selectedMonthlyOffPageWork.includes(work.id)}
-                             onChange={e => {
-                               if (e.target.checked) {
-                                 setSelectedMonthlyOffPageWork(prev => [...prev, work.id]);
-                               } else {
-                                 setSelectedMonthlyOffPageWork(prev => prev.filter(id => id !== work.id));
-                               }
-                             }}
-                             className="mt-1"
-                           />
-                           <div className="text-sm">
-                             <p className="text-slate-800">{work.text?.substring(0, 100)}...</p>
-                             <p className="text-xs text-slate-500">{new Date(work.createdAt).toLocaleDateString()}</p>
-                           </div>
-                         </label>
-                       ));
-                     })()}
-                   </div>
-                 </div>
-                 <div>
-                   <label className="block text-sm font-medium text-slate-600 mb-1">Report Month</label>
-                   <input
-                     type="month"
-                     className="block w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                     value={structuredMonthlyWorkDate}
-                     onChange={e => setStructuredMonthlyWorkDate(e.target.value)}
-                   />
-                 </div>
-               </div>
-               <div className="px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
-                 <Button type="button" variant="outline" onClick={() => setShowStructuredMonthlyReportModal(null)}>Cancel</Button>
-                 <Button type="submit" className="gap-2" disabled={submittingStructuredMonthly}>
-                   {submittingStructuredMonthly ? <><Loader2 size={14} className="animate-spin" /> Sending...</> : <><FileText size={14} /> Send to Sales Manager</>}
-                 </Button>
-               </div>
-             </form>
-           </div>
-         </div>
-       )}
 
-     </div>
-   );
-  }
-                   {/* Monthly Report Submission Section - Muaz submits reports to Sales Manager */}
-                   <div className="p-4 sm:px-5 sm:py-4 border-t border-slate-200">
-                     <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 mb-4">
-                       <div className="w-1 h-4 bg-green-500 rounded-full" />
-                       Submit Monthly Report to Sales Manager
-                     </h4>
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                       <Card className="p-4">
-                         <h5 className="font-semibold text-sm mb-2">Quick Monthly Report</h5>
-                         <p className="text-xs text-slate-500 mb-3">Simple summary of this month's work</p>
-                         <Button className="w-full gap-2" onClick={() => setShowQuickMonthlyReportModal(project.id)}>
-                           <Send size={16} /> Send to Sales Manager
-                         </Button>
-                       </Card>
-                       <Card className="p-4">
-                         <h5 className="font-semibold text-sm mb-2">Structured Monthly Report</h5>
-                         <p className="text-xs text-slate-500 mb-3">Detailed on-page and off-page work</p>
-                         <Button variant="outline" className="w-full gap-2" onClick={() => setShowStructuredMonthlyReportModal(project.id)}>
-                           <FileText size={16} /> Create Structured
-                         </Button>
-                       </Card>
-                     </div>
-                   </div>
 
-                   {rejectedReports.length > 0 && (
+   {rejectedReports.length > 0 && (
                     <div className="p-4 sm:px-5 sm:py-4 border-t border-slate-200">
                       <div className="flex items-center gap-2 mb-3">
                         <div className="w-6 h-6 bg-red-500/20 rounded flex items-center justify-center">
@@ -913,7 +865,19 @@ export function SEOLeadDashboard() {
                       <Button className="gap-2" onClick={() => openSubmitReportModal(project.id, seoManagerId)}>
                         <Send size={16} /> Submit Report to {seoManagerName}
                       </Button>
-                      <Button variant="secondary" className="gap-2" onClick={() => openSubmitReportModal(project.id, salesManagerId)}>
+                      <Button
+                        variant="secondary"
+                        className="gap-2"
+                        onClick={() => {
+                          if (!salesManagerId) {
+                            alert('Sales Manager (Kevin) is not configured. Please contact admin.');
+                            return;
+                          }
+                          openSubmitReportModal(project.id, salesManagerId);
+                        }}
+                        disabled={!salesManagerId}
+                        title={!salesManagerId ? 'Sales Manager not found' : 'Submit Report to Sales Manager'}
+                      >
                         <Send size={16} /> Submit Report to {salesManagerName}
                       </Button>
                     </div>
@@ -925,14 +889,27 @@ export function SEOLeadDashboard() {
                    {/* Quick Report Section */}
                    <div className="p-4 sm:px-5 sm:py-4 bg-slate-50 border-t border-slate-200">
                      <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Quick Report</h4>
-                     <div className="flex flex-wrap gap-3">
-                       <Button className="gap-2" onClick={() => openSimpleReportModal(project.id, seoManagerId)}>
-                         <Send size={16} /> Simple Report to {seoManagerName}
-                       </Button>
-                       <Button variant="secondary" className="gap-2" onClick={() => openSimpleReportModal(project.id, salesManagerId)}>
-                         <Send size={16} /> Simple Report to {salesManagerName}
-                       </Button>
-                     </div>
+                      <div className="flex flex-wrap gap-3">
+                        <Button className="gap-2" onClick={() => openSimpleReportModal(project.id, seoManagerId)}>
+                          <Send size={16} /> Simple Report to {seoManagerName}
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          className="gap-2"
+                          onClick={() => {
+                            if (!salesManagerId) {
+                              alert('Sales Manager (Kevin) is not configured. Please contact admin.');
+                              return;
+                            }
+                            setQuickMonthlyError(null);
+                            setShowQuickMonthlyReportModal(project.id);
+                          }}
+                          disabled={!salesManagerId}
+                          title={!salesManagerId ? 'Sales Manager not found' : 'Quick Monthly Report'}
+                        >
+                          <FileText size={16} /> Quick Monthly Report
+                        </Button>
+                      </div>
                      <p className="text-[10px] text-slate-500 mt-2">
                        Title, notes and file attachments. Independent of work items.
                      </p>
@@ -1394,21 +1371,27 @@ export function SEOLeadDashboard() {
                <h3 className="text-lg font-bold text-slate-900">Quick Monthly Report</h3>
                <button onClick={() => setShowQuickMonthlyReportModal(null)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"><X size={18} /></button>
              </div>
-             <form onSubmit={(e) => { e.preventDefault(); handleQuickMonthlyReportSubmit(); }}>
-               <div className="px-6 py-5 space-y-4">
-                 <div>
-                   <label className="block text-sm font-medium text-slate-600 mb-1">Report Title</label>
-                   <input
-                     type="text"
-                     className="block w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                     placeholder="e.g., March 2025 GMB Progress"
-                     value={quickMonthlyTitle}
-                     onChange={e => setQuickMonthlyTitle(e.target.value)}
-                     required
-                   />
-                 </div>
-                 <div>
-                   <label className="block text-sm font-medium text-slate-600 mb-1">Monthly Summary</label>
+              <form onSubmit={(e) => { e.preventDefault(); handleQuickMonthlyReportSubmit(); }}>
+                <div className="px-6 py-5 space-y-4">
+                  {quickMonthlyError && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 flex items-start gap-2">
+                      <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
+                      {quickMonthlyError}
+                    </div>
+                  )}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-600 mb-1">Report Title</label>
+                    <input
+                      type="text"
+                      className="block w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="e.g., March 2025 GMB Progress"
+                      value={quickMonthlyTitle}
+                      onChange={e => setQuickMonthlyTitle(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-600 mb-1">Monthly Summary</label>
                    <textarea
                      className="block w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[120px]"
                      placeholder="Describe work done this month..."
@@ -1425,28 +1408,28 @@ export function SEOLeadDashboard() {
                      onChange={e => setQuickMonthlyWorkDate(e.target.value)}
                    />
                  </div>
-                 <div>
-                   <label className="block text-sm font-medium text-slate-600 mb-1">Attachments (optional)</label>
-                   <input
-                     type="file"
-                     multiple
-                     className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                     onChange={e => setQuickMonthlyFiles(e.target.files)}
-                   />
-                 </div>
-               </div>
-               <div className="px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
-                 <Button type="button" variant="outline" onClick={() => setShowQuickMonthlyReportModal(null)}>Cancel</Button>
-                 <Button type="submit" className="gap-2" disabled={submittingQuickMonthly || !quickMonthlyTitle.trim()}>
-                   {submittingQuickMonthly ? <><Loader2 size={14} className="animate-spin" /> Sending...</> : <><Send size={14} /> Send to Sales Manager</>}
-                 </Button>
-               </div>
-             </form>
-           </div>
-         </div>
-       )}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-600 mb-1">Attachments (optional)</label>
+                    <input
+                      type="file"
+                      multiple
+                      className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                      onChange={e => setQuickMonthlyFiles(e.target.files)}
+                    />
+                  </div>
+                </div>
+                <div className="px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
+                  <Button type="button" variant="outline" onClick={() => setShowQuickMonthlyReportModal(null)}>Cancel</Button>
+                  <Button type="submit" className="gap-2" disabled={submittingQuickMonthly || !quickMonthlyTitle.trim() || !salesManagerId}>
+                    {submittingQuickMonthly ? <><Loader2 size={14} className="animate-spin" /> Sending...</> : <><Send size={14} /> Send to Sales Manager</>}
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
-       {/* Structured Monthly Report Modal */}
+        {/* Structured Monthly Report Modal */}
        {showStructuredMonthlyReportModal && (
          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
            <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => setShowStructuredMonthlyReportModal(null)} />
@@ -1455,10 +1438,16 @@ export function SEOLeadDashboard() {
                <h3 className="text-lg font-bold text-slate-900">Structured Monthly Report</h3>
                <button onClick={() => setShowStructuredMonthlyReportModal(null)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"><X size={18} /></button>
              </div>
-             <form onSubmit={(e) => { e.preventDefault(); handleStructuredMonthlyReportSubmit(); }}>
-               <div className="px-6 py-5 space-y-4">
-                 <div>
-                   <label className="block text-sm font-medium text-slate-600 mb-1">On-Page Work Summary for This Month</label>
+              <form onSubmit={(e) => { e.preventDefault(); handleStructuredMonthlyReportSubmit(); }}>
+                <div className="px-6 py-5 space-y-4">
+                  {structuredMonthlyError && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 flex items-start gap-2">
+                      <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
+                      {structuredMonthlyError}
+                    </div>
+                  )}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-600 mb-1">On-Page Work Summary for This Month</label>
                    <textarea
                      className="block w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[120px]"
                      placeholder="Describe all on-page SEO work completed during this month..."
@@ -1518,12 +1507,12 @@ export function SEOLeadDashboard() {
                    />
                  </div>
                </div>
-               <div className="px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
-                 <Button type="button" variant="outline" onClick={() => setShowStructuredMonthlyReportModal(null)}>Cancel</Button>
-                 <Button type="submit" className="gap-2" disabled={submittingStructuredMonthly}>
-                   {submittingStructuredMonthly ? <><Loader2 size={14} className="animate-spin" /> Sending...</> : <><FileText size={14} /> Send to Sales Manager</>}
-                 </Button>
-               </div>
+                <div className="px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
+                  <Button type="button" variant="outline" onClick={() => setShowStructuredMonthlyReportModal(null)}>Cancel</Button>
+                  <Button type="submit" className="gap-2" disabled={submittingStructuredMonthly || !structuredMonthlyOnPageText.trim() || !salesManagerId}>
+                    {submittingStructuredMonthly ? <><Loader2 size={14} className="animate-spin" /> Sending...</> : <><FileText size={14} /> Send to Sales Manager</>}
+                  </Button>
+                </div>
              </form>
            </div>
          </div>
