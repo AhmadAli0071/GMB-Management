@@ -309,18 +309,7 @@ export function SEOLeadDashboard() {
       setShowSimpleReportModal(true);
     };
 
-    // Simple Report handlers
-    const openSimpleReportModal = (projectId: string, toId: string) => {
-      if (!toId) {
-        alert('Recipient not found. Please contact admin.');
-        return;
-      }
-      setSimpleReportForm({ projectId, toId });
-      setSimpleReportTitle('');
-      setSimpleReportNotes('');
-      setSimpleReportFiles(null);
-      setShowSimpleReportModal(true);
-    };
+
 
     const handleSimpleReportSubmit = async () => {
       if (!simpleReportTitle.trim() || !simpleReportForm.projectId) return;
@@ -913,9 +902,10 @@ export function SEOLeadDashboard() {
                      <p className="text-[10px] text-slate-500 mt-2">
                        Title, notes and file attachments. Independent of work items.
                      </p>
-                   </div>
+                    </div>
+                    </div>
 
-                   </>)}
+                    </>)}
 
                   {activeTab === 'chat' && (
                   <div className="h-[70vh]">
