@@ -2,6 +2,27 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { useSocket } from './SocketContext';
 import { useApp } from './AppContext';
 
+let audioCtx: AudioContext | null = null;
+
+function playNotificationSound() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+    osc.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.25);
+    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
+    osc.start(audioCtx.currentTime);
+    osc.stop(audioCtx.currentTime + 0.35);
+  } catch (e) { /* ignore audio errors */ }
+}
+
 interface ChatNotifyContextType {
   unreadCounts: Record<string, Record<string, number>>;
   lastActivity: Record<string, number>;
@@ -111,11 +132,12 @@ export function ChatNotifyProvider({ children }: { children: React.ReactNode }) 
       const senderName = (users as any)[data.senderId]?.name || 'Someone';
       const preview = data.type === 'TEXT'
         ? (data.text?.substring(0, 80) || 'New message')
-        : data.type === 'VOICE' ? '🎤 Voice message' : '📎 File';
+        : data.type === 'VOICE' ? 'Voice message' : 'File';
       new Notification(`${senderName} sent you a message`, {
         body: preview,
         tag: `dm-notify-${data._id}`,
       } as NotificationOptions);
+      playNotificationSound();
     }
   }, [currentUser.id, users, notificationPermission]);
 
@@ -135,6 +157,7 @@ export function ChatNotifyProvider({ children }: { children: React.ReactNode }) 
       `activity-${type}-${projectId}`,
       projectId
     );
+    playNotificationSound();
   }, [currentUser?.id, users, projects, showDesktopNotification]);
 
   useEffect(() => {
