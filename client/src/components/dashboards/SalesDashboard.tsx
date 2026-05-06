@@ -9,6 +9,7 @@ import {
 import { Card, Button, Badge, Modal, Input, Textarea } from '../ui/Common';
 import { useApp } from '../../AppContext';
 import { useChatNotify } from '../../ChatNotifyContext';
+import { useSocket } from '../../SocketContext';
 import { STAGE_LABELS, STAGE_COLORS } from '../../types';
 import { ChatBox } from '../chat/ChatBox';
 
