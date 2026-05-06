@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import {
   ArrowRight, MapPin, Star, Globe, Search, Building2, X, ExternalLink, Calendar,
   Shield, Send, Clock, Folder, ChevronDown, ChevronUp,
-  CheckCircle2, RotateCcw, Download, FileText, Bell, Users, MessageCircle, Loader2, FolderPlus, Code2, Paperclip
+  CheckCircle2, RotateCcw, Download, Image, FileText, Bell, Users, MessageCircle, Loader2, FolderPlus, Code2, Paperclip
 } from 'lucide-react';
 import { Card, Button, Badge, Textarea } from '../ui/Common';
 import { useApp } from '../../AppContext';
@@ -369,6 +369,7 @@ export function SEOManagerDashboard() {
                   <div className="flex gap-1 px-4 sm:px-5 pt-3 border-b border-slate-200">
                     <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab === 'details' ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveTab('details')}>Details</button>
                     <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab === 'records' ? 'bg-green-50 text-green-600 border-b-2 border-green-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveTab('records')}>Records</button>
+                    <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab === 'report' ? 'bg-green-50 text-green-600 border-b-2 border-green-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveTab('report')}>Monthly Report</button>
                     <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab === 'chat' ? 'bg-purple-50 text-purple-600 border-b-2 border-purple-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveTab('chat')}>Chat{projectUnread > 0 && <span className="ml-1.5 min-w-[16px] h-4 bg-red-500 text-white text-[8px] font-bold rounded-full inline-flex items-center justify-center px-0.5">{projectUnread > 99 ? '99+' : projectUnread}</span>}</button>
                   </div>
 
@@ -631,6 +632,114 @@ export function SEOManagerDashboard() {
                      </div>
                     )}
                   </>)}
+
+                  {activeTab === 'report' && (
+                    <div className="p-4 sm:px-5 sm:py-4">
+                      <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 mb-4">
+                        <div className="w-1 h-4 bg-green-500 rounded-full" />
+                        Monthly Reports from SEO Lead
+                      </h4>
+                      <div className="space-y-3">
+                        {(() => {
+                          const myId = currentUser.id;
+                          const projectReports = projectUpdates.filter((u: any) => 
+                            u.projectId === project.id && u.toId === myId
+                          ).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+                          if (projectReports.length === 0) {
+                            return (
+                              <div className="p-8 bg-slate-50 rounded-lg text-center">
+                                <FileText size={32} className="mx-auto text-slate-400 mb-2" />
+                                <p className="text-sm text-slate-500">No monthly reports submitted yet.</p>
+                                <p className="text-xs text-slate-400 mt-1">Reports from SEO Lead will appear here for your review.</p>
+                              </div>
+                            );
+                          }
+
+                          return projectReports.map(report => (
+                            <Card key={report.id} className="p-4 border-l-4 border-l-purple-500">
+                              <div className="flex items-start justify-between mb-3">
+                                <div>
+                                  <h5 className="font-semibold text-sm text-slate-900">{report.title || 'Monthly Report'}</h5>
+                                  <p className="text-xs text-slate-500 mt-0.5">
+                                    {new Date(report.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                                    {report.workDate && ` · Work Month: ${report.workDate}`}
+                                  </p>
+                                </div>
+                                <Badge variant={
+                                  report.status === 'APPROVED' ? 'green' :
+                                  report.status === 'CHANGES_REQUESTED' ? 'red' : 'yellow'
+                                }>
+                                  {report.status === 'APPROVED' ? 'Approved' :
+                                   report.status === 'CHANGES_REQUESTED' ? 'Changes Requested' : 'Pending Review'}
+                                </Badge>
+                              </div>
+
+                              <div className="space-y-3">
+                                {report.text && (
+                                  <p className="text-sm text-slate-700">{report.text}</p>
+                                )}
+
+                                {report.files && report.files.length > 0 && (
+                                  <div className="flex flex-wrap gap-2">
+                                    {report.files.map((f: any, i: number) => {
+                                      const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(f.filename);
+                                      return (
+                                        <a key={i} href={`/uploads/${f.filename}`} target="_blank" className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 border border-blue-200 rounded text-xs text-blue-600 hover:bg-blue-100">
+                                          {isImg ? <Image size={12} /> : <Download size={12} />}
+                                          {f.originalName}
+                                        </a>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+
+                                {report.reportType === 'STRUCTURED' && (
+                                  <div className="space-y-2">
+                                    {report.onPageText && (
+                                      <div>
+                                        <p className="text-xs font-semibold text-purple-700 mb-1">On-Page Work</p>
+                                        <p className="text-sm text-slate-700">{report.onPageText}</p>
+                                      </div>
+                                    )}
+                                    {report.onPageFiles && report.onPageFiles.length > 0 && (
+                                      <div>
+                                        <p className="text-xs font-semibold text-blue-700 mb-1">On-Page Files</p>
+                                        <div className="flex flex-wrap gap-2">
+                                          {report.onPageFiles.map((f: any, i: number) => (
+                                            <a key={i} href={`/uploads/${f.filename}`} target="_blank" className="text-xs text-blue-600 hover:underline">
+                                              {f.originalName}
+                                            </a>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+
+                              {report.status === 'PENDING_REVIEW' && (
+                                <div className="flex items-center gap-2 pt-3 mt-3 border-t border-slate-100">
+                                  <Button size="sm" variant="primary" className="gap-1" onClick={() => {
+                                    setShowUpdateReviewModal(report.id);
+                                    setUpdateReviewStatus('APPROVED');
+                                  }}>
+                                    <CheckCircle2 size={14} /> Approve
+                                  </Button>
+                                  <Button size="sm" variant="danger" className="gap-1" onClick={() => {
+                                    setShowUpdateReviewModal(report.id);
+                                    setUpdateReviewStatus('CHANGES_REQUESTED');
+                                  }}>
+                                    <RotateCcw size={14} /> Request Changes
+                                  </Button>
+                                </div>
+                              )}
+                            </Card>
+                          ));
+                        })()}
+                      </div>
+                    </div>
+                  )}
 
                   {activeTab === 'chat' && (
                     <div className="h-[70vh]">

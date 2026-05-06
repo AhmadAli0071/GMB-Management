@@ -201,17 +201,18 @@ router.put('/:id/review-section', async (req, res) => {
   }
 });
 
-// Submit report to both SEO Manager (Ali) and Sales Manager (Kevin)
+// Submit report to SEO Manager (Ali), Sales Manager (Kevin), and Boss (Ammar)
 router.post('/submit-to-managers', upload.array('files', 10), async (req, res) => {
   try {
     const { projectId, title, text, workDate } = req.body;
     const fromId = req.user.id;
     const files = req.files?.map(f => ({ filename: f.filename, originalName: f.originalname })) || [];
 
-    // Find SEO Manager (Ali) and Sales Manager (Kevin)
-    const [seoManager, salesManager] = await Promise.all([
+    // Find SEO Manager (Ali), Sales Manager (Kevin), and Boss (Ammar)
+    const [seoManager, salesManager, boss] = await Promise.all([
       User.findOne({ role: 'SEO_MANAGER' }),
-      User.findOne({ role: 'SALES_MANAGER' })
+      User.findOne({ role: 'SALES_MANAGER' }),
+      User.findOne({ role: 'BOSS' })
     ]);
 
     if (!seoManager || !salesManager) {
@@ -219,6 +220,7 @@ router.post('/submit-to-managers', upload.array('files', 10), async (req, res) =
     }
 
     const managers = [seoManager._id, salesManager._id];
+    if (boss) managers.push(boss._id);
     const reports = [];
 
     for (const toId of managers) {

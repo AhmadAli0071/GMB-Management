@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   Globe, X, ShieldCheck, ExternalLink, Calendar,
   Folder, ChevronDown, ChevronUp, Download, FileText, Clock, Trash2,
-  Palette, Image, Paperclip, Send, CheckCircle2, Loader2, Bell
+  Palette, Image, Paperclip, Send, CheckCircle2, Loader2, Bell, RotateCcw
 } from 'lucide-react';
-import { Card, Badge, Button } from '../ui/Common';
+import { Card, Badge, Button, Modal, Textarea } from '../ui/Common';
 import { useApp } from '../../AppContext';
 import { useChatNotify } from '../../ChatNotifyContext';
 import { useSocket } from '../../SocketContext';
@@ -12,7 +12,7 @@ import { STAGE_LABELS, STAGE_COLORS } from '../../types';
 import { ChatBox } from '../chat/ChatBox';
 
 export function BossDashboard() {
-  const { projects, users, projectUpdates, workSubmissions, deleteProject, createAssignment, reviewWork, assignments } = useApp();
+  const { projects, users, projectUpdates, workSubmissions, deleteProject, createAssignment, reviewWork, reviewProjectUpdate, assignments, currentUser } = useApp();
    const { unreadCounts, notificationPermission, requestNotificationPermission } = useChatNotify();
   const { onActivityNotification, offActivityNotification } = useSocket();
   const [expandedProject, setExpandedProject] = useState<string | null>(null);
@@ -30,6 +30,10 @@ export function BossDashboard() {
   const [deleting, setDeleting] = useState(false);
   const [assigning, setAssigning] = useState(false);
   const [reviewingWork, setReviewingWork] = useState(false);
+  const [showUpdateReviewModal, setShowUpdateReviewModal] = useState<string | null>(null);
+  const [updateReviewStatus, setUpdateReviewStatus] = useState('');
+  const [updateReviewComment, setUpdateReviewComment] = useState('');
+  const [updateReviewing, setUpdateReviewing] = useState(false);
   const assignDesignerImgRef = useRef<HTMLInputElement>(null);
   const assignDesignerDocRef = useRef<HTMLInputElement>(null);
   const [notifications, setNotifications] = useState<{ id: string; type: string; message: string; projectId: string; fromUserId: string; createdAt: number }[]>([]);
@@ -112,6 +116,19 @@ export function BossDashboard() {
       setReviewWorkComment('');
     } finally {
       setReviewingWork(false);
+    }
+  };
+
+  const handleUpdateReview = async () => {
+    if (!showUpdateReviewModal) return;
+    setUpdateReviewing(true);
+    try {
+      await reviewProjectUpdate(showUpdateReviewModal, updateReviewStatus, updateReviewComment);
+      setShowUpdateReviewModal(null);
+      setUpdateReviewComment('');
+      setUpdateReviewStatus('');
+    } finally {
+      setUpdateReviewing(false);
     }
   };
 
@@ -281,6 +298,7 @@ export function BossDashboard() {
                   <div className="flex gap-1 px-4 sm:px-5 pt-3 border-b border-slate-200">
                     <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${(activeBossTab[project.id] || 'details') === 'details' ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveBossTab(p => ({ ...p, [project.id]: 'details' }))}>Details</button>
                     <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeBossTab[project.id] === 'records' ? 'bg-green-50 text-green-600 border-b-2 border-green-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveBossTab(p => ({ ...p, [project.id]: 'records' }))}>Records</button>
+                    <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${(activeBossTab[project.id] || 'details') === 'report' ? 'bg-green-50 text-green-600 border-b-2 border-green-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveBossTab(prev => ({ ...prev, [project.id]: 'report' }))}>Monthly Report</button>
                     <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeBossTab[project.id] === 'chat' ? 'bg-purple-50 text-purple-600 border-b-2 border-purple-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveBossTab(p => ({ ...p, [project.id]: 'chat' }))}>
                       Chat{projectUnread > 0 && <span className="ml-1.5 min-w-[16px] h-4 bg-red-500 text-white text-[8px] font-bold rounded-full inline-flex items-center justify-center px-0.5">{projectUnread > 99 ? '99+' : projectUnread}</span>}
                     </button>
@@ -501,6 +519,114 @@ export function BossDashboard() {
                   </div>
                   )}
 
+                  {(activeBossTab[project.id] || 'details') === 'report' && (
+                    <div className="p-4 sm:px-5 sm:py-4">
+                      <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 mb-4">
+                        <div className="w-1 h-4 bg-green-500 rounded-full" />
+                        Monthly Reports from SEO Lead
+                      </h4>
+                      <div className="space-y-3">
+                        {(() => {
+                          const myId = currentUser.id;
+                          const projectReports = projectUpdates.filter((u: any) => 
+                            u.projectId === project.id && u.toId === myId
+                          ).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+                          if (projectReports.length === 0) {
+                            return (
+                              <div className="p-8 bg-slate-50 rounded-lg text-center">
+                                <FileText size={32} className="mx-auto text-slate-400 mb-2" />
+                                <p className="text-sm text-slate-500">No monthly reports submitted yet.</p>
+                                <p className="text-xs text-slate-400 mt-1">Reports from SEO Lead will appear here for your review.</p>
+                              </div>
+                            );
+                          }
+
+                          return projectReports.map(report => (
+                            <Card key={report.id} className="p-4 border-l-4 border-l-purple-500">
+                              <div className="flex items-start justify-between mb-3">
+                                <div>
+                                  <h5 className="font-semibold text-sm text-slate-900">{report.title || 'Monthly Report'}</h5>
+                                  <p className="text-xs text-slate-500 mt-0.5">
+                                    {new Date(report.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                                    {report.workDate && ` · Work Month: ${report.workDate}`}
+                                  </p>
+                                </div>
+                                <Badge variant={
+                                  report.status === 'APPROVED' ? 'green' :
+                                  report.status === 'CHANGES_REQUESTED' ? 'red' : 'yellow'
+                                }>
+                                  {report.status === 'APPROVED' ? 'Approved' :
+                                   report.status === 'CHANGES_REQUESTED' ? 'Changes Requested' : 'Pending Review'}
+                                </Badge>
+                              </div>
+
+                              <div className="space-y-3">
+                                {report.text && (
+                                  <p className="text-sm text-slate-700">{report.text}</p>
+                                )}
+
+                                {report.files && report.files.length > 0 && (
+                                  <div className="flex flex-wrap gap-2">
+                                    {report.files.map((f: any, i: number) => {
+                                      const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(f.filename);
+                                      return (
+                                        <a key={i} href={`/uploads/${f.filename}`} target="_blank" className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 border border-blue-200 rounded text-xs text-blue-600 hover:bg-blue-100">
+                                          {isImg ? <Image size={12} /> : <Download size={12} />}
+                                          {f.originalName}
+                                        </a>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+
+                                {report.reportType === 'STRUCTURED' && (
+                                  <div className="space-y-2">
+                                    {report.onPageText && (
+                                      <div>
+                                        <p className="text-xs font-semibold text-purple-700 mb-1">On-Page Work</p>
+                                        <p className="text-sm text-slate-700">{report.onPageText}</p>
+                                      </div>
+                                    )}
+                                    {report.onPageFiles && report.onPageFiles.length > 0 && (
+                                      <div>
+                                        <p className="text-xs font-semibold text-blue-700 mb-1">On-Page Files</p>
+                                        <div className="flex flex-wrap gap-2">
+                                          {report.onPageFiles.map((f: any, i: number) => (
+                                            <a key={i} href={`/uploads/${f.filename}`} target="_blank" className="text-xs text-blue-600 hover:underline">
+                                              {f.originalName}
+                                            </a>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+
+                              {report.status === 'PENDING_REVIEW' && (
+                                <div className="flex items-center gap-2 pt-3 mt-3 border-t border-slate-100">
+                                  <Button size="sm" variant="primary" className="gap-1" onClick={() => {
+                                    setShowUpdateReviewModal(report.id);
+                                    setUpdateReviewStatus('APPROVED');
+                                  }}>
+                                    <CheckCircle2 size={14} /> Approve
+                                  </Button>
+                                  <Button size="sm" variant="danger" className="gap-1" onClick={() => {
+                                    setShowUpdateReviewModal(report.id);
+                                    setUpdateReviewStatus('CHANGES_REQUESTED');
+                                  }}>
+                                    <RotateCcw size={14} /> Request Changes
+                                  </Button>
+                                </div>
+                              )}
+                            </Card>
+                          ));
+                        })()}
+                      </div>
+                    </div>
+                  )}
+
                   {activeBossTab[project.id] === 'chat' && (
                   <div className="h-[70vh]">
                     <ChatBox projectId={project.id} />
@@ -613,6 +739,28 @@ export function BossDashboard() {
             </div>
           </div>
         </div>
+      )}
+
+      {showUpdateReviewModal && (
+        <Modal isOpen={true} onClose={() => setShowUpdateReviewModal(null)} title={updateReviewStatus === 'APPROVED' ? 'Approve Report' : 'Request Changes'} size="sm">
+          <div className="space-y-3">
+            {updateReviewStatus === 'CHANGES_REQUESTED' && (
+              <div className="p-2 bg-red-50 text-red-600 text-xs rounded">Please describe what needs to be changed.</div>
+            )}
+            <Textarea
+              label={updateReviewStatus === 'CHANGES_REQUESTED' ? 'Reason / What needs to be fixed' : 'Comment (optional)'}
+              value={updateReviewComment}
+              onChange={e => setUpdateReviewComment(e.target.value)}
+              placeholder={updateReviewStatus === 'CHANGES_REQUESTED' ? 'e.g. Report format needs correction...' : 'Any additional notes...'}
+            />
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowUpdateReviewModal(null)}>Cancel</Button>
+              <Button variant={updateReviewStatus === 'APPROVED' ? 'primary' : 'danger'} className="gap-1" onClick={handleUpdateReview} disabled={updateReviewing || (updateReviewStatus === 'CHANGES_REQUESTED' && !updateReviewComment.trim())}>
+                {updateReviewing ? <><Loader2 size={14} className="animate-spin" /> Processing...</> : updateReviewStatus === 'APPROVED' ? <><CheckCircle2 size={14} /> Approve</> : <><RotateCcw size={14} /> Send Back</>}
+              </Button>
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   );

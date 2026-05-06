@@ -116,6 +116,10 @@ export function SEOLeadDashboard() {
   const salesManagerName = salesManager?.name || 'Sales Manager';
   const salesManagerId = salesManager?.id || '';
 
+  const boss = (Object.values(users) as any[]).find(u => u.role === 'BOSS');
+  const bossName = boss?.name || 'Boss';
+  const bossId = boss?.id || '';
+
   const offPageSpecialist = (Object.values(users) as any[]).find(u => u.role === 'OFF_PAGE_SPECIALIST');
   const offPageName = offPageSpecialist?.name || 'Off-Page Specialist';
   const offPageId = offPageSpecialist?.id || '';
@@ -866,9 +870,14 @@ export function SEOLeadDashboard() {
                       <Button className="gap-2" onClick={() => openSubmitReportModal(project.id, seoManagerId)}>
                         <Send size={16} /> Submit Report to {seoManagerName}
                       </Button>
-                      <Button variant="secondary" className="gap-2" onClick={() => openSubmitReportModal(project.id, salesManagerId)}>
-                        <Send size={16} /> Submit Report to {salesManagerName}
-                      </Button>
+                       <Button variant="secondary" className="gap-2" onClick={() => openSubmitReportModal(project.id, salesManagerId)}>
+                         <Send size={16} /> Submit Report to {salesManagerName}
+                       </Button>
+                       {bossId && (
+                         <Button variant="secondary" className="gap-2" onClick={() => openSubmitReportModal(project.id, bossId)}>
+                           <Send size={16} /> Submit Report to {bossName}
+                         </Button>
+                       )}
                     </div>
                      <p className="text-[10px] text-slate-500 mt-2">
                        Report will include your On-Page work + {offPageName}'s approved Off-Page work
@@ -882,9 +891,14 @@ export function SEOLeadDashboard() {
                        <Button className="gap-2" onClick={() => openSimpleReportModal(project.id, seoManagerId)}>
                          <Send size={16} /> Simple Report to {seoManagerName}
                        </Button>
-                       <Button variant="secondary" className="gap-2" onClick={() => openSimpleReportModal(project.id, salesManagerId)}>
-                         <Send size={16} /> Simple Report to {salesManagerName}
-                       </Button>
+                        <Button variant="secondary" className="gap-2" onClick={() => openSimpleReportModal(project.id, salesManagerId)}>
+                           <Send size={16} /> Simple Report to {salesManagerName}
+                         </Button>
+                         {bossId && (
+                           <Button variant="secondary" className="gap-2" onClick={() => openSimpleReportModal(project.id, bossId)}>
+                             <Send size={16} /> Simple Report to {bossName}
+                           </Button>
+                         )}
                      </div>
                      <p className="text-[10px] text-slate-500 mt-2">
                        Title, notes and file attachments. Independent of work items.
@@ -1109,7 +1123,7 @@ export function SEOLeadDashboard() {
         if (!project) return null;
         const projectOnPage = myLeadWork.filter((w: any) => w.projectId === reportForm.projectId);
         const approvedOffPage = myWorkReviews.filter((w: any) => w.projectId === reportForm.projectId && w.status === 'APPROVED');
-        const toName = reportForm.toId === seoManagerId ? seoManagerName : salesManagerName;
+        const toName = reportForm.toId === seoManagerId ? seoManagerName : reportForm.toId === salesManagerId ? salesManagerName : bossName;
 
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -1216,7 +1230,7 @@ export function SEOLeadDashboard() {
        {showSimpleReportModal && (() => {
          const project = projects.find(p => p.id === simpleReportForm.projectId);
          if (!project) return null;
-         const toName = simpleReportForm.toId === seoManagerId ? seoManagerName : salesManagerName;
+         const toName = simpleReportForm.toId === seoManagerId ? seoManagerName : simpleReportForm.toId === salesManagerId ? salesManagerName : bossName;
          const isEditing = !!editingReportId;
 
          return (
