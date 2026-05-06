@@ -660,7 +660,7 @@ export function SEOLeadDashboard() {
                                                   >
                                                     <X size={8} />
                                                   </button>
-                                                </div>
+
                                               );
                                             })}
                                           </div>
