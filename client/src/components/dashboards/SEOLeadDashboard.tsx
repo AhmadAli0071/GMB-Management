@@ -651,7 +651,9 @@ export function SEOLeadDashboard() {
                                                     <a href={`/uploads/${f.filename}`} target="_blank" download className="flex items-center gap-1 text-xs text-blue-600 hover:underline bg-white px-2 py-1 rounded border border-slate-200">
                                                       <Download size={12} /> {f.originalName}
                                                     </a>
-                                                  )}
+        )}
+                              </div>
+
                                                   <button
                                                     className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-[8px] hidden group-hover:flex items-center justify-center"
                                                     onClick={() => deleteLeadWorkFile(item.id, f.filename)}
