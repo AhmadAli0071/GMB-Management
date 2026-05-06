@@ -63,6 +63,7 @@ export function SEOLeadDashboard() {
      const [simpleReportNotes, setSimpleReportNotes] = useState('');
      const [simpleReportFiles, setSimpleReportFiles] = useState<FileList | null>(null);
      const [submittingSimple, setSubmittingSimple] = useState(false);
+     const [editingReportId, setEditingReportId] = useState<string | null>(null);
 
      // Monthly Report submission to Sales Manager
      const [showQuickMonthlyReportModal, setShowQuickMonthlyReportModal] = useState<string | null>(null);
@@ -288,6 +289,16 @@ export function SEOLeadDashboard() {
      setSimpleReportTitle('');
      setSimpleReportNotes('');
      setSimpleReportFiles(null);
+     setEditingReportId(null);
+     setShowSimpleReportModal(true);
+   };
+
+   const openResubmitModal = (projectId: string, toId: string, title: string, text: string) => {
+     setSimpleReportForm({ projectId, toId });
+     setSimpleReportTitle(title);
+     setSimpleReportNotes(text);
+     setSimpleReportFiles(null);
+     setEditingReportId(`resubmit-${Date.now()}`);
      setShowSimpleReportModal(true);
    };
 
@@ -760,8 +771,15 @@ export function SEOLeadDashboard() {
                                 <div className="flex items-center gap-2 mb-1">
                                   <Badge variant={u.status === 'APPROVED' ? 'green' : 'red'} className="text-[10px]">{u.status === 'APPROVED' ? 'Approved' : 'Changes Requested'}</Badge>
                                   <span className="text-[11px] text-slate-500">Sent to {toUser?.name}</span>
+                                  <span className="text-[10px] text-slate-400">{u.title}</span>
                                 </div>
-                                {u.reviewComment && <p className={`text-sm ${u.status === 'APPROVED' ? 'text-green-400' : 'text-red-400'}`}>{u.reviewComment}</p>}
+                                {u.reviewComment && <p className={`text-sm mb-2 ${u.status === 'APPROVED' ? 'text-green-400' : 'text-red-400'}`}>{u.reviewComment}</p>}
+                                {u.text && <p className="text-xs text-slate-400 mb-2 line-clamp-2">{u.text}</p>}
+                                {u.status === 'CHANGES_REQUESTED' && (
+                                  <Button size="sm" variant="danger" className="gap-1 text-[11px]" onClick={() => openResubmitModal(u.projectId, u.toId, u.title || '', u.text || '')}>
+                                    <Send size={12} /> Edit & Resubmit
+                                  </Button>
+                                )}
                               </div>
                             );
                           })}
@@ -1127,17 +1145,18 @@ export function SEOLeadDashboard() {
          const project = projects.find(p => p.id === simpleReportForm.projectId);
          if (!project) return null;
          const toName = simpleReportForm.toId === seoManagerId ? seoManagerName : salesManagerName;
+         const isEditing = !!editingReportId;
 
          return (
            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-             <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => setShowSimpleReportModal(false)} />
+             <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => { setShowSimpleReportModal(false); setEditingReportId(null); }} />
              <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden z-10">
                <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
                  <div>
-                   <h3 className="text-lg font-bold text-slate-900">Submit Quick Report</h3>
+                   <h3 className="text-lg font-bold text-slate-900">{isEditing ? 'Edit & Resubmit Report' : 'Submit Quick Report'}</h3>
                    <p className="text-xs text-slate-500">To {toName} — {project.name}</p>
                  </div>
-                 <button onClick={() => setShowSimpleReportModal(false)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"><X size={18} /></button>
+                 <button onClick={() => { setShowSimpleReportModal(false); setEditingReportId(null); }} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"><X size={18} /></button>
                </div>
 
                <div className="px-6 py-5 space-y-4">
@@ -1160,6 +1179,11 @@ export function SEOLeadDashboard() {
                      onChange={e => setSimpleReportNotes(e.target.value)}
                    />
                  </div>
+                 {isEditing && (
+                   <div className="p-2 bg-red-50 border border-red-200 rounded-lg text-xs text-red-600">
+                     Previous version was rejected. Update the content above and resubmit.
+                   </div>
+                 )}
                  <div>
                    <label className="block text-sm font-medium text-slate-600 mb-1">Attachments (optional)</label>
                    <input
@@ -1176,9 +1200,9 @@ export function SEOLeadDashboard() {
                </div>
 
                <div className="px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
-                 <Button variant="outline" onClick={() => setShowSimpleReportModal(false)}>Cancel</Button>
+                 <Button variant="outline" onClick={() => { setShowSimpleReportModal(false); setEditingReportId(null); }}>Cancel</Button>
                  <Button className="gap-2" onClick={handleSimpleReportSubmit} disabled={submittingSimple || !simpleReportTitle.trim()}>
-                   {submittingSimple ? <><Loader2 size={16} className="animate-spin" /> Submitting...</> : <><Send size={16} /> Submit Report to {toName}</>}
+                   {submittingSimple ? <><Loader2 size={16} className="animate-spin" /> Submitting...</> : <><Send size={16} /> {isEditing ? 'Resubmit to' : 'Submit Report to'} {toName}</>}
                  </Button>
                </div>
              </div>
