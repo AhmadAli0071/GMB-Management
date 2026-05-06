@@ -624,155 +624,18 @@ export function SEOLeadDashboard() {
                                     ))}
                                   </div>
        )}
+                                </div>
+                              );
+                            })
+                          })()}
+                        </div>
+                      )}
+                    </div>
+                    </>
+                  )}
 
-       {/* Quick Monthly Report Modal */}
-       {showQuickMonthlyReportModal && (
-         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-           <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => setShowQuickMonthlyReportModal(null)} />
-           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden z-10">
-             <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-               <h3 className="text-lg font-bold text-slate-900">Quick Monthly Report</h3>
-               <button onClick={() => setShowQuickMonthlyReportModal(null)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"><X size={18} /></button>
-             </div>
-             <form onSubmit={(e) => { e.preventDefault(); handleQuickMonthlyReportSubmit(); }}>
-               <div className="px-6 py-5 space-y-4">
-                 <div>
-                   <label className="block text-sm font-medium text-slate-600 mb-1">Report Title</label>
-                   <input
-                     type="text"
-                     className="block w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                     placeholder="e.g., March 2025 GMB Progress"
-                     value={quickMonthlyTitle}
-                     onChange={e => setQuickMonthlyTitle(e.target.value)}
-                     required
-                   />
-                 </div>
-                 <div>
-                   <label className="block text-sm font-medium text-slate-600 mb-1">Monthly Summary</label>
-                   <textarea
-                     className="block w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[120px]"
-                     placeholder="Describe work done this month..."
-                     value={quickMonthlyNotes}
-                     onChange={e => setQuickMonthlyNotes(e.target.value)}
-                   />
-                 </div>
-                 <div>
-                   <label className="block text-sm font-medium text-slate-600 mb-1">Report Month</label>
-                   <input
-                     type="month"
-                     className="block w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                     value={quickMonthlyWorkDate}
-                     onChange={e => setQuickMonthlyWorkDate(e.target.value)}
-                   />
-                 </div>
-                 <div>
-                   <label className="block text-sm font-medium text-slate-600 mb-1">Attachments (optional)</label>
-                   <input
-                     type="file"
-                     multiple
-                     className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                     onChange={e => setQuickMonthlyFiles(e.target.files)}
-                   />
-                 </div>
-               </div>
-               <div className="px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
-                 <Button type="button" variant="outline" onClick={() => setShowQuickMonthlyReportModal(null)}>Cancel</Button>
-                 <Button type="submit" className="gap-2" disabled={submittingQuickMonthly || !quickMonthlyTitle.trim()}>
-                   {submittingQuickMonthly ? <><Loader2 size={14} className="animate-spin" /> Sending...</> : <><Send size={14} /> Send to Sales Manager</>}
-                 </Button>
-               </div>
-             </form>
-           </div>
-         </div>
-       )}
-
-       {/* Structured Monthly Report Modal */}
-       {showStructuredMonthlyReportModal && (
-         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-           <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => setShowStructuredMonthlyReportModal(null)} />
-           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden z-10">
-             <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-               <h3 className="text-lg font-bold text-slate-900">Structured Monthly Report</h3>
-               <button onClick={() => setShowStructuredMonthlyReportModal(null)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"><X size={18} /></button>
-             </div>
-             <form onSubmit={(e) => { e.preventDefault(); handleStructuredMonthlyReportSubmit(); }}>
-               <div className="px-6 py-5 space-y-4">
-                 <div>
-                   <label className="block text-sm font-medium text-slate-600 mb-1">On-Page Work Summary for This Month</label>
-                   <textarea
-                     className="block w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[120px]"
-                     placeholder="Describe all on-page SEO work completed during this month..."
-                     value={structuredMonthlyOnPageText}
-                     onChange={e => setStructuredMonthlyOnPageText(e.target.value)}
-                     required
-                   />
-                 </div>
-                 <div>
-                   <label className="block text-sm font-medium text-slate-600 mb-1">On-Page Supporting Files (optional)</label>
-                   <input
-                     type="file"
-                     multiple
-                     className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
-                     onChange={e => setStructuredMonthlyOnPageFiles(e.target.files)}
-                   />
-                 </div>
-                 <div>
-                   <label className="block text-sm font-medium text-slate-600 mb-1">Off-Page Work Completed This Month</label>
-                   <div className="space-y-2 max-h-40 overflow-y-auto border border-slate-200 rounded p-3">
-                     {(() => {
-                       const projectId = showStructuredMonthlyReportModal;
-                       const project = myProjects.find(p => p.id === projectId);
-                       if (!project) return <p className="text-sm text-slate-500">No project found.</p>;
-                       const projectWork = workSubmissions.filter((w: any) => w.projectId === projectId && w.status === 'APPROVED');
-                       if (projectWork.length === 0) return <p className="text-sm text-slate-500">No approved off-page work yet.</p>;
-                       return projectWork.map(work => (
-                         <label key={work.id} className="flex items-start gap-2 p-2 hover:bg-slate-50 rounded">
-                           <input
-                             type="checkbox"
-                             checked={selectedMonthlyOffPageWork.includes(work.id)}
-                             onChange={e => {
-                               if (e.target.checked) {
-                                 setSelectedMonthlyOffPageWork(prev => [...prev, work.id]);
-                               } else {
-                                 setSelectedMonthlyOffPageWork(prev => prev.filter(id => id !== work.id));
-                               }
-                             }}
-                             className="mt-1"
-                           />
-                           <div className="text-sm">
-                             <p className="text-slate-800">{work.text?.substring(0, 100)}...</p>
-                             <p className="text-xs text-slate-500">{new Date(work.createdAt).toLocaleDateString()}</p>
-                           </div>
-                         </label>
-                       ));
-                     })()}
-                   </div>
-                 </div>
-                 <div>
-                   <label className="block text-sm font-medium text-slate-600 mb-1">Report Month</label>
-                   <input
-                     type="month"
-                     className="block w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                     value={structuredMonthlyWorkDate}
-                     onChange={e => setStructuredMonthlyWorkDate(e.target.value)}
-                   />
-                 </div>
-               </div>
-               <div className="px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
-                 <Button type="button" variant="outline" onClick={() => setShowStructuredMonthlyReportModal(null)}>Cancel</Button>
-                 <Button type="submit" className="gap-2" disabled={submittingStructuredMonthly}>
-                   {submittingStructuredMonthly ? <><Loader2 size={14} className="animate-spin" /> Sending...</> : <><FileText size={14} /> Send to Sales Manager</>}
-                 </Button>
-               </div>
-             </form>
-           </div>
-         </div>
-       )}
-
-     </div>
-   );
-  }
-                   {/* Monthly Report Submission Section - Muaz submits reports to Sales Manager */}
+                  {activeTab === 'report' && (<>
+                    {/* Monthly Report Submission Section - Muaz submits reports to Sales Manager */}
                    <div className="p-4 sm:px-5 sm:py-4 border-t border-slate-200">
                      <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 mb-4">
                        <div className="w-1 h-4 bg-green-500 rounded-full" />
