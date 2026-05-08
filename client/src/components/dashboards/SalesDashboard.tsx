@@ -738,10 +738,10 @@ export function SalesDashboard() {
             {formStep === 1 && (
               <div className="space-y-4">
                 <Input label="Business Name" required value={form.name} onChange={e => updateForm('name', e.target.value)} placeholder="e.g. Smith & Co." />
-                <Select label="Business Category" required value={form.businessCategory} onChange={e => updateForm('businessCategory', e.target.value)}>
-                  <option value="">Select a category...</option>
-                  {BUSINESS_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                </Select>
+                <Input label="Business Category" required value={form.businessCategory} onChange={e => updateForm('businessCategory', e.target.value)} placeholder="Select or type a category..." list="create-category-list" />
+                <datalist id="create-category-list">
+                  {BUSINESS_CATEGORIES.map(cat => <option key={cat} value={cat} />)}
+                </datalist>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Input label="Business Address" value={form.businessAddress} onChange={e => updateForm('businessAddress', e.target.value)} placeholder="123 Main St" />
                   <Input label="City" value={form.businessCity} onChange={e => updateForm('businessCity', e.target.value)} placeholder="City" />
@@ -814,10 +814,10 @@ export function SalesDashboard() {
             {editStep === 1 && (
               <div className="space-y-4">
                 <Input label="Business Name" required value={editForm.name} onChange={e => updateEdit('name', e.target.value)} placeholder="e.g. Smith & Co." />
-                <Select label="Business Category" required value={editForm.businessCategory} onChange={e => updateEdit('businessCategory', e.target.value)}>
-                  <option value="">Select a category...</option>
-                  {BUSINESS_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                </Select>
+                <Input label="Business Category" required value={editForm.businessCategory} onChange={e => updateEdit('businessCategory', e.target.value)} placeholder="Select or type a category..." list="edit-category-list" />
+                <datalist id="edit-category-list">
+                  {BUSINESS_CATEGORIES.map(cat => <option key={cat} value={cat} />)}
+                </datalist>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Input label="Business Address" value={editForm.businessAddress} onChange={e => updateEdit('businessAddress', e.target.value)} placeholder="123 Main St" />
                   <Input label="City" value={editForm.businessCity} onChange={e => updateEdit('businessCity', e.target.value)} placeholder="City" />
