@@ -6,7 +6,7 @@ import {
   Search, Building2, ArrowUpRight, Loader2, FileText, Pencil, RotateCcw, ShieldCheck,
   Folder, CheckCircle2, Download, MessageCircle, FileUp, Palette, Bell, Image
 } from 'lucide-react';
-import { Card, Button, Badge, Modal, Input, Textarea } from '../ui/Common';
+import { Card, Button, Badge, Modal, Input, Textarea, Select } from '../ui/Common';
 import { useApp } from '../../AppContext';
 import { useChatNotify } from '../../ChatNotifyContext';
 import { useSocket } from '../../SocketContext';
@@ -68,6 +68,7 @@ export function SalesDashboard() {
   const [sectionReviewing, setSectionReviewing] = useState(false);
   const [updateReviewing, setUpdateReviewing] = useState(false);
    const [form, setForm] = useState(emptyForm);
+   const updateForm = (field: string, value: any) => setForm(prev => ({ ...prev, [field]: value }));
    const [formStep, setFormStep] = useState(1);
    const [editForm, setEditForm] = useState(emptyForm);
    const [editStep, setEditStep] = useState(1);
@@ -256,12 +257,28 @@ export function SalesDashboard() {
            <h2 className="text-xl font-bold text-slate-900">Dashboard</h2>
            <p className="text-sm text-slate-500 mt-0.5">Manage your GMB projects</p>
          </div>
-          <div className="flex items-center gap-3">
-            {notificationPermission !== 'granted' && (
-              <Button size="sm" variant="outline" className="gap-1.5" onClick={() => requestNotificationPermission()}>
-                <Bell size={14} /> Enable Notifications
-              </Button>
-            )}
+           <div className="flex items-center gap-3">
+             {notificationPermission === 'denied' ? (
+               <div className="relative group">
+                 <Button size="sm" variant="outline" className="gap-1.5 border-red-200 text-red-500 hover:bg-red-50 cursor-help" onClick={() => requestNotificationPermission()}>
+                   <Bell size={14} /> Notifications Blocked
+                 </Button>
+                 <div className="absolute right-0 top-full mt-2 w-72 p-4 bg-white border border-red-200 rounded-xl shadow-2xl z-50 hidden group-hover:block">
+                   <p className="text-xs text-slate-700 mb-2 font-semibold">Chrome mein notifications block hain.</p>
+                   <p className="text-xs text-slate-500 mb-1">Unblock karne ke liye:</p>
+                   <ol className="text-xs text-slate-500 list-decimal pl-4 space-y-0.5">
+                     <li>Address bar mein lock icon <span className="text-slate-400">🔒</span> click karein</li>
+                     <li>"Notifications" ke pas "Block" ko "Allow" karein</li>
+                     <li>Page reload karein</li>
+                   </ol>
+                   <p className="text-[10px] text-slate-400 mt-2">Ya Chrome Settings → Privacy → Site Settings → Notifications mein ja kar allow karein.</p>
+                 </div>
+               </div>
+             ) : notificationPermission === 'default' ? (
+               <Button size="sm" variant="outline" className="gap-1.5" onClick={() => requestNotificationPermission()}>
+                 <Bell size={14} /> Enable Notifications
+               </Button>
+             ) : null}
             <div className="relative" ref={notifRef}>
               <button
                 onClick={() => setShowNotifDropdown(!showNotifDropdown)}
@@ -671,13 +688,13 @@ export function SalesDashboard() {
                                       <div className="flex items-center gap-2 pt-3 mt-3 border-t border-slate-100">
                                         <Button size="sm" variant="primary" className="gap-1" onClick={() => {
                                           setShowUpdateReviewModal(report.id);
-                                          setReviewUpdateStatus('APPROVED');
+                                          setUpdateReviewStatus('APPROVED');
                                         }}>
                                           <CheckCircle2 size={14} /> Approve
                                         </Button>
                                         <Button size="sm" variant="danger" className="gap-1" onClick={() => {
                                           setShowUpdateReviewModal(report.id);
-                                          setReviewUpdateStatus('CHANGES_REQUESTED');
+                                          setUpdateReviewStatus('CHANGES_REQUESTED');
                                         }}>
                                           <RotateCcw size={14} /> Request Changes
                                         </Button>
@@ -708,15 +725,151 @@ export function SalesDashboard() {
       {showCreateModal && (
         <Modal isOpen={true} onClose={() => { setShowCreateModal(false); setFormStep(1); }} title={formStep === 1 ? 'New GMB Project — Business Info' : formStep === 2 ? 'Links & Listing Details' : 'Target Keywords & Notes'} size="lg">
           <form onSubmit={handleCreate}>
-            {/* ... multi-step form ... */}
+            {/* Step indicators */}
+            <div className="flex items-center gap-2 mb-6">
+              {[1, 2, 3].map(step => (
+                <React.Fragment key={step}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${formStep >= step ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-500'}`}>{step}</div>
+                  {step < 3 && <div className={`flex-1 h-0.5 rounded transition-colors ${formStep > step ? 'bg-blue-600' : 'bg-slate-200'}`} />}
+                </React.Fragment>
+              ))}
+            </div>
+
+            {formStep === 1 && (
+              <div className="space-y-4">
+                <Input label="Business Name" required value={form.name} onChange={e => updateForm('name', e.target.value)} placeholder="e.g. Smith & Co." />
+                <Select label="Business Category" required value={form.businessCategory} onChange={e => updateForm('businessCategory', e.target.value)}>
+                  <option value="">Select a category...</option>
+                  {BUSINESS_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                </Select>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Input label="Business Address" value={form.businessAddress} onChange={e => updateForm('businessAddress', e.target.value)} placeholder="123 Main St" />
+                  <Input label="City" value={form.businessCity} onChange={e => updateForm('businessCity', e.target.value)} placeholder="City" />
+                  <Input label="State" value={form.businessState} onChange={e => updateForm('businessState', e.target.value)} placeholder="State" />
+                  <Input label="ZIP Code" value={form.businessZip} onChange={e => updateForm('businessZip', e.target.value)} placeholder="ZIP" />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Input label="Business Phone" value={form.businessPhone} onChange={e => updateForm('businessPhone', e.target.value)} placeholder="(555) 123-4567" />
+                  <Input label="Business Email" value={form.businessEmail} onChange={e => updateForm('businessEmail', e.target.value)} placeholder="contact@business.com" type="email" />
+                </div>
+                <Input label="Business Website" value={form.businessWebsite} onChange={e => updateForm('businessWebsite', e.target.value)} placeholder="https://business.com" type="url" />
+                <div className="flex justify-end pt-2">
+                  <Button type="button" onClick={() => setFormStep(2)}>Next <ChevronRight size={16} /></Button>
+                </div>
+              </div>
+            )}
+
+            {formStep === 2 && (
+              <div className="space-y-4">
+                <Input label="Google Maps Link" value={form.googleMapsLink} onChange={e => updateForm('googleMapsLink', e.target.value)} placeholder="https://maps.google.com/..." />
+                <Input label="Yelp Link" value={form.yelpLink} onChange={e => updateForm('yelpLink', e.target.value)} placeholder="https://yelp.com/..." />
+                <Input label="Home Advisor Link" value={form.homeAdvisorLink} onChange={e => updateForm('homeAdvisorLink', e.target.value)} placeholder="https://homeadvisor.com/..." />
+                <div className="grid grid-cols-2 gap-4">
+                  <Input label="Current Reviews" type="number" value={form.currentReviews} onChange={e => updateForm('currentReviews', parseInt(e.target.value) || 0)} />
+                  <Input label="Current Rating" type="number" step="0.1" min="0" max="5" value={form.currentRating} onChange={e => updateForm('currentRating', parseFloat(e.target.value) || 0)} />
+                </div>
+                <Select label="Verification Status" value={form.verificationStatus} onChange={e => updateForm('verificationStatus', e.target.value)}>
+                  <option value="UNVERIFIED">Unverified</option>
+                  <option value="VERIFIED">Verified</option>
+                </Select>
+                <div className="flex justify-between pt-2">
+                  <Button type="button" variant="outline" onClick={() => setFormStep(1)}><ChevronRight size={16} className="rotate-180" /> Back</Button>
+                  <Button type="button" onClick={() => setFormStep(3)}>Next <ChevronRight size={16} /></Button>
+                </div>
+              </div>
+            )}
+
+            {formStep === 3 && (
+              <div className="space-y-4">
+                <Textarea label="Target Keywords (comma separated)" value={form.targetKeywords} onChange={e => updateForm('targetKeywords', e.target.value)} placeholder="keyword1, keyword2, keyword3..." />
+                <Textarea label="Competitors" value={form.competitors} onChange={e => updateForm('competitors', e.target.value)} placeholder="Competitor names or URLs..." />
+                <Textarea label="Business Hours" value={form.businessHours} onChange={e => updateForm('businessHours', e.target.value)} placeholder="Mon-Fri: 9AM-5PM, Sat: 10AM-2PM" />
+                <Textarea label="Services" value={form.services} onChange={e => updateForm('services', e.target.value)} placeholder="List of services offered..." />
+                <Textarea label="What We Offer" value={form.offerServices} onChange={e => updateForm('offerServices', e.target.value)} placeholder="Special offers or promotions..." />
+                <Textarea label="Service Areas" value={form.serviceAreas} onChange={e => updateForm('serviceAreas', e.target.value)} placeholder="Areas served..." />
+                <Textarea label="Special Instructions" value={form.specialInstructions} onChange={e => updateForm('specialInstructions', e.target.value)} placeholder="Any notes or special instructions for the team..." />
+                <div className="flex justify-between pt-2">
+                  <Button type="button" variant="outline" onClick={() => setFormStep(2)}><ChevronRight size={16} className="rotate-180" /> Back</Button>
+                  <Button type="submit" isLoading={creating} disabled={!form.name.trim()}>Create Project</Button>
+                </div>
+              </div>
+            )}
           </form>
         </Modal>
       )}
 
       {editingProject && (
-        <Modal isOpen={true} onClose={() => { setEditingProject(null); setEditStep(1); }} title="Edit Project" size="lg">
+        <Modal isOpen={true} onClose={() => { setEditingProject(null); setEditStep(1); }} title={editStep === 1 ? 'Edit Project — Business Info' : editStep === 2 ? 'Edit Links & Listing Details' : 'Edit Keywords & Notes'} size="lg">
           <form onSubmit={handleEditSave}>
-            {/* ... edit form ... */}
+            {/* Step indicators */}
+            <div className="flex items-center gap-2 mb-6">
+              {[1, 2, 3].map(step => (
+                <React.Fragment key={step}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${editStep >= step ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-500'}`}>{step}</div>
+                  {step < 3 && <div className={`flex-1 h-0.5 rounded transition-colors ${editStep > step ? 'bg-blue-600' : 'bg-slate-200'}`} />}
+                </React.Fragment>
+              ))}
+            </div>
+
+            {editStep === 1 && (
+              <div className="space-y-4">
+                <Input label="Business Name" required value={editForm.name} onChange={e => updateEdit('name', e.target.value)} placeholder="e.g. Smith & Co." />
+                <Select label="Business Category" required value={editForm.businessCategory} onChange={e => updateEdit('businessCategory', e.target.value)}>
+                  <option value="">Select a category...</option>
+                  {BUSINESS_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                </Select>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Input label="Business Address" value={editForm.businessAddress} onChange={e => updateEdit('businessAddress', e.target.value)} placeholder="123 Main St" />
+                  <Input label="City" value={editForm.businessCity} onChange={e => updateEdit('businessCity', e.target.value)} placeholder="City" />
+                  <Input label="State" value={editForm.businessState} onChange={e => updateEdit('businessState', e.target.value)} placeholder="State" />
+                  <Input label="ZIP Code" value={editForm.businessZip} onChange={e => updateEdit('businessZip', e.target.value)} placeholder="ZIP" />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Input label="Business Phone" value={editForm.businessPhone} onChange={e => updateEdit('businessPhone', e.target.value)} placeholder="(555) 123-4567" />
+                  <Input label="Business Email" value={editForm.businessEmail} onChange={e => updateEdit('businessEmail', e.target.value)} placeholder="contact@business.com" type="email" />
+                </div>
+                <Input label="Business Website" value={editForm.businessWebsite} onChange={e => updateEdit('businessWebsite', e.target.value)} placeholder="https://business.com" type="url" />
+                <div className="flex justify-end pt-2">
+                  <Button type="button" onClick={() => setEditStep(2)}>Next <ChevronRight size={16} /></Button>
+                </div>
+              </div>
+            )}
+
+            {editStep === 2 && (
+              <div className="space-y-4">
+                <Input label="Google Maps Link" value={editForm.googleMapsLink} onChange={e => updateEdit('googleMapsLink', e.target.value)} placeholder="https://maps.google.com/..." />
+                <Input label="Yelp Link" value={editForm.yelpLink} onChange={e => updateEdit('yelpLink', e.target.value)} placeholder="https://yelp.com/..." />
+                <Input label="Home Advisor Link" value={editForm.homeAdvisorLink} onChange={e => updateEdit('homeAdvisorLink', e.target.value)} placeholder="https://homeadvisor.com/..." />
+                <div className="grid grid-cols-2 gap-4">
+                  <Input label="Current Reviews" type="number" value={editForm.currentReviews} onChange={e => updateEdit('currentReviews', parseInt(e.target.value) || 0)} />
+                  <Input label="Current Rating" type="number" step="0.1" min="0" max="5" value={editForm.currentRating} onChange={e => updateEdit('currentRating', parseFloat(e.target.value) || 0)} />
+                </div>
+                <Select label="Verification Status" value={editForm.verificationStatus} onChange={e => updateEdit('verificationStatus', e.target.value)}>
+                  <option value="UNVERIFIED">Unverified</option>
+                  <option value="VERIFIED">Verified</option>
+                </Select>
+                <div className="flex justify-between pt-2">
+                  <Button type="button" variant="outline" onClick={() => setEditStep(1)}><ChevronRight size={16} className="rotate-180" /> Back</Button>
+                  <Button type="button" onClick={() => setEditStep(3)}>Next <ChevronRight size={16} /></Button>
+                </div>
+              </div>
+            )}
+
+            {editStep === 3 && (
+              <div className="space-y-4">
+                <Textarea label="Target Keywords (comma separated)" value={editForm.targetKeywords} onChange={e => updateEdit('targetKeywords', e.target.value)} placeholder="keyword1, keyword2, keyword3..." />
+                <Textarea label="Competitors" value={editForm.competitors} onChange={e => updateEdit('competitors', e.target.value)} placeholder="Competitor names or URLs..." />
+                <Textarea label="Business Hours" value={editForm.businessHours} onChange={e => updateEdit('businessHours', e.target.value)} placeholder="Mon-Fri: 9AM-5PM, Sat: 10AM-2PM" />
+                <Textarea label="Services" value={editForm.services} onChange={e => updateEdit('services', e.target.value)} placeholder="List of services offered..." />
+                <Textarea label="What We Offer" value={editForm.offerServices} onChange={e => updateEdit('offerServices', e.target.value)} placeholder="Special offers or promotions..." />
+                <Textarea label="Service Areas" value={editForm.serviceAreas} onChange={e => updateEdit('serviceAreas', e.target.value)} placeholder="Areas served..." />
+                <Textarea label="Special Instructions" value={editForm.specialInstructions} onChange={e => updateEdit('specialInstructions', e.target.value)} placeholder="Any notes or special instructions for the team..." />
+                <div className="flex justify-between pt-2">
+                  <Button type="button" variant="outline" onClick={() => setEditStep(2)}><ChevronRight size={16} className="rotate-180" /> Back</Button>
+                  <Button type="submit" isLoading={saving} disabled={!editForm.name.trim()}>Save Changes</Button>
+                </div>
+              </div>
+            )}
           </form>
         </Modal>
       )}
