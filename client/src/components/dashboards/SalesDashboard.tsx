@@ -1,15 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Plus, Send, FolderKanban, Clock, TrendingUp, Calendar,
   ChevronRight, ChevronDown, ChevronUp, X, MapPin, Globe, Star, Phone, Mail, ExternalLink,
   Search, Building2, ArrowUpRight, Loader2, FileText, Pencil, RotateCcw, ShieldCheck,
-  Folder, CheckCircle2, Download, MessageCircle, FileUp, Palette, Bell, Image
+  Folder, CheckCircle2, Download, MessageCircle, FileUp, Palette, Image
 } from 'lucide-react';
 import { Card, Button, Badge, Modal, Input, Textarea, Select } from '../ui/Common';
 import { useApp } from '../../AppContext';
 import { useChatNotify } from '../../ChatNotifyContext';
-import { useSocket } from '../../SocketContext';
 import { STAGE_LABELS, STAGE_COLORS } from '../../types';
 import { ChatBox } from '../chat/ChatBox';
 
@@ -48,8 +47,7 @@ const BUSINESS_CATEGORIES = [
 
 export function SalesDashboard() {
   const { projects, users, currentUser, createProject, updateProject, updateProjectStage, projectUpdates, reviewProjectUpdate, reviewSection, workSubmissions, createAssignment, assignToLead } = useApp();
-   const { unreadCounts, notificationPermission, requestNotificationPermission } = useChatNotify();
-   const { onActivityNotification, offActivityNotification } = useSocket();
+   const { unreadCounts } = useChatNotify();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingProject, setEditingProject] = useState<string | null>(null);
@@ -75,39 +73,7 @@ export function SalesDashboard() {
    const [creating, setCreating] = useState(false);
     const [saving, setSaving] = useState(false);
 
-    // Notification state for in-app alerts
-    const [notifications, setNotifications] = useState<{ id: string; type: string; message: string; projectId: string; fromUserId: string; createdAt: number }[]>([]);
-    const [showNotifDropdown, setShowNotifDropdown] = useState(false);
-    const notifRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-      const handler = (data: any) => {
-        setNotifications(prev => [{
-          id: Date.now().toString() + Math.random(),
-          type: data.type,
-          message: data.message,
-          projectId: data.projectId,
-          fromUserId: data.fromUserId,
-          createdAt: Date.now(),
-        }, ...prev].slice(0, 50));
-      };
-      onActivityNotification(handler);
-      return () => { offActivityNotification(handler); };
-    }, [onActivityNotification, offActivityNotification]);
-
-    useEffect(() => {
-      const handleClick = (e: MouseEvent) => {
-        if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
-          setShowNotifDropdown(false);
-        }
-      };
-      document.addEventListener('mousedown', handleClick);
-      return () => document.removeEventListener('mousedown', handleClick);
-    }, []);
-
-    const clearNotifications = () => setNotifications([]);
-
-    // Report review state (Kevin reviews reports from Muaz)
+     // Report review state (Kevin reviews reports from Muaz)
    // Note: showUpdateReviewModal, updateReviewStatus, updateReviewComment, updateReviewing already defined above
 
    const myProjects = projects.filter(p => p.createdBy === currentUser.id);
@@ -258,85 +224,7 @@ export function SalesDashboard() {
            <p className="text-sm text-slate-500 mt-0.5">Manage your GMB projects</p>
          </div>
            <div className="flex items-center gap-3">
-             {notificationPermission === 'denied' ? (
-               <div className="relative group">
-                  <Button size="sm" variant="outline" className="gap-1.5 border-red-200 text-red-500 hover:bg-red-50 cursor-help" onClick={() => {}}>
-                    <Bell size={14} /> Notifications Blocked
-                  </Button>
-                 <div className="absolute right-0 top-full mt-2 w-72 p-4 bg-white border border-red-200 rounded-xl shadow-2xl z-50 hidden group-hover:block">
-                   <p className="text-xs text-slate-700 mb-2 font-semibold">Chrome mein notifications block hain.</p>
-                   <p className="text-xs text-slate-500 mb-1">Unblock karne ke liye:</p>
-                   <ol className="text-xs text-slate-500 list-decimal pl-4 space-y-0.5">
-                     <li>Address bar mein lock icon <span className="text-slate-400">🔒</span> click karein</li>
-                     <li>"Notifications" ke pas "Block" ko "Allow" karein</li>
-                     <li>Page reload karein</li>
-                   </ol>
-                   <p className="text-[10px] text-slate-400 mt-2">Ya Chrome Settings → Privacy → Site Settings → Notifications mein ja kar allow karein.</p>
-                 </div>
-               </div>
-             ) : notificationPermission === 'default' ? (
-               <Button size="sm" variant="outline" className="gap-1.5" onClick={() => requestNotificationPermission()}>
-                 <Bell size={14} /> Enable Notifications
-               </Button>
-             ) : null}
-            <div className="relative" ref={notifRef}>
-              <button
-                onClick={() => setShowNotifDropdown(!showNotifDropdown)}
-                className="relative p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors"
-              >
-                <Bell size={20} className="text-slate-600" />
-                {notifications.length > 0 && (
-                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5 animate-pulse">{notifications.length > 99 ? '99+' : notifications.length}</span>
-                )}
-              </button>
-              {showNotifDropdown && (
-                <div className="absolute right-0 top-12 w-80 max-h-96 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-slate-50">
-                    <h4 className="text-sm font-bold text-slate-900">Notifications</h4>
-                    {notifications.length > 0 && (
-                      <button onClick={clearNotifications} className="text-[10px] text-blue-600 hover:text-blue-700 font-medium">Clear All</button>
-                    )}
-                  </div>
-                  <div className="overflow-y-auto max-h-80">
-                    {notifications.length === 0 ? (
-                      <div className="p-6 text-center">
-                        <Bell size={24} className="mx-auto text-slate-300 mb-2" />
-                        <p className="text-sm text-slate-400">No new notifications</p>
-                      </div>
-                    ) : (
-                      notifications.map(n => {
-                        const fromUser = (users as any)[n.fromUserId];
-                        const project = projects.find(p => p.id === n.projectId);
-                        const typeIcon = n.type === 'REPORT_SUBMITTED' ? <FileText size={14} className="text-green-500" />
-                          : n.type === 'REPORT_REVIEWED' ? <CheckCircle2 size={14} className="text-purple-500" />
-                          : n.type === 'WORK_SUBMITTED' ? <Send size={14} className="text-orange-500" />
-                          : n.type === 'WORK_REVIEWED' ? <CheckCircle2 size={14} className="text-blue-500" />
-                          : n.type === 'SECTION_REVIEWED' ? <Folder size={14} className="text-blue-500" />
-                          : <Bell size={14} className="text-slate-500" />;
-                        const timeAgo = Math.round((Date.now() - n.createdAt) / 1000);
-                        const timeStr = timeAgo < 60 ? `${timeAgo}s ago` : timeAgo < 3600 ? `${Math.round(timeAgo / 60)}m ago` : `${Math.round(timeAgo / 3600)}h ago`;
-                        return (
-                          <div key={n.id} className="px-4 py-3 border-b border-slate-100 hover:bg-blue-50/50 transition-colors">
-                            <div className="flex items-start gap-2.5">
-                              <div className="mt-0.5 shrink-0">{typeIcon}</div>
-                              <div className="min-w-0 flex-1">
-                                <p className="text-sm text-slate-800">{n.message}</p>
-                                <div className="flex items-center gap-2 mt-1">
-                                  {fromUser && <span className="text-[10px] text-slate-500">{fromUser.name}</span>}
-                                  {project && <span className="text-[10px] text-blue-600 truncate">- {project.name}</span>}
-                                  <span className="text-[10px] text-slate-400">{timeStr}</span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-            <Button className="gap-2" onClick={() => { setForm(emptyForm); setFormStep(1); setShowCreateModal(true); }}>
+             <Button className="gap-2" onClick={() => { setForm(emptyForm); setFormStep(1); setShowCreateModal(true); }}>
               <Plus size={18} />
               New GMB Project
             </Button>
