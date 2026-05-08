@@ -260,9 +260,9 @@ export function SalesDashboard() {
            <div className="flex items-center gap-3">
              {notificationPermission === 'denied' ? (
                <div className="relative group">
-                 <Button size="sm" variant="outline" className="gap-1.5 border-red-200 text-red-500 hover:bg-red-50 cursor-help" onClick={() => requestNotificationPermission()}>
-                   <Bell size={14} /> Notifications Blocked
-                 </Button>
+                  <Button size="sm" variant="outline" className="gap-1.5 border-red-200 text-red-500 hover:bg-red-50 cursor-help" onClick={() => {}}>
+                    <Bell size={14} /> Notifications Blocked
+                  </Button>
                  <div className="absolute right-0 top-full mt-2 w-72 p-4 bg-white border border-red-200 rounded-xl shadow-2xl z-50 hidden group-hover:block">
                    <p className="text-xs text-slate-700 mb-2 font-semibold">Chrome mein notifications block hain.</p>
                    <p className="text-xs text-slate-500 mb-1">Unblock karne ke liye:</p>
