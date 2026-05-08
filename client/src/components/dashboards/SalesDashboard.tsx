@@ -380,6 +380,12 @@ export function SalesDashboard() {
                             </div>
                           </div>
                         )}
+                        {project.specialInstructions && (
+                          <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                            <span className="text-[10px] text-yellow-700 uppercase tracking-wider font-semibold">Special Instructions</span>
+                            <p className="text-sm text-slate-700 mt-1 whitespace-pre-wrap">{project.specialInstructions}</p>
+                          </div>
+                        )}
                       </div>
                     )}
 

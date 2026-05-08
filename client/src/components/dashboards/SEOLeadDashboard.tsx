@@ -623,6 +623,12 @@ export function SEOLeadDashboard() {
                         <span className="font-bold">{seoManagerName}:</span> {project.managerComment}
                       </div>
                     )}
+                    {project.specialInstructions && (
+                      <div className="mt-3 p-2.5 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <span className="text-[10px] text-yellow-700 uppercase tracking-wider font-semibold">Special Instructions</span>
+                        <p className="text-sm text-slate-700 mt-1">{project.specialInstructions}</p>
+                      </div>
+                    )}
                     {(project.targetKeywords || project.services) && (
                       <div className="mt-3 space-y-2">
                         {project.targetKeywords && <div><span className="text-[10px] text-slate-500 uppercase tracking-wider">Keywords</span><div className="mt-1 flex flex-wrap gap-1">{project.targetKeywords.split(',').map((kw, i) => (<span key={i} className="px-2 py-0.5 bg-blue-500/10 text-blue-600 text-xs rounded-full">{kw.trim()}</span>))}</div></div>}
