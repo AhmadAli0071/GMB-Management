@@ -256,10 +256,29 @@ export function BossDashboard() {
           {projects.map(project => {
             const isExpanded = expandedProject === project.id;
             const projectReports = allUpdates.filter((u: any) => u.projectId === project.id);
-            const structuredReports = projectReports.filter((u: any) => u.reportType === 'STRUCTURED');
-            const hasPending = structuredReports.some((u: any) => u.onPageStatus === 'PENDING' || u.offPageStatus === 'PENDING');
-            const hasRejected = structuredReports.some((u: any) => u.onPageStatus === 'REJECTED' || u.offPageStatus === 'REJECTED');
-            const allApproved = structuredReports.some((u: any) => u.onPageStatus === 'APPROVED' && u.offPageStatus === 'APPROVED');
+            const reportCount = projectReports.length;
+            const hasPending = projectReports.some((u: any) => {
+              if (u.reportType === 'STRUCTURED') {
+                const hasOnPage = !!(u.onPageText || (u.onPageFiles && u.onPageFiles.length > 0));
+                const hasOffPage = !!(u.offPageWorkIds && u.offPageWorkIds.length > 0);
+                return (hasOnPage && u.onPageStatus === 'PENDING') || (hasOffPage && u.offPageStatus === 'PENDING');
+              }
+              return u.status === 'PENDING_REVIEW';
+            });
+            const hasRejected = projectReports.some((u: any) => {
+              if (u.reportType === 'STRUCTURED') return u.onPageStatus === 'REJECTED' || u.offPageStatus === 'REJECTED';
+              return u.status === 'CHANGES_REQUESTED';
+            });
+            const allApproved = projectReports.length > 0 && projectReports.every((u: any) => {
+              if (u.reportType === 'STRUCTURED') {
+                const hasOnPage = !!(u.onPageText || (u.onPageFiles && u.onPageFiles.length > 0));
+                const hasOffPage = !!(u.offPageWorkIds && u.offPageWorkIds.length > 0);
+                const onPageDone = !hasOnPage || u.onPageStatus === 'APPROVED';
+                const offPageDone = !hasOffPage || u.offPageStatus === 'APPROVED';
+                return onPageDone && offPageDone;
+              }
+              return u.status === 'APPROVED';
+            });
             const projectUnreadMap = unreadCounts[project.id] || {};
             const projectUnread = (Object.values(projectUnreadMap) as number[]).reduce((sum, val) => sum + val, 0);
 
@@ -289,7 +308,7 @@ export function BossDashboard() {
                         <p className="text-xs sm:text-sm text-slate-500 mt-0.5">{project.businessCategory || 'N/A'} — {project.businessCity}</p>
                         <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-0.5 text-[10px] sm:text-xs text-slate-500">
                           <span>{(users[project.createdBy] as any)?.name || 'Unknown'}</span>
-                          <span>{structuredReports.length} report{structuredReports.length !== 1 ? 's' : ''}</span>
+                          <span>{reportCount} report{reportCount !== 1 ? 's' : ''}</span>
                           {allApproved && <span className="text-green-600 font-semibold">Fully Approved</span>}
                           {hasRejected && <span className="text-red-500 font-semibold">Has Rejections</span>}
                           {hasPending && !hasRejected && <span className="text-yellow-600 font-semibold">Pending</span>}
@@ -457,7 +476,7 @@ export function BossDashboard() {
                   <div className="p-4 sm:p-5 max-h-[70vh] overflow-y-auto">
                     {(() => {
                       const grouped: Record<string, any[]> = {};
-                      structuredReports.forEach((r: any) => {
+                      projectReports.filter((r: any) => r.reportType === 'STRUCTURED').forEach((r: any) => {
                         const d = r.workDate || new Date(r.createdAt).toISOString().split('T')[0];
                         if (!grouped[d]) grouped[d] = [];
                         grouped[d].push(r);
