@@ -49,7 +49,15 @@ app.use('/api/lead-work', leadWorkRoutes);
 app.use('/api/chat', chatRoutes);
 
 app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString(), uptime: process.uptime() });
+  const dbState = mongoose.connection.readyState;
+  const dbStates = { 0: 'disconnected', 1: 'connected', 2: 'connecting', 3: 'disconnecting' };
+  const healthy = dbState === 1;
+  res.status(healthy ? 200 : 503).json({
+    status: healthy ? 'ok' : 'degraded',
+    db: dbStates[dbState] || 'unknown',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+  });
 });
 
 const clientDist = path.join(__dirname, '../client/dist');
@@ -146,7 +154,7 @@ async function start() {
       logger.info(`Server started on http://localhost:${PORT}`, { component: 'server', port: PORT });
     });
   } catch (err) {
-    logger.error('Failed to start server', { component: 'server', error: err.message });
+    logger.error('Failed to start server after all retries', { component: 'server', error: err.message });
     process.exit(1);
   }
 }
