@@ -84,14 +84,7 @@ export function SalesDashboard() {
     return acc;
   }, {});
 
-  const isUpdatePending = (u: any) => {
-      if (u.reportType === 'STRUCTURED') {
-        const hasOnPage = !!(u.onPageText || (u.onPageFiles && u.onPageFiles.length > 0));
-        const hasOffPage = !!(u.offPageWorkIds && u.offPageWorkIds.length > 0);
-        return (hasOnPage && u.onPageStatus === 'PENDING') || (hasOffPage && u.offPageStatus === 'PENDING');
-      }
-    return u.status === 'PENDING_REVIEW';
-  };
+  const isUpdatePending = (u: any) => u.status === 'PENDING_REVIEW';
 
   const seoLead = (Object.values(users) as any[]).find(u => u.role === 'SEO_LEAD');
   const seoLeadId = seoLead?.id || '';
@@ -553,28 +546,64 @@ export function SalesDashboard() {
                                        </div>
                                      )}
 
-                                     {report.reportType === 'STRUCTURED' && (
-                                       <div className="space-y-2">
-                                         {report.onPageText && (
-                                           <div>
-                                             <p className="text-xs font-semibold text-purple-700 mb-1">On-Page Work</p>
-                                             <p className="text-sm text-slate-700">{report.onPageText}</p>
-                                           </div>
-                                         )}
-                                         {report.onPageFiles && report.onPageFiles.length > 0 && (
-                                           <div>
-                                             <p className="text-xs font-semibold text-blue-700 mb-1">On-Page Files</p>
-                                             <div className="flex flex-wrap gap-2">
-                                               {report.onPageFiles.map((f: any, i: number) => (
-                                                 <a key={i} href={`/uploads/${f.filename}`} target="_blank" className="text-xs text-blue-600 hover:underline">
-                                                   {f.originalName}
-                                                 </a>
-                                               ))}
-                                             </div>
-                                           </div>
-                                         )}
-                                       </div>
-                                     )}
+                                      {report.reportType === 'STRUCTURED' && (
+                                        <div className="space-y-2">
+                                          {report.onPageText && (
+                                            <div>
+                                              <div className="flex items-center justify-between mb-1">
+                                                <p className="text-xs font-semibold text-purple-700">On-Page Work</p>
+                                                <Badge variant={report.onPageStatus === 'APPROVED' ? 'green' : report.onPageStatus === 'REJECTED' ? 'red' : 'yellow'} className="text-[10px]">
+                                                  {report.onPageStatus === 'APPROVED' ? 'Approved' : report.onPageStatus === 'REJECTED' ? 'Rejected' : 'Pending'}
+                                                </Badge>
+                                              </div>
+                                              <p className="text-sm text-slate-700">{report.onPageText}</p>
+                                              {report.onPageStatus === 'PENDING' && (
+                                                <div className="flex items-center gap-2 mt-2">
+                                                  <Button size="sm" variant="primary" className="gap-1 text-[11px] py-1 px-2" onClick={(e) => { e.stopPropagation(); setShowSectionReviewModal({ updateId: report.id, section: 'onPage', status: 'APPROVED' }); }}>
+                                                    <CheckCircle2 size={12} /> Approve
+                                                  </Button>
+                                                  <Button size="sm" variant="danger" className="gap-1 text-[11px] py-1 px-2" onClick={(e) => { e.stopPropagation(); setShowSectionReviewModal({ updateId: report.id, section: 'onPage', status: 'REJECTED' }); }}>
+                                                    <RotateCcw size={12} /> Reject
+                                                  </Button>
+                                                </div>
+                                              )}
+                                            </div>
+                                          )}
+                                          {report.onPageFiles && report.onPageFiles.length > 0 && (
+                                            <div>
+                                              <p className="text-xs font-semibold text-blue-700 mb-1">On-Page Files</p>
+                                              <div className="flex flex-wrap gap-2">
+                                                {report.onPageFiles.map((f: any, i: number) => (
+                                                  <a key={i} href={`/uploads/${f.filename}`} target="_blank" className="text-xs text-blue-600 hover:underline">
+                                                    {f.originalName}
+                                                  </a>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          )}
+                                          {report.offPageWorkIds && report.offPageWorkIds.length > 0 && (
+                                            <div>
+                                              <div className="flex items-center justify-between mb-1">
+                                                <p className="text-xs font-semibold text-orange-700">Off-Page Work</p>
+                                                <Badge variant={report.offPageStatus === 'APPROVED' ? 'green' : report.offPageStatus === 'REJECTED' ? 'red' : 'yellow'} className="text-[10px]">
+                                                  {report.offPageStatus === 'APPROVED' ? 'Approved' : report.offPageStatus === 'REJECTED' ? 'Rejected' : 'Pending'}
+                                                </Badge>
+                                              </div>
+                                              <p className="text-xs text-slate-500">{report.offPageWorkIds.length} submission(s) included</p>
+                                              {report.offPageStatus === 'PENDING' && (
+                                                <div className="flex items-center gap-2 mt-2">
+                                                  <Button size="sm" variant="primary" className="gap-1 text-[11px] py-1 px-2" onClick={(e) => { e.stopPropagation(); setShowSectionReviewModal({ updateId: report.id, section: 'offPage', status: 'APPROVED' }); }}>
+                                                    <CheckCircle2 size={12} /> Approve
+                                                  </Button>
+                                                  <Button size="sm" variant="danger" className="gap-1 text-[11px] py-1 px-2" onClick={(e) => { e.stopPropagation(); setShowSectionReviewModal({ updateId: report.id, section: 'offPage', status: 'REJECTED' }); }}>
+                                                    <RotateCcw size={12} /> Reject
+                                                  </Button>
+                                                </div>
+                                              )}
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
                                    </div>
 
                                    {/* Review Actions - only if pending */}
