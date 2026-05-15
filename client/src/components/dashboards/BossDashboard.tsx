@@ -20,6 +20,7 @@ export function BossDashboard() {
   const [expandedDates, setExpandedDates] = useState<Record<string, boolean>>({});
   const toggleDate = (key: string) => setExpandedDates(prev => ({ ...prev, [key]: !prev[key] }));
   const [activeBossTab, setActiveBossTab] = useState<Record<string, string>>({});
+  const [filterMode, setFilterMode] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [showAssignDesignerModal, setShowAssignDesignerModal] = useState(false);
   const [assignDesignerForm, setAssignDesignerForm] = useState({ projectId: '', text: '' });
   const [assignDesignerImages, setAssignDesignerImages] = useState<FileList | null>(null);
@@ -213,37 +214,49 @@ export function BossDashboard() {
             </div>
          </div>
          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-8">
-          <Card className="p-4 sm:p-5">
+          <Card className={`p-4 sm:p-5 cursor-pointer hover:shadow-md transition-all ${filterMode === 'all' ? 'ring-2 ring-blue-500 bg-blue-50' : ''}`} onClick={() => setFilterMode(filterMode === 'all' ? 'all' : 'all')}>
             <div className="flex items-center justify-between">
               <div className="w-9 h-9 sm:w-10 sm:h-10 bg-blue-500/10 rounded-xl flex items-center justify-center"><Folder size={16} className="text-blue-600" /></div>
-              <span className="text-xl sm:text-2xl font-bold text-slate-400">{projects.length}</span>
+              <span className="text-xl sm:text-2xl font-bold text-slate-700">{projects.length}</span>
             </div>
             <p className="text-[10px] sm:text-xs text-slate-500 mt-2 font-semibold">Total Projects</p>
           </Card>
-          <Card className="p-4 sm:p-5">
+          <Card className={`p-4 sm:p-5 cursor-pointer hover:shadow-md transition-all ${filterMode === 'pending' ? 'ring-2 ring-yellow-500 bg-yellow-50' : ''}`} onClick={() => setFilterMode(filterMode === 'pending' ? 'all' : 'pending')}>
             <div className="flex items-center justify-between">
               <div className="w-9 h-9 sm:w-10 sm:h-10 bg-yellow-500/10 rounded-xl flex items-center justify-center"><Clock size={16} className="text-yellow-600" /></div>
-              <span className="text-xl sm:text-2xl font-bold text-slate-400">{pendingCount}</span>
+              <span className="text-xl sm:text-2xl font-bold text-slate-700">{pendingCount}</span>
             </div>
             <p className="text-[10px] sm:text-xs text-slate-500 mt-2 font-semibold">Pending Reports</p>
           </Card>
-          <Card className="p-4 sm:p-5">
+          <Card className={`p-4 sm:p-5 cursor-pointer hover:shadow-md transition-all ${filterMode === 'approved' ? 'ring-2 ring-green-500 bg-green-50' : ''}`} onClick={() => setFilterMode(filterMode === 'approved' ? 'all' : 'approved')}>
             <div className="flex items-center justify-between">
               <div className="w-9 h-9 sm:w-10 sm:h-10 bg-green-500/10 rounded-xl flex items-center justify-center"><FileText size={16} className="text-green-600" /></div>
-              <span className="text-xl sm:text-2xl font-bold text-slate-400">{approvedCount}</span>
+              <span className="text-xl sm:text-2xl font-bold text-slate-700">{approvedCount}</span>
             </div>
             <p className="text-[10px] sm:text-xs text-slate-500 mt-2 font-semibold">Fully Approved</p>
           </Card>
-          <Card className="p-4 sm:p-5">
+          <Card className={`p-4 sm:p-5 cursor-pointer hover:shadow-md transition-all ${filterMode === 'rejected' ? 'ring-2 ring-red-500 bg-red-50' : ''}`} onClick={() => setFilterMode(filterMode === 'rejected' ? 'all' : 'rejected')}>
             <div className="flex items-center justify-between">
               <div className="w-9 h-9 sm:w-10 sm:h-10 bg-red-500/10 rounded-xl flex items-center justify-center"><X size={16} className="text-red-500" /></div>
-              <span className="text-xl sm:text-2xl font-bold text-slate-400">{rejectedCount}</span>
+              <span className="text-xl sm:text-2xl font-bold text-slate-700">{rejectedCount}</span>
             </div>
             <p className="text-[10px] sm:text-xs text-slate-500 mt-2 font-semibold">Rejected</p>
           </Card>
         </div>
 
-        <h2 className="text-xs sm:text-sm font-bold text-slate-500 uppercase tracking-wider mb-4">All Projects — Reports</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xs sm:text-sm font-bold text-slate-500 uppercase tracking-wider">
+            {filterMode === 'pending' ? 'Projects with Pending Reports' :
+             filterMode === 'approved' ? 'Projects — Fully Approved' :
+             filterMode === 'rejected' ? 'Projects with Rejected Reports' :
+             'All Projects — Reports'}
+          </h2>
+          {filterMode !== 'all' && (
+            <button onClick={() => setFilterMode('all')} className="text-xs text-blue-600 hover:underline font-medium">
+              Show All
+            </button>
+          )}
+        </div>
 
         {projects.length === 0 && (
           <Card className="p-12 text-center">
@@ -253,7 +266,31 @@ export function BossDashboard() {
         )}
 
         <div className="space-y-4">
-          {projects.map(project => {
+          {projects.filter(project => {
+            if (filterMode === 'all') return true;
+            const projectReports = allUpdates.filter((u: any) => u.projectId === project.id);
+            if (filterMode === 'pending') return projectReports.some((u: any) => {
+              if (u.reportType === 'STRUCTURED') {
+                const ho = !!(u.onPageText || (u.onPageFiles && u.onPageFiles.length > 0));
+                const hf = !!(u.offPageWorkIds && u.offPageWorkIds.length > 0);
+                return (ho && u.onPageStatus === 'PENDING') || (hf && u.offPageStatus === 'PENDING');
+              }
+              return u.status === 'PENDING_REVIEW';
+            });
+            if (filterMode === 'approved') return projectReports.length > 0 && projectReports.every((u: any) => {
+              if (u.reportType === 'STRUCTURED') {
+                const ho = !!(u.onPageText || (u.onPageFiles && u.onPageFiles.length > 0));
+                const hf = !!(u.offPageWorkIds && u.offPageWorkIds.length > 0);
+                return (!ho || u.onPageStatus === 'APPROVED') && (!hf || u.offPageStatus === 'APPROVED');
+              }
+              return u.status === 'APPROVED';
+            });
+            if (filterMode === 'rejected') return projectReports.some((u: any) => {
+              if (u.reportType === 'STRUCTURED') return u.onPageStatus === 'REJECTED' || u.offPageStatus === 'REJECTED';
+              return u.status === 'CHANGES_REQUESTED';
+            });
+            return true;
+          }).map(project => {
             const isExpanded = expandedProject === project.id;
             const projectReports = allUpdates.filter((u: any) => u.projectId === project.id);
             const reportCount = projectReports.length;
