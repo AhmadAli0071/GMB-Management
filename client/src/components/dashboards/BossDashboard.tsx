@@ -64,7 +64,9 @@ export function BossDashboard() {
   const designerId = designer?.id || '';
 
   const allUpdates = projectUpdates;
-  const pendingCount = allUpdates.filter((u: any) => {
+  const projectReportGroups = projects.map(p => allUpdates.filter((u: any) => u.projectId === p.id));
+  const allLatest = projectReportGroups.flatMap(reports => getLatestSenderStatus(reports));
+  const pendingCount = allLatest.filter((u: any) => {
     if (u.reportType === 'STRUCTURED') {
       const hasOnPage = !!(u.onPageText || (u.onPageFiles && u.onPageFiles.length > 0));
       const hasOffPage = !!(u.offPageWorkIds && u.offPageWorkIds.length > 0);
@@ -72,7 +74,7 @@ export function BossDashboard() {
     }
     return u.status === 'PENDING_REVIEW';
   }).length;
-  const approvedCount = allUpdates.filter((u: any) => {
+  const approvedCount = allLatest.filter((u: any) => {
     if (u.reportType === 'STRUCTURED') {
       const hasOnPage = !!(u.onPageText || (u.onPageFiles && u.onPageFiles.length > 0));
       const hasOffPage = !!(u.offPageWorkIds && u.offPageWorkIds.length > 0);
@@ -82,7 +84,7 @@ export function BossDashboard() {
     }
     return u.status === 'APPROVED';
   }).length;
-  const rejectedCount = allUpdates.filter((u: any) => {
+  const rejectedCount = allLatest.filter((u: any) => {
     if (u.reportType === 'STRUCTURED') return u.onPageStatus === 'REJECTED' || u.offPageStatus === 'REJECTED';
     return u.status === 'CHANGES_REQUESTED';
   }).length;
@@ -296,10 +298,11 @@ export function BossDashboard() {
         )}
 
         <div className="space-y-4">
-          {projects.filter(project => {
+           {projects.filter(project => {
             if (filterMode === 'all') return true;
             const projectReports = allUpdates.filter((u: any) => u.projectId === project.id);
-            if (filterMode === 'pending') return projectReports.some((u: any) => {
+            const latest = getLatestSenderStatus(projectReports);
+            if (filterMode === 'pending') return latest.some((u: any) => {
               if (u.reportType === 'STRUCTURED') {
                 const ho = !!(u.onPageText || (u.onPageFiles && u.onPageFiles.length > 0));
                 const hf = !!(u.offPageWorkIds && u.offPageWorkIds.length > 0);
@@ -307,7 +310,7 @@ export function BossDashboard() {
               }
               return u.status === 'PENDING_REVIEW';
             });
-            if (filterMode === 'approved') return projectReports.length > 0 && projectReports.every((u: any) => {
+            if (filterMode === 'approved') return latest.length > 0 && latest.every((u: any) => {
               if (u.reportType === 'STRUCTURED') {
                 const ho = !!(u.onPageText || (u.onPageFiles && u.onPageFiles.length > 0));
                 const hf = !!(u.offPageWorkIds && u.offPageWorkIds.length > 0);
@@ -315,7 +318,7 @@ export function BossDashboard() {
               }
               return u.status === 'APPROVED';
             });
-            if (filterMode === 'rejected') return projectReports.some((u: any) => {
+            if (filterMode === 'rejected') return latest.some((u: any) => {
               if (u.reportType === 'STRUCTURED') return u.onPageStatus === 'REJECTED' || u.offPageStatus === 'REJECTED';
               return u.status === 'CHANGES_REQUESTED';
             });
