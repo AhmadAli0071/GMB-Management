@@ -46,13 +46,13 @@ const BUSINESS_CATEGORIES = [
 ];
 
 export function SalesDashboard() {
-  const { projects, users, currentUser, createProject, updateProject, updateProjectStage, projectUpdates, reviewProjectUpdate, reviewSection, workSubmissions, createAssignment, assignToLead } = useApp();
+  const { projects, users, currentUser, createProject, updateProject, updateProjectStage, projectUpdates, reviewProjectUpdate, reviewSection, workSubmissions, leadWork, createAssignment, assignToLead } = useApp();
    const { unreadCounts } = useChatNotify();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingProject, setEditingProject] = useState<string | null>(null);
   const [expandedProject, setExpandedProject] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<string>('details');
+  const [activeTab, setActiveTab] = useState<Record<string, string>>({});
   const [showAssignPopup, setShowAssignPopup] = useState<string | null>(null);
   const [assignComment, setAssignComment] = useState('');
   const [showSectionReviewModal, setShowSectionReviewModal] = useState<{ updateId: string; section: string; status: string } | null>(null);
@@ -188,26 +188,18 @@ export function SalesDashboard() {
 
   const updateEdit = (field: string, value: any) => setEditForm(prev => ({ ...prev, [field]: value }));
 
-   const handleEditSave = async (e: React.FormEvent) => {
-     e.preventDefault();
-     if (!editingProject) return;
-     setSaving(true);
-     try {
-       await updateProject(editingProject, editForm);
-       setEditingProject(null);
-       setEditStep(1);
-     } finally {
-       setSaving(false);
-     }
-    };
-
-    const getStatusColor = (status: string) => {
-    if (status === 'APPROVED') return 'green';
-    if (status === 'CHANGES_REQUESTED') return 'red';
-    return 'yellow';
+  const handleEditSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProject) return;
+    setSaving(true);
+    try {
+      await updateProject(editingProject, editForm);
+      setEditingProject(null);
+      setEditStep(1);
+    } finally {
+      setSaving(false);
+    }
   };
-
-  const myWorkSubmissions = workSubmissions.filter((w: any) => myProjects.some((p: any) => p.id === w.projectId));
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
@@ -272,9 +264,6 @@ export function SalesDashboard() {
             const pendingCount = projectUpdates.filter(isUpdatePending).length;
             const projectUnreadMap = unreadCounts[project.id] || {};
             const projectUnread = (Object.values(projectUnreadMap) as number[]).reduce((sum, val) => sum + val, 0);
-            const projectOnPageWork = workSubmissions.filter((w: any) => w.projectId === project.id);
-            const approvedOffPage = workSubmissions.filter((w: any) => w.projectId === project.id && w.status === 'APPROVED' && w.fromId !== currentUser.id);
-            const rejectedCount = projectUpdates.filter((u: any) => u.status === 'CHANGES_REQUESTED').length;
 
             return (
               <Card key={project.id} className="overflow-hidden">
@@ -334,15 +323,15 @@ export function SalesDashboard() {
                 {isExpanded && (
                   <div className="border-t border-slate-200">
                     <div className="flex gap-1 px-4 sm:px-5 pt-3 border-b border-slate-200">
-                      <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab === 'details' ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveTab('details')}>Details</button>
-                      <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab === 'onpage' ? 'bg-purple-50 text-purple-600 border-b-2 border-purple-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveTab('onpage')}>On-Page</button>
-                      <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab === 'offpage' ? 'bg-orange-50 text-orange-600 border-b-2 border-orange-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveTab('offpage')}>Off-Page</button>
-                       <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab === 'report' ? 'bg-green-50 text-green-600 border-b-2 border-green-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveTab('report')}>Monthly Report</button>
-                      <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab === 'chat' ? 'bg-purple-50 text-purple-600 border-b-2 border-purple-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveTab('chat')}>Chat{projectUnread > 0 && <span className="ml-1.5 min-w-[16px] h-4 bg-red-500 text-white text-[8px] font-bold rounded-full inline-flex items-center justify-center px-0.5">{projectUnread > 99 ? '99+' : projectUnread}</span>}</button>
+                      <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${(activeTab[project.id] || 'details') === 'details' ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveTab(p => ({ ...p, [project.id]: 'details' }))}>Details</button>
+                      <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab[project.id] === 'onpage' ? 'bg-purple-50 text-purple-600 border-b-2 border-purple-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveTab(p => ({ ...p, [project.id]: 'onpage' }))}>On-Page</button>
+                      <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab[project.id] === 'offpage' ? 'bg-orange-50 text-orange-600 border-b-2 border-orange-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveTab(p => ({ ...p, [project.id]: 'offpage' }))}>Off-Page</button>
+                       <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${(activeTab[project.id] || 'details') === 'report' ? 'bg-green-50 text-green-600 border-b-2 border-green-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveTab(prev => ({ ...prev, [project.id]: 'report' }))}>Monthly Report</button>
+                      <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeTab[project.id] === 'chat' ? 'bg-purple-50 text-purple-600 border-b-2 border-purple-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveTab(p => ({ ...p, [project.id]: 'chat' }))}>Chat{projectUnread > 0 && <span className="ml-1.5 min-w-[16px] h-4 bg-red-500 text-white text-[8px] font-bold rounded-full inline-flex items-center justify-center px-0.5">{projectUnread > 99 ? '99+' : projectUnread}</span>}</button>
                     </div>
 
                     {/* Details Tab */}
-                    {activeTab === 'details' && (
+                    {(activeTab[project.id] || 'details') === 'details' && (
                       <div className="p-4 sm:px-5 sm:py-4">
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                           <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">Category</span><p className="text-sm font-medium text-slate-800 mt-0.5 truncate">{project.businessCategory || 'N/A'}</p></div>
@@ -383,62 +372,76 @@ export function SalesDashboard() {
                     )}
 
                     {/* On-Page Tab */}
-                    {activeTab === 'onpage' && (
+                    {activeTab[project.id] === 'onpage' && (
                       <div className="p-4 sm:px-5 sm:py-4">
                         <div className="flex justify-between items-center mb-3">
                           <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
                             <div className="w-1 h-4 bg-purple-500 rounded-full" />
-                            On-Page Work
+                            On-Page Work by SEO Lead
                           </h4>
-                          <Button size="sm" variant="outline" className="gap-1" onClick={() => {/* open add work modal */}}>
-                            <Plus size={14} /> Add Work
-                          </Button>
                         </div>
                         <div className="space-y-2">
-                          {/* On-page work list */}
-                          {projectOnPageWork.length === 0 ? (
-                            <div className="p-6 bg-slate-50 rounded-lg text-center">
-                              <FileUp size={24} className="mx-auto text-slate-600 mb-2" />
-                              <p className="text-sm text-slate-500">No on-page work added yet.</p>
-                            </div>
-                          ) : (
-                            projectOnPageWork.map(work => (
-                              <div key={work.id} className="p-3 bg-white border border-slate-200 rounded-lg">
-                                <div className="flex items-center justify-between mb-2">
-                                  <Badge variant={work.status === 'APPROVED' ? 'green' : work.status === 'CHANGES_REQUESTED' ? 'red' : 'yellow'}>{work.status.replace('_', ' ')}</Badge>
-                                  {work.status === 'PENDING' && (
-                                    <div className="flex gap-1">
-                                      <Button size="sm" variant="primary" className="gap-1 text-[11px] px-2 py-1" onClick={() => {/* approve */}}><CheckCircle2 size={12} /> Approve</Button>
-                                      <Button size="sm" variant="danger" className="gap-1 text-[11px] px-2 py-1" onClick={() => {/* reject */}}><RotateCcw size={12} /> Reject</Button>
+                          {(() => {
+                            const seoLeadOnPage = leadWork.filter((w: any) => w.projectId === project.id);
+                            if (seoLeadOnPage.length === 0) {
+                              return (
+                                <div className="p-6 bg-slate-50 rounded-lg text-center">
+                                  <FileText size={24} className="mx-auto text-slate-400 mb-2" />
+                                  <p className="text-sm text-slate-500">No on-page work added yet by SEO Lead.</p>
+                                </div>
+                              );
+                            }
+                            const grouped: Record<string, any[]> = {};
+                            seoLeadOnPage.forEach((item: any) => {
+                              const d = item.workDate || new Date(item.createdAt).toISOString().split('T')[0];
+                              if (!grouped[d]) grouped[d] = [];
+                              grouped[d].push(item);
+                            });
+                            return Object.keys(grouped).sort((a, b) => b.localeCompare(a)).map(date => {
+                              const dateKey = `onpage-${project.id}-${date}`;
+                              return (
+                                <div key={date} className="bg-purple-50 border border-purple-200 rounded-lg overflow-hidden">
+                                  <div className="px-3 py-2 flex items-center gap-2 cursor-pointer hover:bg-purple-100 transition-colors" onClick={() => toggleDate(dateKey)}>
+                                    {expandedDates[dateKey] ? <ChevronUp size={14} className="text-purple-500" /> : <ChevronDown size={14} className="text-purple-500" />}
+                                    <Calendar size={13} className="text-purple-600" />
+                                    <span className="text-xs font-semibold text-slate-800">{new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                                    <span className="text-[10px] text-slate-500 bg-white px-1.5 py-0.5 rounded">{grouped[date].length} item{grouped[date].length !== 1 ? 's' : ''}</span>
+                                  </div>
+                                  {expandedDates[dateKey] && (
+                                    <div className="p-2 space-y-2">
+                                      {grouped[date].map((item: any) => (
+                                        <div key={item.id} className="p-3 bg-white border border-purple-200 rounded-lg">
+                                          <p className="text-sm text-slate-700">{item.text || <span className="italic text-slate-400">No description</span>}</p>
+                                          {item.files && item.files.length > 0 && (
+                                            <div className="flex flex-wrap gap-2 mt-2">
+                                              {item.files.map((f: any, i: number) => {
+                                                const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(f.filename);
+                                                return (
+                                                  <a key={i} href={`/uploads/${f.filename}`} target="_blank" download>
+                                                    {isImg ? (
+                                                      <img src={`/uploads/${f.filename}`} className="w-16 h-16 rounded-lg object-cover border border-slate-200" />
+                                                    ) : (
+                                                      <span className="flex items-center gap-1 px-2 py-1 bg-blue-50 border border-blue-200 rounded text-xs text-blue-600"><Download size={12} /> {f.originalName}</span>
+                                                    )}
+                                                  </a>
+                                                );
+                                              })}
+                                            </div>
+                                          )}
+                                        </div>
+                                      ))}
                                     </div>
                                   )}
                                 </div>
-                                {work.text && <p className="text-sm text-slate-600 mb-2">{work.text}</p>}
-                                {work.files && work.files.length > 0 && (
-                                  <div className="flex flex-wrap gap-2">
-                                    {work.files.map((f: any, i: number) => {
-                                      const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(f.filename);
-                                      return (
-                                        <a key={i} href={`/uploads/${f.filename}`} target="_blank" download>
-                                          {isImg ? (
-                                            <img src={`/uploads/${f.filename}`} className="w-20 h-20 rounded-lg object-cover border border-slate-200 hover:shadow-md" />
-                                          ) : (
-                                            <span className="flex items-center gap-1 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-600 hover:bg-blue-100"><Download size={14} /> {f.originalName}</span>
-                                          )}
-                                        </a>
-                                      );
-                                    })}
-                                  </div>
-                                )}
-                              </div>
-                            ))
-                          )}
+                              );
+                            });
+                          })()}
                         </div>
                       </div>
                     )}
 
                     {/* Off-Page Tab */}
-                    {activeTab === 'offpage' && (
+                    {activeTab[project.id] === 'offpage' && (
                       <div className="p-4 sm:px-5 sm:py-4">
                         <div className="flex justify-between items-center mb-3">
                           <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
@@ -446,68 +449,168 @@ export function SalesDashboard() {
                             Off-Page Work
                           </h4>
                           <Button size="sm" variant="secondary" className="gap-1" onClick={() => setShowAssignPopup(project.id)}>
-                            <Palette size={14} /> Assign to SEO Lead
+                            <Send size={14} /> Assign to SEO Lead
                           </Button>
                         </div>
                         <div className="space-y-2">
-                          {/* Off-page work list */}
-                          {approvedOffPage.length === 0 ? (
-                            <div className="p-6 bg-slate-50 rounded-lg text-center">
-                              <p className="text-sm text-slate-500">No off-page work yet.</p>
-                            </div>
-                          ) : (
-                            approvedOffPage.map(work => (
-                              <div key={work.id} className="p-3 bg-white border border-slate-200 rounded-lg">
-                                <p className="text-sm text-slate-600 mb-2">{work.text}</p>
-                                {work.files && work.files.length > 0 && (
-                                  <div className="flex flex-wrap gap-2">
-                                    {work.files.map((f: any, i: number) => {
-                                      const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(f.filename);
-                                      return (
-                                        <a key={i} href={`/uploads/${f.filename}`} target="_blank" download>
-                                          {isImg ? (
-                                            <img src={`/uploads/${f.filename}`} className="w-20 h-20 rounded-lg object-cover border border-slate-200 hover:shadow-md" />
-                                          ) : (
-                                            <span className="flex items-center gap-1 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-600 hover:bg-blue-100"><Download size={14} /> {f.originalName}</span>
-                                          )}
-                                        </a>
-                                      );
-                                    })}
+                          {(() => {
+                            const offPageWork = workSubmissions.filter((w: any) => w.projectId === project.id);
+                            if (offPageWork.length === 0) {
+                              return (
+                                <div className="p-6 bg-slate-50 rounded-lg text-center">
+                                  <p className="text-sm text-slate-500">No off-page work yet.</p>
+                                </div>
+                              );
+                            }
+                            const grouped: Record<string, any[]> = {};
+                            offPageWork.forEach((item: any) => {
+                              const d = item.workDate || new Date(item.createdAt).toISOString().split('T')[0];
+                              if (!grouped[d]) grouped[d] = [];
+                              grouped[d].push(item);
+                            });
+                            return Object.keys(grouped).sort((a, b) => b.localeCompare(a)).map(date => {
+                              const dateKey = `offpage-${project.id}-${date}`;
+                              return (
+                                <div key={date} className="bg-orange-50 border border-orange-200 rounded-lg overflow-hidden">
+                                  <div className="px-3 py-2 flex items-center gap-2 cursor-pointer hover:bg-orange-100 transition-colors" onClick={() => toggleDate(dateKey)}>
+                                    {expandedDates[dateKey] ? <ChevronUp size={14} className="text-orange-500" /> : <ChevronDown size={14} className="text-orange-500" />}
+                                    <Calendar size={13} className="text-orange-600" />
+                                    <span className="text-xs font-semibold text-slate-800">{new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                                    <span className="text-[10px] text-slate-500 bg-white px-1.5 py-0.5 rounded">{grouped[date].length} item{grouped[date].length !== 1 ? 's' : ''}</span>
                                   </div>
-                                )}
-                              </div>
-                            ))
-                          )}
+                                  {expandedDates[dateKey] && (
+                                    <div className="p-2 space-y-2">
+                                      {grouped[date].map((work: any) => {
+                                        const fromUser = users[work.fromId];
+                                        return (
+                                          <div key={work.id} className="p-3 bg-white border border-orange-200 rounded-lg">
+                                            <div className="flex items-center justify-between mb-2">
+                                              <div className="flex items-center gap-2">
+                                                <Badge variant={work.status === 'APPROVED' ? 'green' : work.status === 'CHANGES_REQUESTED' ? 'red' : 'yellow'} className="text-[10px]">
+                                                  {work.status === 'APPROVED' ? 'Approved' : work.status === 'CHANGES_REQUESTED' ? 'Changes Requested' : 'Pending'}
+                                                </Badge>
+                                                {fromUser && <span className="text-[10px] text-slate-500">by {fromUser.name}</span>}
+                                              </div>
+                                            </div>
+                                            {work.text && <p className="text-sm text-slate-600 mb-2">{work.text}</p>}
+                                            {work.files && work.files.length > 0 && (
+                                              <div className="flex flex-wrap gap-2">
+                                                {work.files.map((f: any, i: number) => {
+                                                  const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(f.filename);
+                                                  return (
+                                                    <a key={i} href={`/uploads/${f.filename}`} target="_blank" download>
+                                                      {isImg ? (
+                                                        <img src={`/uploads/${f.filename}`} className="w-20 h-20 rounded-lg object-cover border border-slate-200 hover:shadow-md" />
+                                                      ) : (
+                                                        <span className="flex items-center gap-1 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-600 hover:bg-blue-100"><Download size={14} /> {f.originalName}</span>
+                                                      )}
+                                                    </a>
+                                                  );
+                                                })}
+                                              </div>
+                                            )}
+                                            {work.reviewComment && (
+                                              <p className={`text-xs mt-2 p-2 rounded ${work.status === 'APPROVED' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'}`}>
+                                                <span className="font-bold">Review:</span> {work.reviewComment}
+                                              </p>
+                                            )}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            });
+                          })()}
                         </div>
                       </div>
                     )}
 
                       {/* Monthly Report Tab - Kevin reviews reports submitted by Muaz */}
-                      {activeTab === 'report' && (
+                      {(activeTab[project.id] || 'details') === 'report' && (
                         <div className="p-4 sm:px-5 sm:py-4">
                           <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 mb-4">
                             <div className="w-1 h-4 bg-green-500 rounded-full" />
-                            Monthly Reports from SEO Lead
+                            Reports from SEO Lead
                           </h4>
                           <div className="space-y-3">
-                            {/* Filter reports for this project addressed to Kevin (Sales Manager) */}
                             {(() => {
                               const kevinId = currentUser.id;
                               const projectReports = projectUpdates.filter((u: any) => 
                                 u.projectId === project.id && u.toId === kevinId
                               ).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
+                              const dailyReports = projectReports.filter((u: any) => u.reportType !== 'STRUCTURED');
+                              const monthlyReports = projectReports.filter((u: any) => u.reportType === 'STRUCTURED');
+
                               if (projectReports.length === 0) {
                                 return (
                                   <div className="p-8 bg-slate-50 rounded-lg text-center">
                                     <FileText size={32} className="mx-auto text-slate-400 mb-2" />
-                                    <p className="text-sm text-slate-500">No monthly reports submitted yet.</p>
-                                    <p className="text-xs text-slate-400 mt-1">Reports from SEO Lead will appear here for your review.</p>
+                                    <p className="text-sm text-slate-500">No reports submitted yet.</p>
+                                    <p className="text-xs text-slate-400 mt-1">Reports will appear here for your review.</p>
                                   </div>
                                 );
                               }
 
-                               return projectReports.map(report => (
+                              return (
+                                <>
+                                  {dailyReports.length > 0 && (
+                                    <div>
+                                      <h5 className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2 flex items-center gap-2">
+                                        <Clock size={12} /> Daily Reports
+                                      </h5>
+                                      <div className="space-y-2">
+                                        {dailyReports.map(report => (
+                                          <Card key={report.id} className="p-4 border-l-4 border-l-blue-400">
+                                            <div className="flex items-start justify-between mb-2">
+                                              <div>
+                                                <h5 className="font-semibold text-sm text-slate-900">{report.title || 'Quick Report'}</h5>
+                                                <p className="text-xs text-slate-500 mt-0.5">
+                                                  {new Date(report.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                                                  {report.workDate && ` · ${report.workDate}`}
+                                                </p>
+                                              </div>
+                                              <Badge variant={report.status === 'APPROVED' ? 'green' : report.status === 'CHANGES_REQUESTED' ? 'red' : 'yellow'}>
+                                                {report.status === 'APPROVED' ? 'Approved' : report.status === 'CHANGES_REQUESTED' ? 'Changes Requested' : 'Pending Review'}
+                                              </Badge>
+                                            </div>
+                                            {report.text && <p className="text-sm text-slate-700 mb-2">{report.text}</p>}
+                                            {report.files && report.files.length > 0 && (
+                                              <div className="flex flex-wrap gap-2">
+                                                {report.files.map((f: any, i: number) => {
+                                                  const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(f.filename);
+                                                  return (
+                                                    <a key={i} href={`/uploads/${f.filename}`} target="_blank" className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 border border-blue-200 rounded text-xs text-blue-600 hover:bg-blue-100">
+                                                      {isImg ? <Image size={12} /> : <Download size={12} />}{f.originalName}
+                                                    </a>
+                                                  );
+                                                })}
+                                              </div>
+                                            )}
+                                            {report.status === 'PENDING_REVIEW' && (
+                                              <div className="flex items-center gap-2 pt-3 mt-3 border-t border-slate-100">
+                                                <Button size="sm" variant="primary" className="gap-1" onClick={() => { setShowUpdateReviewModal(report.id); setUpdateReviewStatus('APPROVED'); }}>
+                                                  <CheckCircle2 size={14} /> Approve
+                                                </Button>
+                                                <Button size="sm" variant="danger" className="gap-1" onClick={() => { setShowUpdateReviewModal(report.id); setUpdateReviewStatus('CHANGES_REQUESTED'); }}>
+                                                  <RotateCcw size={14} /> Request Changes
+                                                </Button>
+                                              </div>
+                                            )}
+                                          </Card>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                  {monthlyReports.length > 0 && (
+                                    <div>
+                                      <h5 className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2 flex items-center gap-2">
+                                        <FileText size={12} /> Monthly Reports
+                                      </h5>
+                                      <div className="space-y-2">
+                                        {monthlyReports.map(report => (
                                  <Card key={report.id} className="p-4 border-l-4 border-l-purple-500">
                                    <div className="flex items-start justify-between mb-3">
                                      <div>
@@ -623,15 +726,20 @@ export function SalesDashboard() {
                                         </Button>
                                       </div>
                                    )}
-                                 </Card>
-                               ));
+                                  </Card>
+                                ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </>
+                              );
                             })()}
                           </div>
                         </div>
                       )}
 
                     {/* Chat Tab */}
-                    {activeTab === 'chat' && (
+                    {activeTab[project.id] === 'chat' && (
                       <div className="h-[70vh]">
                         <ChatBox projectId={project.id} />
                       </div>
@@ -827,7 +935,7 @@ export function SalesDashboard() {
       )}
 
        {showSectionReviewModal && (
-         <Modal isOpen={true} onClose={() => setShowSectionReviewModal(null)} title={showSectionReviewModal.status === 'APPROVED' ? 'Approve Section' : 'Request Changes'} size="sm">
+         <Modal isOpen={true} onClose={() => setShowSectionReviewModal(null)} title={showSectionReviewModal.status === 'APPROVED' ? `Approve ${showSectionReviewModal.section === 'onPage' ? 'On-Page' : 'Off-Page'} Section` : `Reject ${showSectionReviewModal.section === 'onPage' ? 'On-Page' : 'Off-Page'} Section`} size="sm">
            <div className="space-y-3">
              {showSectionReviewModal.status === 'CHANGES_REQUESTED' && <div className="p-2 bg-red-50 text-red-600 text-xs rounded">Please describe what needs to be changed.</div>}
              <Textarea label={showSectionReviewModal.status === 'CHANGES_REQUESTED' ? 'Reason / What needs to be fixed' : 'Comment (optional)'} value={sectionReviewComment} onChange={e => setSectionReviewComment(e.target.value)} placeholder={showSectionReviewModal.status === 'CHANGES_REQUESTED' ? 'e.g. Please add more details...' : 'Any additional notes...'} />
