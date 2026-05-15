@@ -12,7 +12,7 @@ import { STAGE_LABELS, STAGE_COLORS } from '../../types';
 import { ChatBox } from '../chat/ChatBox';
 
 export function BossDashboard() {
-  const { projects, users, projectUpdates, workSubmissions, deleteProject, createAssignment, reviewWork, reviewProjectUpdate, assignments, currentUser } = useApp();
+  const { projects, users, projectUpdates, workSubmissions, deleteProject, createAssignment, reviewWork, reviewProjectUpdate, reviewSection, assignments, currentUser } = useApp();
    const { unreadCounts, notificationPermission, requestNotificationPermission } = useChatNotify();
   const { onActivityNotification, offActivityNotification } = useSocket();
   const [expandedProject, setExpandedProject] = useState<string | null>(null);
@@ -35,6 +35,9 @@ export function BossDashboard() {
   const [updateReviewStatus, setUpdateReviewStatus] = useState('');
   const [updateReviewComment, setUpdateReviewComment] = useState('');
   const [updateReviewing, setUpdateReviewing] = useState(false);
+  const [showSectionReviewModal, setShowSectionReviewModal] = useState<{ updateId: string; section: string; status: string } | null>(null);
+  const [sectionReviewComment, setSectionReviewComment] = useState('');
+  const [sectionReviewing, setSectionReviewing] = useState(false);
   const assignDesignerImgRef = useRef<HTMLInputElement>(null);
   const assignDesignerDocRef = useRef<HTMLInputElement>(null);
   const [notifications, setNotifications] = useState<{ id: string; type: string; message: string; projectId: string; fromUserId: string; createdAt: number }[]>([]);
@@ -62,24 +65,26 @@ export function BossDashboard() {
 
   const allUpdates = projectUpdates;
   const pendingCount = allUpdates.filter((u: any) => {
-    if (u.reportType !== 'STRUCTURED') return false;
-    const hasOnPage = !!(u.onPageText || (u.onPageFiles && u.onPageFiles.length > 0));
-    const hasOffPage = !!(u.offPageWorkIds && u.offPageWorkIds.length > 0);
-    const onPagePending = hasOnPage && u.onPageStatus === 'PENDING';
-    const offPagePending = hasOffPage && u.offPageStatus === 'PENDING';
-    return onPagePending || offPagePending;
+    if (u.reportType === 'STRUCTURED') {
+      const hasOnPage = !!(u.onPageText || (u.onPageFiles && u.onPageFiles.length > 0));
+      const hasOffPage = !!(u.offPageWorkIds && u.offPageWorkIds.length > 0);
+      return (hasOnPage && u.onPageStatus === 'PENDING') || (hasOffPage && u.offPageStatus === 'PENDING');
+    }
+    return u.status === 'PENDING_REVIEW';
   }).length;
   const approvedCount = allUpdates.filter((u: any) => {
-    if (u.reportType !== 'STRUCTURED') return false;
-    const hasOnPage = !!(u.onPageText || (u.onPageFiles && u.onPageFiles.length > 0));
-    const hasOffPage = !!(u.offPageWorkIds && u.offPageWorkIds.length > 0);
-    const onPageDone = !hasOnPage || u.onPageStatus === 'APPROVED';
-    const offPageDone = !hasOffPage || u.offPageStatus === 'APPROVED';
-    return onPageDone && offPageDone && (hasOnPage || hasOffPage);
+    if (u.reportType === 'STRUCTURED') {
+      const hasOnPage = !!(u.onPageText || (u.onPageFiles && u.onPageFiles.length > 0));
+      const hasOffPage = !!(u.offPageWorkIds && u.offPageWorkIds.length > 0);
+      const onPageDone = !hasOnPage || u.onPageStatus === 'APPROVED';
+      const offPageDone = !hasOffPage || u.offPageStatus === 'APPROVED';
+      return onPageDone && offPageDone && (hasOnPage || hasOffPage);
+    }
+    return u.status === 'APPROVED';
   }).length;
   const rejectedCount = allUpdates.filter((u: any) => {
-    if (u.reportType !== 'STRUCTURED') return false;
-    return u.onPageStatus === 'REJECTED' || u.offPageStatus === 'REJECTED';
+    if (u.reportType === 'STRUCTURED') return u.onPageStatus === 'REJECTED' || u.offPageStatus === 'REJECTED';
+    return u.status === 'CHANGES_REQUESTED';
   }).length;
 
   const getStatusColor = (status: string) => {
@@ -87,6 +92,17 @@ export function BossDashboard() {
     if (status === 'REJECTED') return 'red';
     return 'yellow';
   };
+
+  function getLatestSenderStatus(reports: any[]) {
+    const latestBySender: Record<string, any> = {};
+    for (const r of reports) {
+      const key = r.fromId;
+      if (!latestBySender[key] || new Date(r.createdAt) > new Date(latestBySender[key].createdAt)) {
+        latestBySender[key] = r;
+      }
+    }
+    return Object.values(latestBySender);
+  }
 
   const getWorkStatusColor = (status: string) => {
     if (status === 'APPROVED') return 'green';
@@ -150,6 +166,18 @@ export function BossDashboard() {
     }
   };
 
+  const handleSectionReview = async () => {
+    if (!showSectionReviewModal) return;
+    setSectionReviewing(true);
+    try {
+      await reviewSection(showSectionReviewModal.updateId, showSectionReviewModal.section, showSectionReviewModal.status, sectionReviewComment);
+      setShowSectionReviewModal(null);
+      setSectionReviewComment('');
+    } finally {
+      setSectionReviewing(false);
+    }
+  };
+
    return (
      <div>
        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
@@ -185,6 +213,8 @@ export function BossDashboard() {
                         const project = projects.find(p => p.id === n.projectId);
                         const typeIcon = n.type === 'REPORT_SUBMITTED' ? <FileText size={14} className="text-green-500" />
                           : n.type === 'REPORT_REVIEWED' ? <CheckCircle2 size={14} className="text-purple-500" />
+                          : n.type === 'SECTION_REVIEWED' ? <FileText size={14} className="text-orange-500" />
+                          : n.type === 'PROJECT_CREATED' ? <Folder size={14} className="text-blue-500" />
                           : n.type === 'WORK_SUBMITTED' ? <Send size={14} className="text-orange-500" />
                           : n.type === 'WORK_REVIEWED' ? <CheckCircle2 size={14} className="text-blue-500" />
                           : n.type === 'PROJECT_ASSIGNED' ? <Folder size={14} className="text-blue-500" />
@@ -214,7 +244,7 @@ export function BossDashboard() {
             </div>
          </div>
          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-8">
-          <Card className={`p-4 sm:p-5 cursor-pointer hover:shadow-md transition-all ${filterMode === 'all' ? 'ring-2 ring-blue-500 bg-blue-50' : ''}`} onClick={() => setFilterMode(filterMode === 'all' ? 'all' : 'all')}>
+          <Card className={`p-4 sm:p-5 cursor-pointer hover:shadow-md transition-all ${filterMode === 'all' ? 'ring-2 ring-blue-500 bg-blue-50' : ''}`} onClick={() => setFilterMode('all')}>
             <div className="flex items-center justify-between">
               <div className="w-9 h-9 sm:w-10 sm:h-10 bg-blue-500/10 rounded-xl flex items-center justify-center"><Folder size={16} className="text-blue-600" /></div>
               <span className="text-xl sm:text-2xl font-bold text-slate-700">{projects.length}</span>
@@ -293,8 +323,9 @@ export function BossDashboard() {
           }).map(project => {
             const isExpanded = expandedProject === project.id;
             const projectReports = allUpdates.filter((u: any) => u.projectId === project.id);
+            const latestReports = getLatestSenderStatus(projectReports);
             const reportCount = projectReports.length;
-            const hasPending = projectReports.some((u: any) => {
+            const hasPending = latestReports.some((u: any) => {
               if (u.reportType === 'STRUCTURED') {
                 const hasOnPage = !!(u.onPageText || (u.onPageFiles && u.onPageFiles.length > 0));
                 const hasOffPage = !!(u.offPageWorkIds && u.offPageWorkIds.length > 0);
@@ -302,11 +333,11 @@ export function BossDashboard() {
               }
               return u.status === 'PENDING_REVIEW';
             });
-            const hasRejected = projectReports.some((u: any) => {
+            const hasRejected = latestReports.some((u: any) => {
               if (u.reportType === 'STRUCTURED') return u.onPageStatus === 'REJECTED' || u.offPageStatus === 'REJECTED';
               return u.status === 'CHANGES_REQUESTED';
             });
-            const allApproved = projectReports.length > 0 && projectReports.every((u: any) => {
+            const allApproved = latestReports.length > 0 && latestReports.every((u: any) => {
               if (u.reportType === 'STRUCTURED') {
                 const hasOnPage = !!(u.onPageText || (u.onPageFiles && u.onPageFiles.length > 0));
                 const hasOffPage = !!(u.offPageWorkIds && u.offPageWorkIds.length > 0);
@@ -316,6 +347,14 @@ export function BossDashboard() {
               }
               return u.status === 'APPROVED';
             });
+            const pendingBadgeCount = latestReports.filter((u: any) => {
+              if (u.reportType === 'STRUCTURED') {
+                const ho = !!(u.onPageText || (u.onPageFiles && u.onPageFiles.length > 0));
+                const hf = !!(u.offPageWorkIds && u.offPageWorkIds.length > 0);
+                return (ho && u.onPageStatus === 'PENDING') || (hf && u.offPageStatus === 'PENDING');
+              }
+              return u.status === 'PENDING_REVIEW';
+            }).length;
             const projectUnreadMap = unreadCounts[project.id] || {};
             const projectUnread = (Object.values(projectUnreadMap) as number[]).reduce((sum, val) => sum + val, 0);
 
@@ -324,12 +363,17 @@ export function BossDashboard() {
                 <div className="p-3 sm:p-5 cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => setExpandedProject(isExpanded ? null : project.id)}>
                   <div className="flex items-start sm:items-center justify-between gap-2">
                     <div className="flex items-start sm:items-center gap-3 min-w-0">
-                      <div className="relative shrink-0">
+                       <div className="relative shrink-0">
                         <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-500 rounded-xl sm:rounded-2xl flex items-center justify-center text-white">
                           <Folder size={22} />
                         </div>
+                        {pendingBadgeCount > 0 && (
+                          <span className="absolute -top-1 -right-1 min-w-[20px] h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 animate-pulse">
+                            {pendingBadgeCount}
+                          </span>
+                        )}
                         {projectUnread > 0 && (
-                          <span className="absolute -top-1 -left-1 bg-red-500 text-white text-[8px] font-bold rounded-full min-w-[18px] h-4 flex items-center justify-center px-0.5 animate-bounce shadow-lg shadow-red-500/50 z-10">
+                          <span className="absolute -bottom-1 -left-1 bg-red-500 text-white text-[8px] font-bold rounded-full min-w-[18px] h-4 flex items-center justify-center px-0.5 animate-bounce shadow-lg shadow-red-500/50 z-10">
                             {projectUnread > 99 ? '99+' : projectUnread}
                           </span>
                         )}
@@ -712,38 +756,58 @@ export function BossDashboard() {
                                                <p className="text-sm text-slate-700">{report.text}</p>
                                              )}
 
-                                             {(report.onPageText || (report.onPageFiles && report.onPageFiles.length > 0)) && (
-                                               <div>
-                                                 <div className="flex items-center justify-between mb-1">
-                                                   <p className="text-xs font-semibold text-purple-700">On-Page Work</p>
-                                                   <Badge variant={report.onPageStatus === 'APPROVED' ? 'green' : report.onPageStatus === 'REJECTED' ? 'red' : 'yellow'} className="text-[10px]">
-                                                     {report.onPageStatus === 'APPROVED' ? 'Approved' : report.onPageStatus === 'REJECTED' ? 'Rejected' : 'Pending'}
-                                                   </Badge>
-                                                 </div>
-                                                 {report.onPageText && <p className="text-sm text-slate-700">{report.onPageText}</p>}
-                                                 {report.onPageFiles && report.onPageFiles.length > 0 && (
-                                                   <div className="flex flex-wrap gap-2 mt-1">
-                                                     {report.onPageFiles.map((f: any, i: number) => (
-                                                       <a key={i} href={`/uploads/${f.filename}`} target="_blank" className="text-xs text-blue-600 hover:underline">
-                                                         {f.originalName}
-                                                       </a>
-                                                     ))}
-                                                   </div>
-                                                 )}
-                                               </div>
-                                             )}
+                                              {(report.onPageText || (report.onPageFiles && report.onPageFiles.length > 0)) && (
+                                                <div>
+                                                  <div className="flex items-center justify-between mb-1">
+                                                    <p className="text-xs font-semibold text-purple-700">On-Page Work</p>
+                                                    <Badge variant={report.onPageStatus === 'APPROVED' ? 'green' : report.onPageStatus === 'REJECTED' ? 'red' : 'yellow'} className="text-[10px]">
+                                                      {report.onPageStatus === 'APPROVED' ? 'Approved' : report.onPageStatus === 'REJECTED' ? 'Rejected' : 'Pending'}
+                                                    </Badge>
+                                                  </div>
+                                                  {report.onPageText && <p className="text-sm text-slate-700">{report.onPageText}</p>}
+                                                  {report.onPageFiles && report.onPageFiles.length > 0 && (
+                                                    <div className="flex flex-wrap gap-2 mt-1">
+                                                      {report.onPageFiles.map((f: any, i: number) => (
+                                                        <a key={i} href={`/uploads/${f.filename}`} target="_blank" className="text-xs text-blue-600 hover:underline">
+                                                          {f.originalName}
+                                                        </a>
+                                                      ))}
+                                                    </div>
+                                                  )}
+                                                  {report.onPageStatus === 'PENDING' && (
+                                                    <div className="flex items-center gap-2 mt-2">
+                                                      <Button size="sm" variant="primary" className="gap-1 text-[11px] py-1 px-2" onClick={(e) => { e.stopPropagation(); setShowSectionReviewModal({ updateId: report.id, section: 'onPage', status: 'APPROVED' }); }}>
+                                                        <CheckCircle2 size={12} /> Approve
+                                                      </Button>
+                                                      <Button size="sm" variant="danger" className="gap-1 text-[11px] py-1 px-2" onClick={(e) => { e.stopPropagation(); setShowSectionReviewModal({ updateId: report.id, section: 'onPage', status: 'REJECTED' }); }}>
+                                                        <RotateCcw size={12} /> Reject
+                                                      </Button>
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              )}
 
-                                             {(report.offPageWorkIds && report.offPageWorkIds.length > 0) && (
-                                               <div>
-                                                 <div className="flex items-center justify-between mb-1">
-                                                   <p className="text-xs font-semibold text-orange-700">Off-Page Work</p>
-                                                   <Badge variant={report.offPageStatus === 'APPROVED' ? 'green' : report.offPageStatus === 'REJECTED' ? 'red' : 'yellow'} className="text-[10px]">
-                                                     {report.offPageStatus === 'APPROVED' ? 'Approved' : report.offPageStatus === 'REJECTED' ? 'Rejected' : 'Pending'}
-                                                   </Badge>
-                                                 </div>
-                                                 <p className="text-xs text-slate-500">{report.offPageWorkIds.length} submission(s) included</p>
-                                               </div>
-                                             )}
+                                              {(report.offPageWorkIds && report.offPageWorkIds.length > 0) && (
+                                                <div>
+                                                  <div className="flex items-center justify-between mb-1">
+                                                    <p className="text-xs font-semibold text-orange-700">Off-Page Work</p>
+                                                    <Badge variant={report.offPageStatus === 'APPROVED' ? 'green' : report.offPageStatus === 'REJECTED' ? 'red' : 'yellow'} className="text-[10px]">
+                                                      {report.offPageStatus === 'APPROVED' ? 'Approved' : report.offPageStatus === 'REJECTED' ? 'Rejected' : 'Pending'}
+                                                    </Badge>
+                                                  </div>
+                                                  <p className="text-xs text-slate-500">{report.offPageWorkIds.length} submission(s) included</p>
+                                                  {report.offPageStatus === 'PENDING' && (
+                                                    <div className="flex items-center gap-2 mt-2">
+                                                      <Button size="sm" variant="primary" className="gap-1 text-[11px] py-1 px-2" onClick={(e) => { e.stopPropagation(); setShowSectionReviewModal({ updateId: report.id, section: 'offPage', status: 'APPROVED' }); }}>
+                                                        <CheckCircle2 size={12} /> Approve
+                                                      </Button>
+                                                      <Button size="sm" variant="danger" className="gap-1 text-[11px] py-1 px-2" onClick={(e) => { e.stopPropagation(); setShowSectionReviewModal({ updateId: report.id, section: 'offPage', status: 'REJECTED' }); }}>
+                                                        <RotateCcw size={12} /> Reject
+                                                      </Button>
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              )}
                                            </div>
 
                                            {report.status === 'PENDING_REVIEW' && (
@@ -905,6 +969,28 @@ export function BossDashboard() {
               <Button variant="outline" onClick={() => setShowUpdateReviewModal(null)}>Cancel</Button>
               <Button variant={updateReviewStatus === 'APPROVED' ? 'primary' : 'danger'} className="gap-1" onClick={handleUpdateReview} disabled={updateReviewing || (updateReviewStatus === 'CHANGES_REQUESTED' && !updateReviewComment.trim())}>
                 {updateReviewing ? <><Loader2 size={14} className="animate-spin" /> Processing...</> : updateReviewStatus === 'APPROVED' ? <><CheckCircle2 size={14} /> Approve</> : <><RotateCcw size={14} /> Send Back</>}
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {showSectionReviewModal && (
+        <Modal isOpen={true} onClose={() => setShowSectionReviewModal(null)} title={showSectionReviewModal.status === 'APPROVED' ? `Approve ${showSectionReviewModal.section === 'onPage' ? 'On-Page' : 'Off-Page'} Section` : `Reject ${showSectionReviewModal.section === 'onPage' ? 'On-Page' : 'Off-Page'} Section`} size="sm">
+          <div className="space-y-3">
+            {showSectionReviewModal.status === 'REJECTED' && (
+              <div className="p-2 bg-red-50 text-red-600 text-xs rounded">Please describe what needs to be changed.</div>
+            )}
+            <Textarea
+              label={showSectionReviewModal.status === 'REJECTED' ? 'Reason / What needs to be fixed' : 'Comment (optional)'}
+              value={sectionReviewComment}
+              onChange={e => setSectionReviewComment(e.target.value)}
+              placeholder={showSectionReviewModal.status === 'REJECTED' ? 'e.g. Please add more details...' : 'Any additional notes...'}
+            />
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowSectionReviewModal(null)}>Cancel</Button>
+              <Button variant={showSectionReviewModal.status === 'APPROVED' ? 'primary' : 'danger'} className="gap-1" onClick={handleSectionReview} disabled={sectionReviewing || (showSectionReviewModal.status === 'REJECTED' && !sectionReviewComment.trim())}>
+                {sectionReviewing ? <><Loader2 size={14} className="animate-spin" /> Processing...</> : showSectionReviewModal.status === 'APPROVED' ? <><CheckCircle2 size={14} /> Approve Section</> : <><RotateCcw size={14} /> Reject Section</>}
               </Button>
             </div>
           </div>
