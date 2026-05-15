@@ -24,6 +24,7 @@ const projectSchema = new mongoose.Schema({
   currentReviews: { type: Number, default: 0 },
   currentRating: { type: Number, default: 0 },
   specialInstructions: { type: String, default: '' },
+  signupDate: { type: String, default: '' },
   managerComment: { type: String, default: '' },
   stage: {
     type: String,

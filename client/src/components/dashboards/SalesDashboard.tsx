@@ -35,6 +35,7 @@ const emptyForm = {
   currentReviews: 0,
   currentRating: 0,
   specialInstructions: '',
+  signupDate: '',
 };
 
 const BUSINESS_CATEGORIES = [
@@ -180,6 +181,7 @@ export function SalesDashboard() {
       currentReviews: project.currentReviews || 0,
       currentRating: project.currentRating || 0,
       specialInstructions: project.specialInstructions || '',
+      signupDate: (project as any).signupDate || '',
       verificationStatus: project.verificationStatus,
     });
     setEditingProject(projectId);
@@ -346,6 +348,7 @@ export function SalesDashboard() {
                           <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">Reviews</span><p className="text-sm font-medium text-slate-800 mt-0.5">{project.currentReviews} ({project.currentRating} rating)</p></div>
                           <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">Verification</span><p className="text-sm font-medium text-slate-800 mt-0.5">{project.verificationStatus}</p></div>
                           <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">Competitors</span><p className="text-sm font-medium text-slate-800 mt-0.5 truncate">{project.competitors || 'N/A'}</p></div>
+                          {(project as any).signupDate && <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200"><span className="text-[10px] text-blue-500/70 uppercase tracking-wider font-medium">Signup Date</span><p className="text-sm font-medium text-slate-800 mt-0.5">{new Date((project as any).signupDate + 'T00:00:00').toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</p></div>}
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-3">
                           {project.googleMapsLink && <a href={project.googleMapsLink} target="_blank" className="flex items-center gap-2 p-2.5 bg-blue-500/5 rounded-lg border border-blue-500/10 hover:bg-blue-500/10 transition-colors"><ExternalLink size={12} className="text-blue-600 shrink-0" /><div className="min-w-0"><span className="text-[10px] text-blue-600/60 uppercase tracking-wider">Google Maps</span><p className="text-xs text-blue-600 truncate">{project.googleMapsLink}</p></div></a>}
@@ -769,6 +772,7 @@ export function SalesDashboard() {
             {formStep === 1 && (
               <div className="space-y-4">
                 <Input label="Business Name" required value={form.name} onChange={e => updateForm('name', e.target.value)} placeholder="e.g. Smith & Co." />
+                <Input label="Signup Date" type="date" value={form.signupDate} onChange={e => updateForm('signupDate', e.target.value)} />
                 <Input label="Business Category" required value={form.businessCategory} onChange={e => updateForm('businessCategory', e.target.value)} placeholder="Select or type a category..." list="create-category-list" />
                 <datalist id="create-category-list">
                   {BUSINESS_CATEGORIES.map(cat => <option key={cat} value={cat} />)}
@@ -845,6 +849,7 @@ export function SalesDashboard() {
             {editStep === 1 && (
               <div className="space-y-4">
                 <Input label="Business Name" required value={editForm.name} onChange={e => updateEdit('name', e.target.value)} placeholder="e.g. Smith & Co." />
+                <Input label="Signup Date" type="date" value={editForm.signupDate} onChange={e => updateEdit('signupDate', e.target.value)} />
                 <Input label="Business Category" required value={editForm.businessCategory} onChange={e => updateEdit('businessCategory', e.target.value)} placeholder="Select or type a category..." list="edit-category-list" />
                 <datalist id="edit-category-list">
                   {BUSINESS_CATEGORIES.map(cat => <option key={cat} value={cat} />)}

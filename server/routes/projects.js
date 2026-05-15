@@ -45,6 +45,7 @@ function formatProject(doc) {
     currentReviews: obj.currentReviews,
     currentRating: obj.currentRating,
     specialInstructions: obj.specialInstructions,
+    signupDate: obj.signupDate || '',
     managerComment: obj.managerComment,
     stage: obj.stage,
     assignedTo: obj.assignedTo,
@@ -89,6 +90,7 @@ router.post('/', async (req, res) => {
       currentReviews: data.currentReviews || 0,
       currentRating: data.currentRating || 0,
       specialInstructions: data.specialInstructions || '',
+      signupDate: data.signupDate || '',
       stage: 'CLIENT_COMMUNICATION',
       assignedTo: [],
       createdBy: userId,
@@ -146,7 +148,7 @@ router.put('/:id', async (req, res) => {
       'name', 'businessCategory', 'businessAddress', 'businessCity',
       'businessState', 'businessZip', 'businessPhone', 'businessEmail', 'businessWebsite',
       'googleMapsLink', 'yelpLink', 'homeAdvisorLink', 'verificationStatus', 'targetKeywords', 'competitors', 'businessHours',
-      'services', 'offerServices', 'serviceAreas', 'currentReviews', 'currentRating', 'specialInstructions',
+      'services', 'offerServices', 'serviceAreas', 'currentReviews', 'currentRating', 'specialInstructions', 'signupDate',
     ];
 
     updatableFields.forEach(field => {
