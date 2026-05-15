@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   Globe, X, ShieldCheck, ExternalLink, Calendar,
   Folder, ChevronDown, ChevronUp, Download, FileText, Clock, Trash2,
-  Palette, Image, Paperclip, Send, CheckCircle2, Loader2, Bell, RotateCcw
+  Palette, Image, Paperclip, Send, CheckCircle2, Loader2, Bell, RotateCcw, Search
 } from 'lucide-react';
 import { Card, Badge, Button, Modal, Textarea } from '../ui/Common';
 import { useApp } from '../../AppContext';
@@ -43,6 +43,9 @@ export function BossDashboard() {
   const [notifications, setNotifications] = useState<{ id: string; type: string; message: string; projectId: string; fromUserId: string; createdAt: number }[]>([]);
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handler = (data: any) => {
@@ -53,7 +56,10 @@ export function BossDashboard() {
   }, [onActivityNotification, offActivityNotification]);
 
   useEffect(() => {
-    const handleClick = (e: MouseEvent) => { if (notifRef.current && !notifRef.current.contains(e.target as Node)) setShowNotifDropdown(false); };
+    const handleClick = (e: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) setShowNotifDropdown(false);
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) setShowSearchDropdown(false);
+    };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
@@ -274,6 +280,60 @@ export function BossDashboard() {
             </div>
             <p className="text-[10px] sm:text-xs text-slate-500 mt-2 font-semibold">Rejected</p>
           </Card>
+        </div>
+
+        <div className="mb-4" ref={searchRef}>
+          <div className="relative max-w-md">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search projects..."
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setShowSearchDropdown(true); }}
+              onFocus={() => setShowSearchDropdown(true)}
+              className="w-full pl-10 pr-4 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-900 placeholder-slate-400"
+            />
+            {searchQuery && (
+              <button onClick={() => { setSearchQuery(''); setShowSearchDropdown(false); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                <X size={14} />
+              </button>
+            )}
+            {showSearchDropdown && searchQuery && (() => {
+              const filtered = projects.filter(p =>
+                p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (p.businessCategory || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (p.businessCity || '').toLowerCase().includes(searchQuery.toLowerCase())
+              );
+              if (filtered.length === 0) return (
+                <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden">
+                  <div className="px-4 py-3 text-sm text-slate-400 text-center">No projects found</div>
+                </div>
+              );
+              return (
+                <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden max-h-64 overflow-y-auto">
+                  {filtered.map(p => (
+                    <div
+                      key={p.id}
+                      className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer border-b border-slate-50 last:border-b-0 transition-colors"
+                      onClick={() => {
+                        setExpandedProject(p.id);
+                        setSearchQuery(p.name);
+                        setShowSearchDropdown(false);
+                      }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-slate-900 truncate">{p.name}</p>
+                          <p className="text-xs text-slate-500">{p.businessCategory || 'N/A'} — {p.businessCity}</p>
+                        </div>
+                        <Badge variant={STAGE_COLORS[p.stage]} className="shrink-0 ml-2">{STAGE_LABELS[p.stage]}</Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
         </div>
 
         <div className="flex items-center justify-between mb-4">
