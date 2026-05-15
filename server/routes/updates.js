@@ -14,6 +14,15 @@ const uploadsDir = process.env.UPLOADS_DIR || path.join(__dirname, '../uploads')
 const router = express.Router();
 router.use(authMiddleware);
 
+async function notifyBoss(io, data) {
+  try {
+    const bosses = await User.find({ role: 'BOSS' });
+    for (const boss of bosses) {
+      io.to(`user:${boss._id}`).emit('activity-notification', data);
+    }
+  } catch {}
+}
+
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, uploadsDir),
   filename: (_req, file, cb) => {
@@ -115,6 +124,7 @@ router.post('/', upload.array('files', 10), async (req, res) => {
     if (io) {
       io.emit('data-changed', { type: 'REPORT_SUBMITTED', projectId, userId });
       io.to(`user:${toId}`).emit('activity-notification', { type: 'REPORT_SUBMITTED', message: 'A new report has been submitted', projectId, fromUserId: userId });
+      notifyBoss(io, { type: 'REPORT_SUBMITTED', message: `New report submitted for project`, projectId, fromUserId: userId });
     }
 
     res.json(formatUpdate(update));
@@ -140,6 +150,7 @@ router.put('/:id/review', async (req, res) => {
     if (io) {
       io.emit('data-changed', { type: 'REPORT_REVIEWED', projectId: update.projectId, userId: req.user.id });
       io.to(`user:${update.fromId}`).emit('activity-notification', { type: 'REPORT_REVIEWED', message: `Your report has been ${status === 'APPROVED' ? 'approved' : 'rejected'}`, projectId: update.projectId, fromUserId: req.user.id });
+      notifyBoss(io, { type: 'REPORT_REVIEWED', message: `Report ${status === 'APPROVED' ? 'approved' : 'rejected'}`, projectId: update.projectId, fromUserId: req.user.id });
     }
 
     res.json(formatUpdate(update));
@@ -193,6 +204,7 @@ router.put('/:id/review-section', async (req, res) => {
     if (io) {
       io.emit('data-changed', { type: 'SECTION_REVIEWED', projectId: update.projectId, userId: req.user.id });
       io.to(`user:${update.fromId}`).emit('activity-notification', { type: 'SECTION_REVIEWED', message: `Your ${section === 'onPage' ? 'On-Page' : 'Off-Page'} report has been ${status === 'APPROVED' ? 'approved' : 'rejected'}`, projectId: update.projectId, fromUserId: req.user.id });
+      notifyBoss(io, { type: 'SECTION_REVIEWED', message: `Section ${section} ${status === 'APPROVED' ? 'approved' : 'rejected'}`, projectId: update.projectId, fromUserId: req.user.id });
     }
 
     res.json(formatUpdate(update));
