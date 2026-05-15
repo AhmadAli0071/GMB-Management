@@ -319,6 +319,7 @@ export function BossDashboard() {
                         setExpandedProject(p.id);
                         setSearchQuery(p.name);
                         setShowSearchDropdown(false);
+                        document.getElementById(`project-${p.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                       }}
                     >
                       <div className="flex items-center justify-between">
@@ -358,7 +359,15 @@ export function BossDashboard() {
         )}
 
         <div className="space-y-4">
-           {projects.filter(project => {
+          {projects.filter(project => {
+            if (searchQuery) {
+              const q = searchQuery.toLowerCase();
+              if (!project.name.toLowerCase().includes(q) &&
+                !(project.businessCategory || '').toLowerCase().includes(q) &&
+                !(project.businessCity || '').toLowerCase().includes(q)) {
+                return false;
+              }
+            }
             if (filterMode === 'all') return true;
             const projectReports = allUpdates.filter((u: any) => u.projectId === project.id);
             const latest = getLatestSenderStatus(projectReports);
