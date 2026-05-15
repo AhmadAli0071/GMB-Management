@@ -300,6 +300,7 @@ export function SalesDashboard() {
                         <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-slate-500">
                           <span className="flex items-center gap-1"><MapPin size={10} /> {project.businessCity}{project.businessState ? `, ${project.businessState}` : ''}</span>
                           <span className="flex items-center gap-1"><Star size={10} /> {project.currentRating} ({project.currentReviews} reviews)</span>
+                          {(project as any).signupDate && <span className="flex items-center gap-1"><Calendar size={10} /> {new Date((project as any).signupDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>}
                         </div>
                       </div>
                     </div>
