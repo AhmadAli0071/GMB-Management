@@ -2,12 +2,22 @@ import { Router } from 'express';
 import crypto from 'crypto';
 import Project from '../models/Project.js';
 import Activity from '../models/Activity.js';
+import User from '../models/User.js';
 import { authMiddleware } from '../middleware/auth.js';
 import logger from '../utils/logger.js';
 
 const router = Router();
 
 router.use(authMiddleware);
+
+async function notifyBoss(io, data) {
+  try {
+    const bosses = await User.find({ role: 'BOSS' });
+    for (const boss of bosses) {
+      io.to(`user:${boss._id}`).emit('activity-notification', data);
+    }
+  } catch {}
+}
 
 function formatProject(doc) {
   const obj = doc.toObject ? doc.toObject() : doc;
@@ -100,7 +110,10 @@ router.post('/', async (req, res) => {
     logger.info('Project created', { component: 'projects', projectId, userId });
 
     const io = req.app.get('io');
-    if (io) io.emit('data-changed', { type: 'PROJECT_CREATED', projectId, userId });
+    if (io) {
+      io.emit('data-changed', { type: 'PROJECT_CREATED', projectId, userId });
+      notifyBoss(io, { type: 'PROJECT_CREATED', message: `New project created: ${name}`, projectId, fromUserId: userId });
+    }
 
     res.status(201).json(formatProject(project));
   } catch (err) {
