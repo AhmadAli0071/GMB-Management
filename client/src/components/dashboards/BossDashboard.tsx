@@ -60,9 +60,26 @@ export function BossDashboard() {
   const designerId = designer?.id || '';
 
   const allUpdates = projectUpdates;
-  const pendingCount = allUpdates.filter((u: any) => u.reportType === 'STRUCTURED' && (u.onPageStatus === 'PENDING' || u.offPageStatus === 'PENDING')).length;
-  const approvedCount = allUpdates.filter((u: any) => u.reportType === 'STRUCTURED' && u.onPageStatus === 'APPROVED' && u.offPageStatus === 'APPROVED').length;
-  const rejectedCount = allUpdates.filter((u: any) => u.reportType === 'STRUCTURED' && (u.onPageStatus === 'REJECTED' || u.offPageStatus === 'REJECTED')).length;
+  const pendingCount = allUpdates.filter((u: any) => {
+    if (u.reportType !== 'STRUCTURED') return false;
+    const hasOnPage = !!(u.onPageText || (u.onPageFiles && u.onPageFiles.length > 0));
+    const hasOffPage = !!(u.offPageWorkIds && u.offPageWorkIds.length > 0);
+    const onPagePending = hasOnPage && u.onPageStatus === 'PENDING';
+    const offPagePending = hasOffPage && u.offPageStatus === 'PENDING';
+    return onPagePending || offPagePending;
+  }).length;
+  const approvedCount = allUpdates.filter((u: any) => {
+    if (u.reportType !== 'STRUCTURED') return false;
+    const hasOnPage = !!(u.onPageText || (u.onPageFiles && u.onPageFiles.length > 0));
+    const hasOffPage = !!(u.offPageWorkIds && u.offPageWorkIds.length > 0);
+    const onPageDone = !hasOnPage || u.onPageStatus === 'APPROVED';
+    const offPageDone = !hasOffPage || u.offPageStatus === 'APPROVED';
+    return onPageDone && offPageDone && (hasOnPage || hasOffPage);
+  }).length;
+  const rejectedCount = allUpdates.filter((u: any) => {
+    if (u.reportType !== 'STRUCTURED') return false;
+    return u.onPageStatus === 'REJECTED' || u.offPageStatus === 'REJECTED';
+  }).length;
 
   const getStatusColor = (status: string) => {
     if (status === 'APPROVED') return 'green';
