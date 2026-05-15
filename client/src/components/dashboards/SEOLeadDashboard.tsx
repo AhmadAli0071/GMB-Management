@@ -264,6 +264,10 @@ export function SEOLeadDashboard() {
   };
 
   const handleSubmitReport = async () => {
+    if (!reportForm.toId) {
+      alert('Recipient not selected. Please try again or refresh the page.');
+      return;
+    }
     setSubmittingReport(true);
     try {
       const projectLeadWork = myLeadWork.filter((w: any) => w.projectId === reportForm.projectId);
@@ -291,6 +295,8 @@ export function SEOLeadDashboard() {
       setShowSubmitReportModal(false);
       setReportForm({ projectId: '', toId: '' });
       setReportDate(new Date().toISOString().split('T')[0]);
+    } catch (err: any) {
+      alert('Failed to submit report: ' + (err.message || 'Please try again.'));
     } finally {
       setSubmittingReport(false);
     }
@@ -328,6 +334,10 @@ export function SEOLeadDashboard() {
 
    const handleSimpleReportSubmit = async () => {
      if (!simpleReportTitle.trim() || !simpleReportForm.projectId) return;
+     if (!simpleReportForm.toId) {
+       alert('Recipient not found. Please refresh the page and try again.');
+       return;
+     }
      setSubmittingSimple(true);
      try {
        const formData = new FormData();
@@ -346,75 +356,83 @@ export function SEOLeadDashboard() {
        setSimpleReportTitle('');
        setSimpleReportNotes('');
        setSimpleReportFiles(null);
-     } catch (err) {
-       console.error('Simple report submit error:', err);
+     } catch (err: any) {
+       alert('Failed to submit report: ' + (err.message || 'Please try again.'));
      } finally {
        setSubmittingSimple(false);
      }
    };
 
-     // Monthly Report handlers (to Sales Manager)
-     const handleQuickMonthlyReportSubmit = async () => {
-       if (!quickMonthlyTitle.trim() || !showQuickMonthlyReportModal) return;
-       setSubmittingQuickMonthly(true);
-       try {
-         const formData = new FormData();
-         formData.append('projectId', showQuickMonthlyReportModal);
-         formData.append('toId', salesManagerId); // Send to Sales Manager (Kevin)
-         formData.append('title', quickMonthlyTitle.trim());
-         formData.append('text', quickMonthlyNotes.trim());
-         if (quickMonthlyFiles) {
-           Array.from(quickMonthlyFiles).forEach(file => formData.append('files', file));
-         }
-         formData.append('workDate', quickMonthlyWorkDate);
+      // Monthly Report handlers (to Sales Manager)
+      const handleQuickMonthlyReportSubmit = async () => {
+        if (!quickMonthlyTitle.trim() || !showQuickMonthlyReportModal) return;
+        if (!salesManagerId) {
+          alert('Sales Manager not found. Please wait for the page to load or refresh and try again.');
+          return;
+        }
+        setSubmittingQuickMonthly(true);
+        try {
+          const formData = new FormData();
+          formData.append('projectId', showQuickMonthlyReportModal);
+          formData.append('toId', salesManagerId); // Send to Sales Manager (Kevin)
+          formData.append('title', quickMonthlyTitle.trim());
+          formData.append('text', quickMonthlyNotes.trim());
+          if (quickMonthlyFiles) {
+            Array.from(quickMonthlyFiles).forEach(file => formData.append('files', file));
+          }
+          formData.append('workDate', quickMonthlyWorkDate);
 
-         await submitProjectUpdate(formData);
-         setShowQuickMonthlyReportModal(null);
-         setQuickMonthlyTitle('');
-         setQuickMonthlyNotes('');
-         setQuickMonthlyFiles(null);
-       } catch (err) {
-         console.error('Quick monthly report submit error:', err);
-       } finally {
-         setSubmittingQuickMonthly(false);
-       }
-     };
+          await submitProjectUpdate(formData);
+          setShowQuickMonthlyReportModal(null);
+          setQuickMonthlyTitle('');
+          setQuickMonthlyNotes('');
+          setQuickMonthlyFiles(null);
+        } catch (err: any) {
+          alert('Failed to submit report: ' + (err.message || 'Please try again.'));
+        } finally {
+          setSubmittingQuickMonthly(false);
+        }
+      };
 
-     const handleStructuredMonthlyReportSubmit = async () => {
-       if (!showStructuredMonthlyReportModal) return;
-       setSubmittingStructuredMonthly(true);
-       try {
-         const formData = new FormData();
-         formData.append('projectId', showStructuredMonthlyReportModal);
-         formData.append('toId', salesManagerId); // Send to Sales Manager (Kevin)
-         formData.append('reportType', 'STRUCTURED');
-         formData.append('onPageText', structuredMonthlyOnPageText);
+      const handleStructuredMonthlyReportSubmit = async () => {
+        if (!showStructuredMonthlyReportModal) return;
+        if (!salesManagerId) {
+          alert('Sales Manager not found. Please wait for the page to load or refresh and try again.');
+          return;
+        }
+        setSubmittingStructuredMonthly(true);
+        try {
+          const formData = new FormData();
+          formData.append('projectId', showStructuredMonthlyReportModal);
+          formData.append('toId', salesManagerId); // Send to Sales Manager (Kevin)
+          formData.append('reportType', 'STRUCTURED');
+          formData.append('onPageText', structuredMonthlyOnPageText);
 
-         const onPageFiles: { filename: string; originalName: string }[] = [];
-         if (structuredMonthlyOnPageFiles) {
-           Array.from(structuredMonthlyOnPageFiles).forEach(file => {
-             onPageFiles.push({ filename: file.name, originalName: file.name });
-           });
-         }
-         formData.append('onPageFilesJson', JSON.stringify(onPageFiles));
+          const onPageFiles: { filename: string; originalName: string }[] = [];
+          if (structuredMonthlyOnPageFiles) {
+            Array.from(structuredMonthlyOnPageFiles).forEach(file => {
+              onPageFiles.push({ filename: file.name, originalName: file.name });
+            });
+          }
+          formData.append('onPageFilesJson', JSON.stringify(onPageFiles));
 
-         if (selectedMonthlyOffPageWork.length > 0) {
-           formData.append('offPageWorkIds', JSON.stringify(selectedMonthlyOffPageWork));
-         }
+          if (selectedMonthlyOffPageWork.length > 0) {
+            formData.append('offPageWorkIds', JSON.stringify(selectedMonthlyOffPageWork));
+          }
 
-         formData.append('workDate', structuredMonthlyWorkDate);
+          formData.append('workDate', structuredMonthlyWorkDate);
 
-         await submitProjectUpdate(formData);
-         setShowStructuredMonthlyReportModal(null);
-         setStructuredMonthlyOnPageText('');
-         setStructuredMonthlyOnPageFiles(null);
-         setSelectedMonthlyOffPageWork([]);
-       } catch (err) {
-         console.error('Structured monthly report submit error:', err);
-       } finally {
-         setSubmittingStructuredMonthly(false);
-       }
-     };
+          await submitProjectUpdate(formData);
+          setShowStructuredMonthlyReportModal(null);
+          setStructuredMonthlyOnPageText('');
+          setStructuredMonthlyOnPageFiles(null);
+          setSelectedMonthlyOffPageWork([]);
+        } catch (err: any) {
+          alert('Failed to submit report: ' + (err.message || 'Please try again.'));
+        } finally {
+          setSubmittingStructuredMonthly(false);
+        }
+      };
 
      const handleUpdateReview = async () => {
     if (!showUpdateReviewModal) return;
