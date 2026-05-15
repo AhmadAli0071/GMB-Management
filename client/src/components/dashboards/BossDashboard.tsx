@@ -298,7 +298,7 @@ export function BossDashboard() {
                   <div className="flex gap-1 px-4 sm:px-5 pt-3 border-b border-slate-200">
                     <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${(activeBossTab[project.id] || 'details') === 'details' ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveBossTab(p => ({ ...p, [project.id]: 'details' }))}>Details</button>
                     <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeBossTab[project.id] === 'records' ? 'bg-green-50 text-green-600 border-b-2 border-green-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveBossTab(p => ({ ...p, [project.id]: 'records' }))}>Records</button>
-                    <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${(activeBossTab[project.id] || 'details') === 'report' ? 'bg-green-50 text-green-600 border-b-2 border-green-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveBossTab(prev => ({ ...prev, [project.id]: 'report' }))}>Monthly Report</button>
+                       <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${(activeBossTab[project.id] || 'details') === 'report' ? 'bg-green-50 text-green-600 border-b-2 border-green-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveBossTab(prev => ({ ...prev, [project.id]: 'report' }))}>Reports</button>
                     <button className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeBossTab[project.id] === 'chat' ? 'bg-purple-50 text-purple-600 border-b-2 border-purple-500' : 'text-slate-500 hover:text-slate-700'}`} onClick={() => setActiveBossTab(p => ({ ...p, [project.id]: 'chat' }))}>
                       Chat{projectUnread > 0 && <span className="ml-1.5 min-w-[16px] h-4 bg-red-500 text-white text-[8px] font-bold rounded-full inline-flex items-center justify-center px-0.5">{projectUnread > 99 ? '99+' : projectUnread}</span>}
                     </button>
@@ -519,113 +519,188 @@ export function BossDashboard() {
                   </div>
                   )}
 
-                  {(activeBossTab[project.id] || 'details') === 'report' && (
-                    <div className="p-4 sm:px-5 sm:py-4">
-                      <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 mb-4">
-                        <div className="w-1 h-4 bg-green-500 rounded-full" />
-                        Monthly Reports from SEO Lead
-                      </h4>
-                      <div className="space-y-3">
-                        {(() => {
-                          const myId = currentUser.id;
-                          const projectReports = projectUpdates.filter((u: any) => 
-                            u.projectId === project.id && u.toId === myId
-                          ).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+                   {(activeBossTab[project.id] || 'details') === 'report' && (
+                     <div className="p-4 sm:px-5 sm:py-4">
+                       <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 mb-4">
+                         <div className="w-1 h-4 bg-green-500 rounded-full" />
+                         All Reports
+                       </h4>
+                       <div className="space-y-3">
+                         {(() => {
+                           const projectReports = projectUpdates.filter((u: any) => 
+                             u.projectId === project.id
+                           ).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-                          if (projectReports.length === 0) {
-                            return (
-                              <div className="p-8 bg-slate-50 rounded-lg text-center">
-                                <FileText size={32} className="mx-auto text-slate-400 mb-2" />
-                                <p className="text-sm text-slate-500">No monthly reports submitted yet.</p>
-                                <p className="text-xs text-slate-400 mt-1">Reports from SEO Lead will appear here for your review.</p>
-                              </div>
-                            );
-                          }
+                           const dailyReports = projectReports.filter((u: any) => u.reportType !== 'STRUCTURED');
+                           const monthlyReports = projectReports.filter((u: any) => u.reportType === 'STRUCTURED');
 
-                          return projectReports.map(report => (
-                            <Card key={report.id} className="p-4 border-l-4 border-l-purple-500">
-                              <div className="flex items-start justify-between mb-3">
-                                <div>
-                                  <h5 className="font-semibold text-sm text-slate-900">{report.title || 'Monthly Report'}</h5>
-                                  <p className="text-xs text-slate-500 mt-0.5">
-                                    {new Date(report.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                                    {report.workDate && ` · Work Month: ${report.workDate}`}
-                                  </p>
-                                </div>
-                                <Badge variant={
-                                  report.status === 'APPROVED' ? 'green' :
-                                  report.status === 'CHANGES_REQUESTED' ? 'red' : 'yellow'
-                                }>
-                                  {report.status === 'APPROVED' ? 'Approved' :
-                                   report.status === 'CHANGES_REQUESTED' ? 'Changes Requested' : 'Pending Review'}
-                                </Badge>
-                              </div>
+                           if (projectReports.length === 0) {
+                             return (
+                               <div className="p-8 bg-slate-50 rounded-lg text-center">
+                                 <FileText size={32} className="mx-auto text-slate-400 mb-2" />
+                                 <p className="text-sm text-slate-500">No reports submitted yet.</p>
+                                 <p className="text-xs text-slate-400 mt-1">All reports from SEO Lead will appear here.</p>
+                               </div>
+                             );
+                           }
 
-                              <div className="space-y-3">
-                                {report.text && (
-                                  <p className="text-sm text-slate-700">{report.text}</p>
-                                )}
+                           return (
+                             <>
+                               {/* Daily / Simple Reports */}
+                               {dailyReports.length > 0 && (
+                                 <div>
+                                   <h5 className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2 flex items-center gap-2">
+                                     <Clock size={12} /> Daily Reports
+                                   </h5>
+                                   <div className="space-y-2">
+                                     {dailyReports.map(report => {
+                                       const fromUser = users[report.fromId];
+                                       const toUser = users[report.toId];
+                                       return (
+                                         <Card key={report.id} className="p-4 border-l-4 border-l-blue-400">
+                                           <div className="flex items-start justify-between mb-2">
+                                             <div>
+                                               <h5 className="font-semibold text-sm text-slate-900">{report.title || 'Quick Report'}</h5>
+                                               <p className="text-xs text-slate-500 mt-0.5">
+                                                 {new Date(report.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                                                 {report.workDate && ` · ${report.workDate}`}
+                                               </p>
+                                               <p className="text-[11px] text-slate-400 mt-0.5">
+                                                 From: {fromUser?.name || 'Unknown'} → To: {toUser?.name || 'Unknown'}
+                                               </p>
+                                             </div>
+                                             <Badge variant={
+                                               report.status === 'APPROVED' ? 'green' :
+                                               report.status === 'CHANGES_REQUESTED' ? 'red' : 'yellow'
+                                             }>
+                                               {report.status === 'APPROVED' ? 'Approved' :
+                                                report.status === 'CHANGES_REQUESTED' ? 'Changes Requested' : 'Pending Review'}
+                                             </Badge>
+                                           </div>
 
-                                {report.files && report.files.length > 0 && (
-                                  <div className="flex flex-wrap gap-2">
-                                    {report.files.map((f: any, i: number) => {
-                                      const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(f.filename);
-                                      return (
-                                        <a key={i} href={`/uploads/${f.filename}`} target="_blank" className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 border border-blue-200 rounded text-xs text-blue-600 hover:bg-blue-100">
-                                          {isImg ? <Image size={12} /> : <Download size={12} />}
-                                          {f.originalName}
-                                        </a>
-                                      );
-                                    })}
-                                  </div>
-                                )}
+                                           {report.text && (
+                                             <p className="text-sm text-slate-700 mb-2">{report.text}</p>
+                                           )}
 
-                                {report.reportType === 'STRUCTURED' && (
-                                  <div className="space-y-2">
-                                    {report.onPageText && (
-                                      <div>
-                                        <p className="text-xs font-semibold text-purple-700 mb-1">On-Page Work</p>
-                                        <p className="text-sm text-slate-700">{report.onPageText}</p>
-                                      </div>
-                                    )}
-                                    {report.onPageFiles && report.onPageFiles.length > 0 && (
-                                      <div>
-                                        <p className="text-xs font-semibold text-blue-700 mb-1">On-Page Files</p>
-                                        <div className="flex flex-wrap gap-2">
-                                          {report.onPageFiles.map((f: any, i: number) => (
-                                            <a key={i} href={`/uploads/${f.filename}`} target="_blank" className="text-xs text-blue-600 hover:underline">
-                                              {f.originalName}
-                                            </a>
-                                          ))}
-                                        </div>
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
+                                           {report.files && report.files.length > 0 && (
+                                             <div className="flex flex-wrap gap-2">
+                                               {report.files.map((f: any, i: number) => {
+                                                 const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(f.filename);
+                                                 return (
+                                                   <a key={i} href={`/uploads/${f.filename}`} target="_blank" className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 border border-blue-200 rounded text-xs text-blue-600 hover:bg-blue-100">
+                                                     {isImg ? <Image size={12} /> : <Download size={12} />}
+                                                     {f.originalName}
+                                                   </a>
+                                                 );
+                                               })}
+                                             </div>
+                                           )}
+                                         </Card>
+                                       );
+                                     })}
+                                   </div>
+                                 </div>
+                               )}
 
-                              {report.status === 'PENDING_REVIEW' && (
-                                <div className="flex items-center gap-2 pt-3 mt-3 border-t border-slate-100">
-                                  <Button size="sm" variant="primary" className="gap-1" onClick={() => {
-                                    setShowUpdateReviewModal(report.id);
-                                    setUpdateReviewStatus('APPROVED');
-                                  }}>
-                                    <CheckCircle2 size={14} /> Approve
-                                  </Button>
-                                  <Button size="sm" variant="danger" className="gap-1" onClick={() => {
-                                    setShowUpdateReviewModal(report.id);
-                                    setUpdateReviewStatus('CHANGES_REQUESTED');
-                                  }}>
-                                    <RotateCcw size={14} /> Request Changes
-                                  </Button>
-                                </div>
-                              )}
-                            </Card>
-                          ));
-                        })()}
-                      </div>
-                    </div>
-                  )}
+                               {/* Monthly / Structured Reports */}
+                               {monthlyReports.length > 0 && (
+                                 <div>
+                                   <h5 className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2 flex items-center gap-2">
+                                     <FileText size={12} /> Monthly Reports
+                                   </h5>
+                                   <div className="space-y-2">
+                                     {monthlyReports.map(report => {
+                                       const fromUser = users[report.fromId];
+                                       const toUser = users[report.toId];
+                                       return (
+                                         <Card key={report.id} className="p-4 border-l-4 border-l-purple-500">
+                                           <div className="flex items-start justify-between mb-3">
+                                             <div>
+                                               <h5 className="font-semibold text-sm text-slate-900">{report.title || 'Monthly Report'}</h5>
+                                               <p className="text-xs text-slate-500 mt-0.5">
+                                                 {new Date(report.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                                                 {report.workDate && ` · Work Month: ${report.workDate}`}
+                                               </p>
+                                               <p className="text-[11px] text-slate-400 mt-0.5">
+                                                 From: {fromUser?.name || 'Unknown'} → To: {toUser?.name || 'Unknown'}
+                                               </p>
+                                             </div>
+                                             <Badge variant={
+                                               report.status === 'APPROVED' ? 'green' :
+                                               report.status === 'CHANGES_REQUESTED' ? 'red' : 'yellow'
+                                             }>
+                                               {report.status === 'APPROVED' ? 'Approved' :
+                                                report.status === 'CHANGES_REQUESTED' ? 'Changes Requested' : 'Pending Review'}
+                                             </Badge>
+                                           </div>
+
+                                           <div className="space-y-2">
+                                             {report.text && (
+                                               <p className="text-sm text-slate-700">{report.text}</p>
+                                             )}
+
+                                             {(report.onPageText || (report.onPageFiles && report.onPageFiles.length > 0)) && (
+                                               <div>
+                                                 <div className="flex items-center justify-between mb-1">
+                                                   <p className="text-xs font-semibold text-purple-700">On-Page Work</p>
+                                                   <Badge variant={report.onPageStatus === 'APPROVED' ? 'green' : report.onPageStatus === 'REJECTED' ? 'red' : 'yellow'} className="text-[10px]">
+                                                     {report.onPageStatus === 'APPROVED' ? 'Approved' : report.onPageStatus === 'REJECTED' ? 'Rejected' : 'Pending'}
+                                                   </Badge>
+                                                 </div>
+                                                 {report.onPageText && <p className="text-sm text-slate-700">{report.onPageText}</p>}
+                                                 {report.onPageFiles && report.onPageFiles.length > 0 && (
+                                                   <div className="flex flex-wrap gap-2 mt-1">
+                                                     {report.onPageFiles.map((f: any, i: number) => (
+                                                       <a key={i} href={`/uploads/${f.filename}`} target="_blank" className="text-xs text-blue-600 hover:underline">
+                                                         {f.originalName}
+                                                       </a>
+                                                     ))}
+                                                   </div>
+                                                 )}
+                                               </div>
+                                             )}
+
+                                             {(report.offPageWorkIds && report.offPageWorkIds.length > 0) && (
+                                               <div>
+                                                 <div className="flex items-center justify-between mb-1">
+                                                   <p className="text-xs font-semibold text-orange-700">Off-Page Work</p>
+                                                   <Badge variant={report.offPageStatus === 'APPROVED' ? 'green' : report.offPageStatus === 'REJECTED' ? 'red' : 'yellow'} className="text-[10px]">
+                                                     {report.offPageStatus === 'APPROVED' ? 'Approved' : report.offPageStatus === 'REJECTED' ? 'Rejected' : 'Pending'}
+                                                   </Badge>
+                                                 </div>
+                                                 <p className="text-xs text-slate-500">{report.offPageWorkIds.length} submission(s) included</p>
+                                               </div>
+                                             )}
+                                           </div>
+
+                                           {report.status === 'PENDING_REVIEW' && (
+                                             <div className="flex items-center gap-2 pt-3 mt-3 border-t border-slate-100">
+                                               <Button size="sm" variant="primary" className="gap-1" onClick={() => {
+                                                 setShowUpdateReviewModal(report.id);
+                                                 setUpdateReviewStatus('APPROVED');
+                                               }}>
+                                                 <CheckCircle2 size={14} /> Approve
+                                               </Button>
+                                               <Button size="sm" variant="danger" className="gap-1" onClick={() => {
+                                                 setShowUpdateReviewModal(report.id);
+                                                 setUpdateReviewStatus('CHANGES_REQUESTED');
+                                               }}>
+                                                 <RotateCcw size={14} /> Request Changes
+                                               </Button>
+                                             </div>
+                                           )}
+                                         </Card>
+                                       );
+                                     })}
+                                   </div>
+                                 </div>
+                               )}
+                             </>
+                           );
+                         })()}
+                       </div>
+                     </div>
+                   )}
 
                   {activeBossTab[project.id] === 'chat' && (
                   <div className="h-[70vh]">
